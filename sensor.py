@@ -2,17 +2,13 @@ import logging
 
 from homeassistant.components.sensor import SensorEntity
 from .oig_cloud import OigCloud
-from homeassistant.components.sensor.const import (
-    STATE_CLASS_MEASUREMENT,
-    STATE_CLASS_TOTAL_INCREASING,
-)
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
 )
 from datetime import timedelta
 
-from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN, SENSOR_NAMES, SENSOR_TYPES
+from .const import CONF_NO_TELEMETRY, CONF_PASSWORD, CONF_USERNAME, DOMAIN, SENSOR_NAMES, SENSOR_TYPES
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -120,7 +116,13 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     _LOGGER.debug("async_setup_entry")
     username = config_entry.data[CONF_USERNAME]
     password = config_entry.data[CONF_PASSWORD]
-    oig_cloud = OigCloud(username, password)
+
+    if config_entry.data.get(CONF_NO_TELEMETRY) is None:
+        no_telemetry = False
+    else:
+        no_telemetry = config_entry.data[CONF_NO_TELEMETRY]
+
+    oig_cloud = OigCloud(username, password, no_telemetry)
 
     async def update_data():
         """Fetch data from API endpoint."""

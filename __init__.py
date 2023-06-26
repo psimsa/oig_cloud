@@ -2,7 +2,7 @@ from .oig_cloud import OigCloud
 
 from homeassistant import config_entries, core
 
-from .const import DOMAIN, CONF_USERNAME, CONF_PASSWORD
+from .const import CONF_NO_TELEMETRY, DOMAIN, CONF_USERNAME, CONF_PASSWORD
 
 
 async def async_setup(hass: core.HomeAssistant, config: dict):
@@ -15,8 +15,12 @@ async def async_setup_entry(
 ):
     username = entry.data[CONF_USERNAME]
     password = entry.data[CONF_PASSWORD]
+    if entry.data.get(CONF_NO_TELEMETRY) is None:
+        no_telemetry = False
+    else:
+        no_telemetry = entry.data[CONF_NO_TELEMETRY]
 
-    oig_cloud = OigCloud(username, password)
+    oig_cloud = OigCloud(username, password, no_telemetry)
 
     # Run the authenticate() method to get the token
     await oig_cloud.authenticate()
