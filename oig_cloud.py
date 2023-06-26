@@ -18,10 +18,12 @@ class OigCloud:
         self.password = password
         self.last_state = None
         self.logger = logging.getLogger(__name__)
+        self.logger.debug("OigCloud initialized")
 
     async def authenticate(self) -> bool:
         login_command = {"email": self.username, "password": self.password}
 
+        self.logger.debug("Authenticating")
         async with (aiohttp.ClientSession()) as session:
             async with session.post(
                 self.base_url + self.login_url,
@@ -47,8 +49,10 @@ class OigCloud:
         try:
             to_return = await self.get_stats_internal()
         except:
+            self.logger.debug("Retrying authentication")
             if await self.authenticate():
                 to_return = await self.get_stats_internal()
+        self.logger.debug("Retrieved stats")
         return to_return
 
     async def get_stats_internal(self, dependent: bool = False) -> object:
@@ -59,16 +63,15 @@ class OigCloud:
                     to_return = await response.json()
                     # the response should be a json dictionary, otherwise it's an error
                     if not isinstance(to_return, dict) and not dependent:
-                        self.logger.warning("Retrying with authentication")
+                        self.logger.info("Retrying authentication")
                         if await self.authenticate():
                             second_try = await self.get_stats_internal(True)
                             if not isinstance(second_try, dict):
-                                self.logger.warning(f"Error: {second_try}")
+                                self.logger.error(f"Error: {second_try}")
                                 return None
                             else:
                                 to_return = second_try
                         else:
                             return None
-            self.logger.debug(f"Received response")
-            self.last_state = to_return
+                self.last_state = to_return
             return to_return

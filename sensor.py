@@ -12,7 +12,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 from datetime import timedelta
 
-from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN, SENSOR_TYPES
+from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN, SENSOR_NAMES, SENSOR_TYPES
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,10 +26,13 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
         self._node_key = SENSOR_TYPES[sensor_type]["node_key"]
         self._box_id = list(self.coordinator.data.keys())[0]
         self.entity_id = f"sensor.oig_{self._box_id}_{sensor_type}"
+        _LOGGER.debug(f"Created sensor {self.entity_id}")
 
     @property
     def name(self):
-        return SENSOR_TYPES[self._sensor_type]["name"]
+        """Return the name of the sensor."""
+        language = self.hass.config.language
+        return SENSOR_NAMES.get(language, SENSOR_NAMES["en"])[self._sensor_type]
 
     @property
     def device_class(self):
@@ -37,7 +40,9 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def state(self):
+        _LOGGER.debug(f"Getting state for {self.entity_id}")
         if self.coordinator.data is None:
+            _LOGGER.debug(f"Data is None for {self.entity_id}")
             return None
 
         data = self.coordinator.data
@@ -69,7 +74,6 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
             return float(node_value)
         except ValueError:
             return node_value
-        return node_value
 
     @property
     def unit_of_measurement(self):
@@ -88,7 +92,7 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
     def state_class(self):
         """Return the state class of the sensor."""
         return SENSOR_TYPES[self._sensor_type]["state_class"]
-    
+
     @property
     def device_info(self):
         return {
@@ -113,6 +117,7 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
+    _LOGGER.debug("async_setup_entry")
     username = config_entry.data[CONF_USERNAME]
     password = config_entry.data[CONF_PASSWORD]
     oig_cloud = OigCloud(username, password)
@@ -133,6 +138,9 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     # Fetch initial data so we have data when entities subscribe.
     await coordinator.async_config_entry_first_refresh()
 
+    _LOGGER.debug("First refresh done, will add entities")
+    
     async_add_entities(
         OigCloudSensor(coordinator, sensor_type) for sensor_type in SENSOR_TYPES
     )
+    _LOGGER.debug("async_setup_entry done")
