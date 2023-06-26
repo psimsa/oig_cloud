@@ -72,6 +72,7 @@ class OigCloud:
             provider.add_span_processor(processor)
 
         self.logger = logging.getLogger(__name__)
+        self.logger.info(f"Telemetry hash is {self.email_hash}")
 
         self.last_state = None
         debug(self.logger, "OigCloud initialized")
