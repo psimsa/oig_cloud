@@ -1,0 +1,180 @@
+from homeassistant.const import (
+    DEVICE_CLASS_BATTERY,
+    DEVICE_CLASS_ENERGY,
+    DEVICE_CLASS_POWER,
+    DEVICE_CLASS_POWER_FACTOR,
+    DEVICE_CLASS_TIMESTAMP,
+)
+
+from homeassistant.components.sensor import SensorStateClass
+
+
+DOMAIN = "oig_cloud"
+
+CONF_USERNAME = "username"
+CONF_PASSWORD = "password"
+
+DEFAULT_NAME = "Battery Box"
+
+SENSOR_TYPES = {
+    "dc_in_fv_p1": {
+        "name": "Panels Output String 1",
+        "device_class": DEVICE_CLASS_POWER,
+        "unit_of_measurement": "W",
+        "node_id": "dc_in",
+        "node_key": "fv_p1",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "dc_in_fv_p2": {
+        "name": "Panels Output String 2",
+        "device_class": DEVICE_CLASS_POWER,
+        "unit_of_measurement": "W",
+        "node_id": "dc_in",
+        "node_key": "fv_p2",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "dc_in_fv_proc": {
+        "name": "Panels Output Percent",
+        "device_class": DEVICE_CLASS_POWER_FACTOR,
+        "unit_of_measurement": "%",
+        "node_id": "dc_in",
+        "node_key": "fv_proc",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "batt_bat_c": {
+        "name": "Battery Percent",
+        "device_class": DEVICE_CLASS_BATTERY,
+        "unit_of_measurement": "%",
+        "node_id": "batt",
+        "node_key": "bat_c",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "ac_out_aco_pr": {
+        "name": "Load Line 1",
+        "device_class": DEVICE_CLASS_POWER,
+        "unit_of_measurement": "W",
+        "node_id": "ac_out",
+        "node_key": "aco_pr",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "ac_out_aco_ps": {
+        "name": "Load Line 2",
+        "device_class": DEVICE_CLASS_POWER,
+        "unit_of_measurement": "W",
+        "node_id": "ac_out",
+        "node_key": "aco_ps",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "ac_out_aco_pt": {
+        "name": "Load Line 3",
+        "device_class": DEVICE_CLASS_POWER,
+        "unit_of_measurement": "W",
+        "node_id": "ac_out",
+        "node_key": "aco_pt",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "ac_out_aco_p": {
+        "name": "Load Total",
+        "device_class": DEVICE_CLASS_POWER,
+        "unit_of_measurement": "W",
+        "node_id": "ac_out",
+        "node_key": "aco_p",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "ac_in_aci_wr": {
+        "name": "Grid Load Line 1",
+        "device_class": DEVICE_CLASS_POWER,
+        "unit_of_measurement": "W",
+        "node_id": "ac_in",
+        "node_key": "aci_wr",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "ac_in_aci_ws": {
+        "name": "Grid Load Line 2",
+        "device_class": DEVICE_CLASS_POWER,
+        "unit_of_measurement": "W",
+        "node_id": "ac_in",
+        "node_key": "aci_ws",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "ac_in_aci_wt": {
+        "name": "Grid Load Line 3",
+        "device_class": DEVICE_CLASS_POWER,
+        "unit_of_measurement": "W",
+        "node_id": "ac_in",
+        "node_key": "aci_wt",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "ac_in_aci_wtotal": {
+        "name": "Grid Load Total",
+        "device_class": DEVICE_CLASS_POWER,
+        "unit_of_measurement": "W",
+        "node_id": "",
+        "node_key": "",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "dc_in_fv_ad": {
+        "name": "PV Output Today",
+        "device_class": DEVICE_CLASS_ENERGY,
+        "unit_of_measurement": "Wh",
+        "node_id": "dc_in",
+        "node_key": "fv_ad",
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+    },
+    "ac_out_en_day": {
+        "name": "Consumption Today",
+        "device_class": DEVICE_CLASS_ENERGY,
+        "unit_of_measurement": "Wh",
+        "node_id": "ac_out",
+        "node_key": "en_day",
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+    },
+    "ac_in_ac_ad": {
+        "name": "Grid Consumption Today",
+        "device_class": DEVICE_CLASS_ENERGY,
+        "unit_of_measurement": "Wh",
+        "node_id": "ac_in",
+        "node_key": "ac_ad",
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+    },
+    "ac_in_ac_pd": {
+        "name": "Grid Delivery Today",
+        "device_class": DEVICE_CLASS_ENERGY,
+        "unit_of_measurement": "Wh",
+        "node_id": "ac_in",
+        "node_key": "ac_pd",
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+    },
+    "batt_bat_apd": {
+        "name": "Battery Charge Today",
+        "device_class": DEVICE_CLASS_ENERGY,
+        "unit_of_measurement": "Wh",
+        "node_id": "batt",
+        "node_key": "bat_apd",
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+    },
+    "batt_bat_and": {
+        "name": "Battery Discharge Today",
+        "device_class": DEVICE_CLASS_ENERGY,
+        "unit_of_measurement": "Wh",
+        "node_id": "batt",
+        "node_key": "bat_and",
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+    },
+    "device_lastcall": {
+        "name": "Last Call",
+        "device_class": DEVICE_CLASS_TIMESTAMP,
+        "unit_of_measurement": None,
+        "node_id": "device",
+        "node_key": "lastcall",
+        "state_class": None,
+    },
+    "box_prms_mode": {
+        "name": "Operation Mode",
+        "device_class": None,
+        "unit_of_measurement": None,
+        "node_id": "box_prms",
+        "node_key": "mode",
+        "state_class": None,
+    },
+}
