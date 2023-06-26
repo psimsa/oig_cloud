@@ -12,7 +12,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 from datetime import timedelta
 
-from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN, SENSOR_TYPES
+from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN, SENSOR_NAMES, SENSOR_TYPES
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,7 +29,10 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def name(self):
-        return SENSOR_TYPES[self._sensor_type]["name"]
+        """Return the name of the sensor."""
+        language = self.hass.config.language
+        return SENSOR_NAMES.get(language, SENSOR_NAMES["en"])[self._sensor_type]
+
 
     @property
     def device_class(self):

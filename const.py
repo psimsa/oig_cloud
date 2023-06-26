@@ -1,13 +1,4 @@
-from homeassistant.const import (
-    DEVICE_CLASS_BATTERY,
-    DEVICE_CLASS_ENERGY,
-    DEVICE_CLASS_POWER,
-    DEVICE_CLASS_POWER_FACTOR,
-    DEVICE_CLASS_TIMESTAMP,
-)
-
-from homeassistant.components.sensor import SensorStateClass
-
+from homeassistant.components.sensor import SensorStateClass, SensorDeviceClass
 
 DOMAIN = "oig_cloud"
 
@@ -16,10 +7,58 @@ CONF_PASSWORD = "password"
 
 DEFAULT_NAME = "Battery Box"
 
+SENSOR_NAMES = {
+    "en": {
+        "dc_in_fv_p1": "Panels Output String 1",
+        "dc_in_fv_p2": "Panels Output String 2",
+        "dc_in_fv_proc": "Panels Output Percent",
+        "batt_bat_c": "Battery Percent",
+        "ac_out_aco_pr": "Load Line 1",
+        "ac_out_aco_ps": "Load Line 2",
+        "ac_out_aco_pt": "Load Line 3",
+        "ac_out_aco_p": "Load Total",
+        "ac_in_aci_wr": "Grid Load Line 1",
+        "ac_in_aci_ws": "Grid Load Line 2",
+        "ac_in_aci_wt": "Grid Load Line 3",
+        "ac_in_aci_wtotal": "Grid Load Total",
+        "dc_in_fv_ad": "PV Output Today",
+        "ac_out_en_day": "Consumption Today",
+        "ac_in_ac_ad": "Grid Consumption Today",
+        "ac_in_ac_pd": "Grid Delivery Today",
+        "batt_bat_apd": "Battery Charge Today",
+        "batt_bat_and": "Battery Discharge Today",
+        "device_lastcall": "Last Call",
+        "box_prms_mode": "Operation Mode",
+    },
+    "cs": {
+        "dc_in_fv_p1": "Výkon panelů string 1",
+        "dc_in_fv_p2": "Výkon panelů string 2",
+        "dc_in_fv_proc": "Výkon panelů (procenta)",
+        "batt_bat_c": "Nabití baterie (procenta)",
+        "ac_out_aco_pr": "Zátěž fáze 1",
+        "ac_out_aco_ps": "Zátěž fáze 2",
+        "ac_out_aco_pt": "Zátěž fáze 3",
+        "ac_out_aco_p": "Zátěž celkem",
+        "ac_in_aci_wr": "Síť - Zátěž fáze 1",
+        "ac_in_aci_ws": "Síť - Zátěž fáze 2",
+        "ac_in_aci_wt": "Síť - Zátěž fáze 3",
+        "ac_in_aci_wtotal": "Síť - Zátěž celkem",
+        "dc_in_fv_ad": "Dnešní výroba",
+        "ac_out_en_day": "Dnešní spotřeba (FVE)",
+        "ac_in_ac_ad": "Dnešní spotřeba (síť)",
+        "ac_in_ac_pd": "Dnešní dodávka do sítě",
+        "batt_bat_apd": "Dnešní nabíjení baterie",
+        "batt_bat_and": "Dnešní vybíjení baterie",
+        "device_lastcall": "Poslední komunikace",
+        "box_prms_mode": "Režim provozu",
+    }
+}
+
+
 SENSOR_TYPES = {
     "dc_in_fv_p1": {
         "name": "Panels Output String 1",
-        "device_class": DEVICE_CLASS_POWER,
+        "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "dc_in",
         "node_key": "fv_p1",
@@ -27,7 +66,7 @@ SENSOR_TYPES = {
     },
     "dc_in_fv_p2": {
         "name": "Panels Output String 2",
-        "device_class": DEVICE_CLASS_POWER,
+        "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "dc_in",
         "node_key": "fv_p2",
@@ -35,7 +74,7 @@ SENSOR_TYPES = {
     },
     "dc_in_fv_proc": {
         "name": "Panels Output Percent",
-        "device_class": DEVICE_CLASS_POWER_FACTOR,
+        "device_class": SensorDeviceClass.POWER_FACTOR,
         "unit_of_measurement": "%",
         "node_id": "dc_in",
         "node_key": "fv_proc",
@@ -43,7 +82,7 @@ SENSOR_TYPES = {
     },
     "batt_bat_c": {
         "name": "Battery Percent",
-        "device_class": DEVICE_CLASS_BATTERY,
+        "device_class": SensorDeviceClass.BATTERY,
         "unit_of_measurement": "%",
         "node_id": "batt",
         "node_key": "bat_c",
@@ -51,7 +90,7 @@ SENSOR_TYPES = {
     },
     "ac_out_aco_pr": {
         "name": "Load Line 1",
-        "device_class": DEVICE_CLASS_POWER,
+        "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "ac_out",
         "node_key": "aco_pr",
@@ -59,7 +98,7 @@ SENSOR_TYPES = {
     },
     "ac_out_aco_ps": {
         "name": "Load Line 2",
-        "device_class": DEVICE_CLASS_POWER,
+        "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "ac_out",
         "node_key": "aco_ps",
@@ -67,7 +106,7 @@ SENSOR_TYPES = {
     },
     "ac_out_aco_pt": {
         "name": "Load Line 3",
-        "device_class": DEVICE_CLASS_POWER,
+        "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "ac_out",
         "node_key": "aco_pt",
@@ -75,7 +114,7 @@ SENSOR_TYPES = {
     },
     "ac_out_aco_p": {
         "name": "Load Total",
-        "device_class": DEVICE_CLASS_POWER,
+        "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "ac_out",
         "node_key": "aco_p",
@@ -83,7 +122,7 @@ SENSOR_TYPES = {
     },
     "ac_in_aci_wr": {
         "name": "Grid Load Line 1",
-        "device_class": DEVICE_CLASS_POWER,
+        "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "ac_in",
         "node_key": "aci_wr",
@@ -91,7 +130,7 @@ SENSOR_TYPES = {
     },
     "ac_in_aci_ws": {
         "name": "Grid Load Line 2",
-        "device_class": DEVICE_CLASS_POWER,
+        "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "ac_in",
         "node_key": "aci_ws",
@@ -99,7 +138,7 @@ SENSOR_TYPES = {
     },
     "ac_in_aci_wt": {
         "name": "Grid Load Line 3",
-        "device_class": DEVICE_CLASS_POWER,
+        "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "ac_in",
         "node_key": "aci_wt",
@@ -107,7 +146,7 @@ SENSOR_TYPES = {
     },
     "ac_in_aci_wtotal": {
         "name": "Grid Load Total",
-        "device_class": DEVICE_CLASS_POWER,
+        "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "",
         "node_key": "",
@@ -115,7 +154,7 @@ SENSOR_TYPES = {
     },
     "dc_in_fv_ad": {
         "name": "PV Output Today",
-        "device_class": DEVICE_CLASS_ENERGY,
+        "device_class": SensorDeviceClass.ENERGY,
         "unit_of_measurement": "Wh",
         "node_id": "dc_in",
         "node_key": "fv_ad",
@@ -123,7 +162,7 @@ SENSOR_TYPES = {
     },
     "ac_out_en_day": {
         "name": "Consumption Today",
-        "device_class": DEVICE_CLASS_ENERGY,
+        "device_class": SensorDeviceClass.ENERGY,
         "unit_of_measurement": "Wh",
         "node_id": "ac_out",
         "node_key": "en_day",
@@ -131,7 +170,7 @@ SENSOR_TYPES = {
     },
     "ac_in_ac_ad": {
         "name": "Grid Consumption Today",
-        "device_class": DEVICE_CLASS_ENERGY,
+        "device_class": SensorDeviceClass.ENERGY,
         "unit_of_measurement": "Wh",
         "node_id": "ac_in",
         "node_key": "ac_ad",
@@ -139,7 +178,7 @@ SENSOR_TYPES = {
     },
     "ac_in_ac_pd": {
         "name": "Grid Delivery Today",
-        "device_class": DEVICE_CLASS_ENERGY,
+        "device_class": SensorDeviceClass.ENERGY,
         "unit_of_measurement": "Wh",
         "node_id": "ac_in",
         "node_key": "ac_pd",
@@ -147,7 +186,7 @@ SENSOR_TYPES = {
     },
     "batt_bat_apd": {
         "name": "Battery Charge Today",
-        "device_class": DEVICE_CLASS_ENERGY,
+        "device_class": SensorDeviceClass.ENERGY,
         "unit_of_measurement": "Wh",
         "node_id": "batt",
         "node_key": "bat_apd",
@@ -155,7 +194,7 @@ SENSOR_TYPES = {
     },
     "batt_bat_and": {
         "name": "Battery Discharge Today",
-        "device_class": DEVICE_CLASS_ENERGY,
+        "device_class": SensorDeviceClass.ENERGY,
         "unit_of_measurement": "Wh",
         "node_id": "batt",
         "node_key": "bat_and",
@@ -163,7 +202,7 @@ SENSOR_TYPES = {
     },
     "device_lastcall": {
         "name": "Last Call",
-        "device_class": DEVICE_CLASS_TIMESTAMP,
+        "device_class": SensorDeviceClass.TIMESTAMP,
         "unit_of_measurement": None,
         "node_id": "device",
         "node_key": "lastcall",

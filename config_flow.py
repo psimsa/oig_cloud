@@ -1,7 +1,6 @@
 import voluptuous as vol
 from .oig_cloud import OigCloud
 from homeassistant import config_entries
-from homeassistant.core import callback
 
 from .const import DEFAULT_NAME, DOMAIN, CONF_USERNAME, CONF_PASSWORD
 
@@ -21,11 +20,6 @@ class OigCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
-                {vol.Required(CONF_USERNAME): str, vol.Required(CONF_PASSWORD): str}
-            ),
-            description_placeholders={
-                CONF_USERNAME: "Username",
-                CONF_PASSWORD: "Password",
-                "message": "Enter your OIG Cloud credentials",
-            },
+                {vol.Required(CONF_USERNAME): str, vol.Required(CONF_PASSWORD): str, vol.Required("no_telemetry"): bool}
+            )
         )

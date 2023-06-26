@@ -59,7 +59,7 @@ class OigCloud:
                     to_return = await response.json()
                     # the response should be a json dictionary, otherwise it's an error
                     if not isinstance(to_return, dict) and not dependent:
-                        self.logger.warning("Retrying with authentication")
+                        self.logger.info("Retrying with authentication")
                         if await self.authenticate():
                             second_try = await self.get_stats_internal(True)
                             if not isinstance(second_try, dict):
@@ -69,6 +69,5 @@ class OigCloud:
                                 to_return = second_try
                         else:
                             return None
-            self.logger.debug(f"Received response")
-            self.last_state = to_return
+                self.last_state = to_return
             return to_return

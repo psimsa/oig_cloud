@@ -1,5 +1,4 @@
 from .oig_cloud import OigCloud
-import asyncio
 
 from homeassistant import config_entries, core
 
