@@ -12,7 +12,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 from datetime import timedelta
 
-from .const import CONF_PASSWORD, CONF_USERNAME, SENSOR_TYPES
+from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN, SENSOR_TYPES
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -88,6 +88,15 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
     def state_class(self):
         """Return the state class of the sensor."""
         return SENSOR_TYPES[self._sensor_type]["state_class"]
+    
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._box_id)},
+            "name": f"Battery Box {self._box_id}",
+            "manufacturer": "OIG",
+            "model": "Unknown",
+        }
 
     async def async_added_to_hass(self):
         self.async_on_remove(
