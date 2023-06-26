@@ -13,7 +13,7 @@ class OigCloud:
 
     phpsessid: str = None
 
-    def __init__(self, username: str, password: str) -> None:
+    def __init__(self, username: str, password: str, no_telemetry: bool) -> None:
         self.username = username
         self.password = password
         self.last_state = None
