@@ -4,6 +4,7 @@ DOMAIN = "oig_cloud"
 
 CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
+CONF_NO_TELEMETRY = "no_telemetry"
 
 DEFAULT_NAME = "Battery Box"
 
