@@ -1,6 +1,7 @@
 import json
 import logging
 import aiohttp
+import hashlib
 
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
@@ -65,6 +66,7 @@ class OigCloud:
         self.username = username
         self.password = password
         self.no_telemetry = no_telemetry
+        self.email_hash = hashlib.md5(self.username.encode("utf-8")).hexdigest()
 
         if not self.no_telemetry:
             provider.add_span_processor(processor)
@@ -76,7 +78,7 @@ class OigCloud:
 
     async def authenticate(self) -> bool:
         with tracer.start_as_current_span("authenticate") as span:
-            span.set_attribute("username", self.username)
+            span.set_attribute("email_hash", self.email_hash)
             login_command = {"email": self.username, "password": self.password}
 
             debug(self.logger, "Authenticating")
@@ -102,7 +104,7 @@ class OigCloud:
 
     async def get_stats(self) -> object:
         with tracer.start_as_current_span("get_stats") as span:
-            span.set_attribute("username", self.username)
+            span.set_attribute("email_hash", self.email_hash)
             to_return: object = None
             try:
                 to_return = await self.get_stats_internal()
