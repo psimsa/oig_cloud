@@ -8,6 +8,9 @@ CONF_NO_TELEMETRY = "no_telemetry"
 
 DEFAULT_NAME = "Battery Box"
 
+SERVICE_NAME = "oig_cloud"
+COMPONENT_VERSION = "0.0.1"
+
 SENSOR_NAMES = {
     "en": {
         "dc_in_fv_p1": "Panels Output String 1",
@@ -30,6 +33,9 @@ SENSOR_NAMES = {
         "batt_bat_and": "Battery Discharge Today",
         "device_lastcall": "Last Call",
         "box_prms_mode": "Operation Mode",
+        "box_temp": "Box Temperature",
+        "box_humid": "Box Humidity",
+        "box_prms_sw": "Firmwaver Version",
     },
     "cs": {
         "dc_in_fv_p1": "Výkon panelů string 1",
@@ -52,7 +58,10 @@ SENSOR_NAMES = {
         "batt_bat_and": "Dnešní vybíjení baterie",
         "device_lastcall": "Poslední komunikace",
         "box_prms_mode": "Režim provozu",
-    }
+        "box_temp": "Teplota boxu",
+        "box_humid": "Vlhkost v boxu",
+        "box_prms_sw": "Verze firmware",
+    },
 }
 
 
@@ -215,6 +224,30 @@ SENSOR_TYPES = {
         "unit_of_measurement": None,
         "node_id": "box_prms",
         "node_key": "mode",
+        "state_class": None,
+    },
+    "box_temp": {
+        "name": "Temperature",
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "unit_of_measurement": "°C",
+        "node_id": "box",
+        "node_key": "temp",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "box_humid": {
+        "name": "Humidity",
+        "device_class": SensorDeviceClass.HUMIDITY,
+        "unit_of_measurement": "%",
+        "node_id": "box",
+        "node_key": "humid",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "box_prms_sw": {
+        "name": "Software Version",
+        "device_class": None,
+        "unit_of_measurement": None,
+        "node_id": "box_prms",
+        "node_key": "sw",
         "state_class": None,
     },
 }
