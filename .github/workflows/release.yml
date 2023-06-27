@@ -1,0 +1,60 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version'
+        required: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+
+    - name: Replace version and service in release_const.py
+      run: |
+        sed -i 's/VERSION = "dev"/VERSION = "${{ github.event.inputs.version }}"/g' release_const.py
+        sed -i 's/SERVICE = "oig_cloud_dev"/SERVICE = "oig_cloud"/g' release_const.py
+
+    - name: Update version property in manifest.json
+      run: |
+        jq --arg version ${{ github.event.inputs.version }} '.version = $version' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
+
+    - name: Commit changes
+      run: |
+        git config --global user.name "Your Name"
+        git config --global user.email "your-email@example.com"
+        git add release_const.py manifest.json
+        git commit -m "Creating release"
+        git tag -a v${{ format('0.0.0', github.event.inputs.version) }} -m "Version ${{ github.event.inputs.version }}"
+        git push --follow-tags
+
+    - name: Create draft release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ format('0.0.0', github.event.inputs.version) }}
+        release_name: Release ${{ github.event.inputs.version }}
+        draft: true
+
+    - name: Revert changes in release_const.py and manifest.json
+      run: |
+        git checkout release_const.py manifest.json
+
+    - name: Commit changes
+      run: |
+        git config --global user.name "Your Name"
+        git config --global user.email "your-email@example.com"
+        git add release_const.py manifest.json
+        git commit -m "Restoring dev variables"
+        git push
