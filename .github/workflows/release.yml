@@ -36,7 +36,7 @@ jobs:
         git add release_const.py manifest.json
         git commit -m "Creating release"
         git tag -a v${{ format('0.0.0', github.event.inputs.version) }} -m "Version ${{ github.event.inputs.version }}"
-        git push --follow-tags
+        git push --follow-tags --force
 
     - name: Create draft release
       uses: actions/create-release@v1
@@ -57,4 +57,4 @@ jobs:
         git config --global user.email "pavel@simsa.cz"
         git add release_const.py manifest.json
         git commit -m "Restoring dev variables"
-        git push
+        git push --force
