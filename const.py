@@ -8,9 +8,6 @@ CONF_NO_TELEMETRY = "no_telemetry"
 
 DEFAULT_NAME = "Battery Box"
 
-SERVICE_NAME = "oig_cloud_dev"
-COMPONENT_VERSION = "0.0.2"
-
 SENSOR_NAMES = {
     "en": {
         "dc_in_fv_p1": "Panels Output String 1",
