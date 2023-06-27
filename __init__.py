@@ -20,7 +20,7 @@ async def async_setup_entry(
     else:
         no_telemetry = entry.data[CONF_NO_TELEMETRY]
 
-    oig_cloud = OigCloud(username, password, no_telemetry)
+    oig_cloud = OigCloud(username, password, no_telemetry, hass)
 
     # Run the authenticate() method to get the token
     await oig_cloud.authenticate()

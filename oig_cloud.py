@@ -8,8 +8,11 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from .const import COMPONENT_VERSION, SERVICE_NAME
 
-resource = Resource.create({"service.name": "oig_cloud"})
+from homeassistant import core
+
+resource = Resource.create({"service.name": SERVICE_NAME})
 provider = TracerProvider(resource=resource)
 processor = BatchSpanProcessor(
     OTLPSpanExporter(
@@ -62,17 +65,29 @@ class OigCloud:
 
     phpsessid: str = None
 
-    def __init__(self, username: str, password: str, no_telemetry: bool) -> None:
+    def __init__(
+        self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
+    ) -> None:
         self.username = username
         self.password = password
         self.no_telemetry = no_telemetry
         self.email_hash = hashlib.md5(self.username.encode("utf-8")).hexdigest()
+        self.logger = logging.getLogger(__name__)
 
         if not self.no_telemetry:
             provider.add_span_processor(processor)
 
-        self.logger = logging.getLogger(__name__)
-        self.logger.info(f"Telemetry hash is {self.email_hash}")
+            with tracer.start_as_current_span("initialize") as span:
+                span.set_attributes(
+                    {
+                        "email_hash": self.email_hash,
+                        "hass.language": hass.config.language,
+                        "hass.time_zone": hass.config.time_zone,
+                        "oig_cloud.version": COMPONENT_VERSION,
+                    }
+                )
+                span.add_event("log", {"level": logging.INFO, "msg": "Initializing"})
+                self.logger.info(f"Telemetry hash is {self.email_hash}")
 
         self.last_state = None
         debug(self.logger, "OigCloud initialized")

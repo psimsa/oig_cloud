@@ -122,7 +122,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     else:
         no_telemetry = config_entry.data[CONF_NO_TELEMETRY]
 
-    oig_cloud = OigCloud(username, password, no_telemetry)
+    oig_cloud = OigCloud(username, password, no_telemetry, hass)
 
     async def update_data():
         """Fetch data from API endpoint."""
