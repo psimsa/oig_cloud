@@ -56,59 +56,77 @@ def log(logger: logging.Logger, level: int, msg: str):
 
 
 class OigCloud:
-    base_url = "https://www.oigpower.cz/cez/"
-    login_url = "inc/php/scripts/Login.php"
-    get_stats_url = "json.php"
+    _base_url = "https://www.oigpower.cz/cez/"
+    _login_url = "inc/php/scripts/Login.php"
+    _get_stats_url = "json.php"
+    _set_mode_url = ""
 
-    username: str = None
-    password: str = None
+    _username: str = None
+    _password: str = None
 
-    phpsessid: str = None
+    _phpsessid: str = None
+
+    _box_id: str = None
 
     def __init__(
         self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
     ) -> None:
-        self.username = username
-        self.password = password
-        self.no_telemetry = no_telemetry
-        self.email_hash = hashlib.md5(self.username.encode("utf-8")).hexdigest()
-        self.logger = logging.getLogger(__name__)
+        self._username = username
+        self._password = password
+        self._no_telemetry = no_telemetry
+        self._email_hash = hashlib.md5(self._username.encode("utf-8")).hexdigest()
+        self._logger = logging.getLogger(__name__)
 
-        if not self.no_telemetry:
+        if not self._no_telemetry:
             provider.add_span_processor(processor)
 
             with tracer.start_as_current_span("initialize") as span:
+                self._initialize_span()
                 span.set_attributes(
                     {
-                        "email_hash": self.email_hash,
                         "hass.language": hass.config.language,
                         "hass.time_zone": hass.config.time_zone,
-                        "oig_cloud.version": COMPONENT_VERSION,
                     }
                 )
                 span.add_event("log", {"level": logging.INFO, "msg": "Initializing"})
-                self.logger.info(f"Telemetry hash is {self.email_hash}")
+                self._logger.info(f"Telemetry hash is {self._email_hash}")
 
         self.last_state = None
-        debug(self.logger, "OigCloud initialized")
+        debug(self._logger, "OigCloud initialized")
+
+    def _initialize_span(self):
+        span = trace.get_current_span()
+        if span:
+            # span.set_attribute("email_hash", self.email_hash)
+            # span.set_attribute("oig_cloud.version", COMPONENT_VERSION)
+            span.set_attributes(
+                {
+                    "email_hash": self._email_hash,
+                    "oig_cloud.version": COMPONENT_VERSION,
+                }
+            )
 
     async def authenticate(self) -> bool:
         with tracer.start_as_current_span("authenticate") as span:
-            span.set_attribute("email_hash", self.email_hash)
-            login_command = {"email": self.username, "password": self.password}
+            self._initialize_span()
+            login_command = {"email": self._username, "password": self._password}
 
-            debug(self.logger, "Authenticating")
+            debug(self._logger, "Authenticating")
             async with (aiohttp.ClientSession()) as session:
                 async with session.post(
-                    self.base_url + self.login_url,
+                    self._base_url + self._login_url,
                     data=json.dumps(login_command),
                     headers={"Content-Type": "application/json"},
                 ) as response:
+                    responsecontent = await response.text()
+                    span.add_event(
+                        "Received auth response",
+                        {"response": responsecontent, "status": response.status},
+                    )
                     if response.status == 200:
-                        responsecontent = await response.text()
                         if responsecontent == '[[2,"",false]]':
-                            self.phpsessid = (
-                                session.cookie_jar.filter_cookies(self.base_url)
+                            self._phpsessid = (
+                                session.cookie_jar.filter_cookies(self._base_url)
                                 .get("PHPSESSID")
                                 .value
                             )
@@ -116,35 +134,40 @@ class OigCloud:
                     return False
 
     def get_session(self) -> aiohttp.ClientSession:
-        return aiohttp.ClientSession(headers={"Cookie": f"PHPSESSID={self.phpsessid}"})
+        return aiohttp.ClientSession(headers={"Cookie": f"PHPSESSID={self._phpsessid}"})
 
     async def get_stats(self) -> object:
         with tracer.start_as_current_span("get_stats") as span:
-            span.set_attribute("email_hash", self.email_hash)
+            self._initialize_span()
             to_return: object = None
             try:
                 to_return = await self.get_stats_internal()
             except:
-                debug(self.logger, "Retrying authentication")
+                debug(self._logger, "Retrying authentication")
                 if await self.authenticate():
                     to_return = await self.get_stats_internal()
-            debug(self.logger, "Retrieved stats")
+            debug(self._logger, "Retrieved stats")
+        if self._box_id is None:
+            self._box_id = list(to_return.keys())[0]
         return to_return
 
     async def get_stats_internal(self, dependent: bool = False) -> object:
         with tracer.start_as_current_span("get_stats_internal"):
+            self._initialize_span()
             to_return: object = None
             async with self.get_session() as session:
-                async with session.get(self.base_url + self.get_stats_url) as response:
+                async with session.get(
+                    self._base_url + self._get_stats_url
+                ) as response:
                     if response.status == 200:
                         to_return = await response.json()
                         # the response should be a json dictionary, otherwise it's an error
                         if not isinstance(to_return, dict) and not dependent:
-                            info(self.logger, "Retrying authentication")
+                            info(self._logger, "Retrying authentication")
                             if await self.authenticate():
                                 second_try = await self.get_stats_internal(True)
                                 if not isinstance(second_try, dict):
-                                    error(self.logger, f"Error: {second_try}")
+                                    error(self._logger, f"Error: {second_try}")
                                     return None
                                 else:
                                     to_return = second_try
