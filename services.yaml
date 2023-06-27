@@ -1,0 +1,20 @@
+set_box_mode:
+    description: Set the mode of the device.
+    fields:
+        mode:
+            description: The mode to set
+            example: "Home 1"
+            selector:
+              select:
+                options:
+                  - "Home 1"
+                  - "Home 2"
+                  - "Home 3"
+                  - "Home UPS"
+
+# set_grid_delivery:
+#     description: Enable or disable grid delivery.
+#     fields:
+#         enabled:
+#             description: True to enable, False to disable.
+#             example: true

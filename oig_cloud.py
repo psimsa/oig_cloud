@@ -59,7 +59,7 @@ class OigCloud:
     _base_url = "https://www.oigpower.cz/cez/"
     _login_url = "inc/php/scripts/Login.php"
     _get_stats_url = "json.php"
-    _set_mode_url = ""
+    _set_mode_url = "inc/php/scripts/Device.Set.Value.php"
 
     _username: str = None
     _password: str = None
@@ -175,3 +175,41 @@ class OigCloud:
                                 return None
                     self.last_state = to_return
                 return to_return
+
+    async def set_box_mode(self, mode: str) -> bool:
+        # in c# the structure looks like this:
+        # private record OigCommand(
+        #   [property: JsonPropertyName("id_device")]
+        #   string DeviceId,
+        #   [property: JsonPropertyName("table")] string Table,
+        #   [property: JsonPropertyName("column")] string Column,
+        #   [property: JsonPropertyName("value")] string Value);
+        # table will be box_prms, column will be mode, value will be the mode
+
+        with tracer.start_as_current_span("set_mode") as span:
+            self._initialize_span()
+            debug(self._logger, f"Setting mode to {mode}")
+            async with self.get_session() as session:
+                async with session.post(
+                    self._base_url + self._set_mode_url,
+                    data=json.dumps(
+                        {
+                            "id_device": self._box_id,
+                            "table": "box_prms",
+                            "column": "mode",
+                            "value": mode,
+                        }
+                    ),
+                    headers={"Content-Type": "application/json"},
+                ) as response:
+                    responsecontent = await response.text()
+                    span.add_event(
+                        "Received mode response",
+                        {"response": responsecontent, "status": response.status},
+                    )
+                    if response.status == 200:
+                        return True
+                    return False
+
+    async def set_grid_delivery(self, enabled: bool) -> bool:
+        pass

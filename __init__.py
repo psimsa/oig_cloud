@@ -1,3 +1,4 @@
+from .services import async_setup_entry_services
 from .oig_cloud import OigCloud
 
 from homeassistant import config_entries, core
@@ -31,5 +32,7 @@ async def async_setup_entry(
     hass.async_create_task(
         hass.config_entries.async_forward_entry_setup(entry, "sensor")
     )
+
+    hass.async_create_task(async_setup_entry_services(hass, entry))
 
     return True

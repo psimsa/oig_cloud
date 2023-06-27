@@ -1,0 +1,59 @@
+from .oig_cloud import OigCloud
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+
+import voluptuous as vol
+
+from .const import CONF_NO_TELEMETRY, DOMAIN, CONF_USERNAME, CONF_PASSWORD
+
+MODES = {
+    "Home 1": "0",
+    "Home 2": "1",
+    "Home 3": "2",
+    "Home UPS": "3",
+}
+
+
+async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    # Get the client instance from the entry
+
+    # Register services
+    async def async_set_box_mode(call):
+        client: OigCloud = hass.data[DOMAIN][entry.entry_id]
+        mode = call.data.get("mode")
+        mode_value = MODES.get(mode)
+        success = await client.set_box_mode(mode)
+        # if success:
+        #     entity.async_write_ha_state()
+
+    # async def async_set_grid_delivery(call):
+    #     entity_ids = await async_extract_entity_ids(hass, call)
+    #     enabled = call.data.get("enabled")
+    #     for entity_id in entity_ids:
+    #         entity = hass.data[DOMAIN].get(entity_id)
+    #         if entity:
+    #             success = await client.set_grid_delivery(enabled)
+    #             if success:
+    #                 entity.async_write_ha_state()
+
+    hass.services.async_register(
+        DOMAIN,
+        "set_box_mode",
+        async_set_box_mode,
+        schema=vol.Schema(
+            {
+                vol.Required("mode"): vol.In(
+                    [
+                        "Home 1",
+                        "Home 2",
+                        "Home 3",
+                        "Home UPS",
+                    ]
+                )
+            }
+        ),
+    )
+
+    # hass.services.async_register(
+    #     DOMAIN, "set_grid_delivery", async_set_grid_delivery, schema=vol.Schema({vol.Required("enabled"): bool})
+    # )
