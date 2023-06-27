@@ -8,7 +8,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from .const import COMPONENT_VERSION, SERVICE_NAME
+from .release_const import COMPONENT_VERSION, SERVICE_NAME
 
 from homeassistant import core
 
