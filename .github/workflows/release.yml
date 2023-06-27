@@ -31,8 +31,8 @@ jobs:
 
     - name: Commit changes
       run: |
-        git config --global user.name "Your Name"
-        git config --global user.email "your-email@example.com"
+        git config --global user.name "Pavel Simsa"
+        git config --global user.email "pavel@simsa.cz"
         git add release_const.py manifest.json
         git commit -m "Creating release"
         git tag -a v${{ format('0.0.0', github.event.inputs.version) }} -m "Version ${{ github.event.inputs.version }}"
@@ -53,8 +53,8 @@ jobs:
 
     - name: Commit changes
       run: |
-        git config --global user.name "Your Name"
-        git config --global user.email "your-email@example.com"
+        git config --global user.name "Pavel Simsa"
+        git config --global user.email "pavel@simsa.cz"
         git add release_const.py manifest.json
         git commit -m "Restoring dev variables"
         git push
