@@ -35,7 +35,7 @@ SENSOR_NAMES = {
         "box_prms_mode": "Operation Mode",
         "box_temp": "Box Temperature",
         "box_humid": "Box Humidity",
-        "box_prms_sw": "Firmwaver Version",
+        "box_prms_sw": "Firmware Version",
     },
     "cs": {
         "dc_in_fv_p1": "Výkon panelů string 1",
