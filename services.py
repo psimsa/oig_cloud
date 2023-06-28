@@ -20,7 +20,7 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
     # Register services
     async def async_set_box_mode(call):
         client: OigCloud = hass.data[DOMAIN][entry.entry_id]
-        mode = call.data.get("mode")
+        mode = call.data.get("Mode")
         mode_value = MODES.get(mode)
         success = await client.set_box_mode(mode_value)
         # if success:
@@ -42,14 +42,15 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
         async_set_box_mode,
         schema=vol.Schema(
             {
-                vol.Required("mode"): vol.In(
+                vol.Required("Mode"): vol.In(
                     [
                         "Home 1",
                         "Home 2",
                         "Home 3",
                         "Home UPS",
                     ]
-                )
+                ),
+                vol.Required("Acknowledgement"): vol.Boolean(1),
             }
         ),
     )

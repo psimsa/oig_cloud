@@ -69,7 +69,7 @@ class OigCloud:
     _box_id: str = None
 
     def __init__(
-        self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
+            self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
     ) -> None:
         self._username = username
         self._password = password
@@ -114,9 +114,9 @@ class OigCloud:
             debug(self._logger, "Authenticating")
             async with (aiohttp.ClientSession()) as session:
                 async with session.post(
-                    self._base_url + self._login_url,
-                    data=json.dumps(login_command),
-                    headers={"Content-Type": "application/json"},
+                        self._base_url + self._login_url,
+                        data=json.dumps(login_command),
+                        headers={"Content-Type": "application/json"},
                 ) as response:
                     responsecontent = await response.text()
                     span.add_event(
@@ -157,7 +157,7 @@ class OigCloud:
             to_return: object = None
             async with self.get_session() as session:
                 async with session.get(
-                    self._base_url + self._get_stats_url
+                        self._base_url + self._get_stats_url
                 ) as response:
                     if response.status == 200:
                         to_return = await response.json()
@@ -191,16 +191,16 @@ class OigCloud:
             debug(self._logger, f"Setting mode to {mode}")
             async with self.get_session() as session:
                 async with session.post(
-                    self._base_url + self._set_mode_url,
-                    data=json.dumps(
-                        {
-                            "id_device": self._box_id,
-                            "table": "box_prms",
-                            "column": "mode",
-                            "value": mode,
-                        }
-                    ),
-                    headers={"Content-Type": "application/json"},
+                        self._base_url + self._set_mode_url,
+                        data=json.dumps(
+                            {
+                                "id_device": self._box_id,
+                                "table": "box_prms",
+                                "column": "mode",
+                                "value": mode,
+                            }
+                        ),
+                        headers={"Content-Type": "application/json"},
                 ) as response:
                     responsecontent = await response.text()
                     span.add_event(

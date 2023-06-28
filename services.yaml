@@ -1,7 +1,10 @@
 set_box_mode:
-    description: Set the mode of the device.
+    name: Set BatteryBox Mode
+    description: |
+      Set the mode of the device.
+      Please note upon successfully calling the service, it may take up to 10 minutes for the changes to be reflected in the BBox and the UI.
     fields:
-        mode:
+        Mode:
             description: The mode to set
             example: "Home 1"
             selector:
@@ -11,6 +14,12 @@ set_box_mode:
                   - "Home 2"
                   - "Home 3"
                   - "Home UPS"
+        Acknowledgement:
+            description: |
+              I acknowledge that calling the service will result in parameter modification of a live system.
+              I take on full responsibility for the changes and any effect they may have, expected or otherwise.
+            selector:
+              boolean: false
 
 # set_grid_delivery:
 #     description: Enable or disable grid delivery.
