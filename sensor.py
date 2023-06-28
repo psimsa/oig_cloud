@@ -6,7 +6,7 @@ from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
 )
-from config.custom_components.oig_cloud.const import (
+from .const import (
     DOMAIN,
     SENSOR_NAMES,
     SENSOR_TYPES,
