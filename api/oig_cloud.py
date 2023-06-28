@@ -11,8 +11,8 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 from homeassistant import core
-from .release_const import COMPONENT_VERSION, SERVICE_NAME
-from .shared.logging import debug, info, error, warning
+from ..release_const import COMPONENT_VERSION, SERVICE_NAME
+from ..shared.logging import debug, info, error, warning
 
 resource = Resource.create({"service.name": SERVICE_NAME})
 provider = TracerProvider(resource=resource)

@@ -1,6 +1,6 @@
 from homeassistant import config_entries, core
 from .const import CONF_NO_TELEMETRY, DOMAIN, CONF_USERNAME, CONF_PASSWORD
-from .oig_cloud import OigCloud
+from .api.oig_cloud import OigCloud
 from .services import async_setup_entry_services
 
 

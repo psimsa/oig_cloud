@@ -6,12 +6,12 @@ from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
 )
-from .const import (
+from config.custom_components.oig_cloud.const import (
     DOMAIN,
     SENSOR_NAMES,
     SENSOR_TYPES,
 )
-from .oig_cloud import OigCloud
+from .api.oig_cloud import OigCloud
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -54,6 +54,12 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
                 pv_data["ac_in"]["aci_wr"]
                 + pv_data["ac_in"]["aci_ws"]
                 + pv_data["ac_in"]["aci_wt"]
+            )
+
+        if self._sensor_type == "dc_in_fv_total":
+            return float(
+                pv_data["dc_in"]["fv_p1"]
+                + pv_data["dc_in"]["fv_p2"]
             )
 
         node_value = pv_data[self._node_id][self._node_key]

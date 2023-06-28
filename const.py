@@ -12,6 +12,7 @@ SENSOR_NAMES = {
     "en": {
         "dc_in_fv_p1": "Panels Output String 1",
         "dc_in_fv_p2": "Panels Output String 2",
+        "dc_in_fv_total": "Panels Output Total",
         "dc_in_fv_proc": "Panels Output Percent",
         "batt_bat_c": "Battery Percent",
         "ac_out_aco_pr": "Load Line 1",
@@ -37,6 +38,7 @@ SENSOR_NAMES = {
     "cs": {
         "dc_in_fv_p1": "Výkon panelů string 1",
         "dc_in_fv_p2": "Výkon panelů string 2",
+        "dc_in_fv_total": "Výkon panelů celkem",
         "dc_in_fv_proc": "Výkon panelů (procenta)",
         "batt_bat_c": "Nabití baterie (procenta)",
         "ac_out_aco_pr": "Zátěž fáze 1",
@@ -76,6 +78,14 @@ SENSOR_TYPES = {
         "unit_of_measurement": "W",
         "node_id": "dc_in",
         "node_key": "fv_p2",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "dc_in_fv_total": {
+        "name": "Panels Output Total",
+        "device_class": SensorDeviceClass.POWER,
+        "unit_of_measurement": "W",
+        "node_id": "",
+        "node_key": "",
         "state_class": SensorStateClass.MEASUREMENT,
     },
     "dc_in_fv_proc": {

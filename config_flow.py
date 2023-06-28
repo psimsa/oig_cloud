@@ -2,7 +2,7 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from .const import CONF_NO_TELEMETRY, DEFAULT_NAME, DOMAIN, CONF_USERNAME, CONF_PASSWORD
-from .oig_cloud import OigCloud
+from .api.oig_cloud import OigCloud
 
 
 class OigCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
