@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 import aiohttp
 import hashlib
 
@@ -69,7 +70,7 @@ class OigCloud:
     _box_id: str = None
 
     def __init__(
-            self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
+        self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
     ) -> None:
         self._username = username
         self._password = password
@@ -97,8 +98,6 @@ class OigCloud:
     def _initialize_span(self):
         span = trace.get_current_span()
         if span:
-            # span.set_attribute("email_hash", self.email_hash)
-            # span.set_attribute("oig_cloud.version", COMPONENT_VERSION)
             span.set_attributes(
                 {
                     "email_hash": self._email_hash,
@@ -114,9 +113,9 @@ class OigCloud:
             debug(self._logger, "Authenticating")
             async with (aiohttp.ClientSession()) as session:
                 async with session.post(
-                        self._base_url + self._login_url,
-                        data=json.dumps(login_command),
-                        headers={"Content-Type": "application/json"},
+                    self._base_url + self._login_url,
+                    data=json.dumps(login_command),
+                    headers={"Content-Type": "application/json"},
                 ) as response:
                     responsecontent = await response.text()
                     span.add_event(
@@ -157,7 +156,7 @@ class OigCloud:
             to_return: object = None
             async with self.get_session() as session:
                 async with session.get(
-                        self._base_url + self._get_stats_url
+                    self._base_url + self._get_stats_url
                 ) as response:
                     if response.status == 200:
                         to_return = await response.json()
@@ -179,19 +178,29 @@ class OigCloud:
     async def set_box_mode(self, mode: str) -> bool:
         with tracer.start_as_current_span("set_mode") as span:
             self._initialize_span()
+            # if not await self.authenticate():
+            #     error(self._logger, "Authentication failed")
+            #     return False
             debug(self._logger, f"Setting mode to {mode}")
             async with self.get_session() as session:
+                data = json.dumps(
+                    {
+                        "id_device": self._box_id,
+                        "table": "box_prms",
+                        "column": "mode",
+                        "value": mode
+                    }
+                )
+                # timestamp in Europe/Prague timezone: _nonce: 1687954063707
+                _nonce = int(time.time() * 1000)
+                target_url = self._base_url + self._set_mode_url + f"?_nonce={_nonce}"
+                span.add_event(
+                    "Sending mode request", {"data": data, "url": target_url}
+                )
                 async with session.post(
-                        self._base_url + self._set_mode_url,
-                        data=json.dumps(
-                            {
-                                "id_device": self._box_id,
-                                "table": "box_prms",
-                                "column": "mode",
-                                "value": mode,
-                            }
-                        ),
-                        headers={"Content-Type": "application/json"},
+                    target_url,
+                    data=data,
+                    headers={"Content-Type": "application/json"},
                 ) as response:
                     responsecontent = await response.text()
                     span.add_event(
@@ -199,6 +208,9 @@ class OigCloud:
                         {"response": responsecontent, "status": response.status},
                     )
                     if response.status == 200:
+                        response_json = json.loads(responsecontent)
+                        message = response_json[0][2]
+                        info(self._logger, f"Response: {message}")
                         return True
                     return False
 
