@@ -4,7 +4,7 @@ from homeassistant.core import HomeAssistant
 
 import voluptuous as vol
 
-from .const import CONF_NO_TELEMETRY, DOMAIN, CONF_USERNAME, CONF_PASSWORD
+from .const import DOMAIN
 
 MODES = {
     "Home 1": "0",
