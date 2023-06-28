@@ -7,7 +7,7 @@
         "data": {
           "username": "[%key:common::config_flow::data::username%]",
           "password": "[%key:common::config_flow::data::password%]",
-          "no_telemetry": "[%key:common::config_flow::data::no_telemetry%]",
+          "no_telemetry": "[%key:common::config_flow::data::no_telemetry%]"
         }
       }
     },

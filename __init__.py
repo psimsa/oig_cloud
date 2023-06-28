@@ -1,9 +1,7 @@
-from .services import async_setup_entry_services
-from .oig_cloud import OigCloud
-
 from homeassistant import config_entries, core
-
 from .const import CONF_NO_TELEMETRY, DOMAIN, CONF_USERNAME, CONF_PASSWORD
+from .oig_cloud import OigCloud
+from .services import async_setup_entry_services
 
 
 async def async_setup(hass: core.HomeAssistant, config: dict):
@@ -12,7 +10,7 @@ async def async_setup(hass: core.HomeAssistant, config: dict):
 
 
 async def async_setup_entry(
-    hass: core.HomeAssistant, entry: config_entries.ConfigEntry
+        hass: core.HomeAssistant, entry: config_entries.ConfigEntry
 ):
     username = entry.data[CONF_USERNAME]
     password = entry.data[CONF_PASSWORD]
