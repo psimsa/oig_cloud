@@ -1,10 +1,9 @@
-from .oig_cloud import OigCloud
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-
 import voluptuous as vol
 
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from .const import DOMAIN
+from .oig_cloud import OigCloud
 
 MODES = {
     "Home 1": "0",

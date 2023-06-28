@@ -1,21 +1,17 @@
 import logging
+from datetime import timedelta
 
 from homeassistant.components.sensor import SensorEntity
-from .oig_cloud import OigCloud
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
 )
-from datetime import timedelta
-
 from .const import (
-    CONF_NO_TELEMETRY,
-    CONF_PASSWORD,
-    CONF_USERNAME,
     DOMAIN,
     SENSOR_NAMES,
     SENSOR_TYPES,
 )
+from .oig_cloud import OigCloud
 
 _LOGGER = logging.getLogger(__name__)
 

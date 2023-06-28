@@ -61,7 +61,6 @@ SENSOR_NAMES = {
     },
 }
 
-
 SENSOR_TYPES = {
     "dc_in_fv_p1": {
         "name": "Panels Output String 1",

@@ -1,17 +1,18 @@
+import hashlib
 import json
 import logging
 import time
-import aiohttp
-import hashlib
 
+import aiohttp
 from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from .release_const import COMPONENT_VERSION, SERVICE_NAME
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 from homeassistant import core
+from .release_const import COMPONENT_VERSION, SERVICE_NAME
+from .shared.logging import debug, info, error, warning
 
 resource = Resource.create({"service.name": SERVICE_NAME})
 provider = TracerProvider(resource=resource)
@@ -32,30 +33,6 @@ trace.set_tracer_provider(provider)
 tracer = trace.get_tracer(__name__)
 
 
-def info(logger: logging.Logger, msg: str):
-    log(logger=logger, level=logging.INFO, msg=msg)
-
-
-def debug(logger: logging.Logger, msg: str):
-    log(logger=logger, level=logging.DEBUG, msg=msg)
-
-
-def warning(logger: logging.Logger, msg: str):
-    log(logger=logger, level=logging.WARNING, msg=msg)
-
-
-def error(logger: logging.Logger, msg: str):
-    log(logger=logger, level=logging.ERROR, msg=msg)
-
-
-def log(logger: logging.Logger, level: int, msg: str):
-    span = trace.get_current_span()
-    if span:
-        span.add_event("log", {"level": level, "msg": msg})
-
-    logger.log(level=level, msg=msg)
-
-
 class OigCloud:
     _base_url = "https://www.oigpower.cz/cez/"
     _login_url = "inc/php/scripts/Login.php"
@@ -70,7 +47,7 @@ class OigCloud:
     _box_id: str = None
 
     def __init__(
-        self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
+            self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
     ) -> None:
         self._username = username
         self._password = password
@@ -112,10 +89,13 @@ class OigCloud:
 
             debug(self._logger, "Authenticating")
             async with (aiohttp.ClientSession()) as session:
+                url = self._base_url + self._login_url
+                data = json.dumps(login_command)
+                headers = {"Content-Type": "application/json"}
                 async with session.post(
-                    self._base_url + self._login_url,
-                    data=json.dumps(login_command),
-                    headers={"Content-Type": "application/json"},
+                        url,
+                        data=data,
+                        headers=headers,
                 ) as response:
                     responsecontent = await response.text()
                     span.add_event(
@@ -155,8 +135,9 @@ class OigCloud:
             self._initialize_span()
             to_return: object = None
             async with self.get_session() as session:
+                url = self._base_url + self._get_stats_url
                 async with session.get(
-                    self._base_url + self._get_stats_url
+                        url
                 ) as response:
                     if response.status == 200:
                         to_return = await response.json()
@@ -178,9 +159,6 @@ class OigCloud:
     async def set_box_mode(self, mode: str) -> bool:
         with tracer.start_as_current_span("set_mode") as span:
             self._initialize_span()
-            # if not await self.authenticate():
-            #     error(self._logger, "Authentication failed")
-            #     return False
             debug(self._logger, f"Setting mode to {mode}")
             async with self.get_session() as session:
                 data = json.dumps(
@@ -191,28 +169,26 @@ class OigCloud:
                         "value": mode
                     }
                 )
-                # timestamp in Europe/Prague timezone: _nonce: 1687954063707
+
                 _nonce = int(time.time() * 1000)
-                target_url = self._base_url + self._set_mode_url + f"?_nonce={_nonce}"
+                target_url = f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
                 span.add_event(
-                    "Sending mode request", {"data": data, "url": target_url}
+                    "Sending mode request", {"data": data.replace(self._box_id, "xxxxxx"), "url": target_url}
                 )
                 async with session.post(
-                    target_url,
-                    data=data,
-                    headers={"Content-Type": "application/json"},
+                        target_url,
+                        data=data,
+                        headers={"Content-Type": "application/json"},
                 ) as response:
                     responsecontent = await response.text()
-                    span.add_event(
-                        "Received mode response",
-                        {"response": responsecontent, "status": response.status},
-                    )
                     if response.status == 200:
                         response_json = json.loads(responsecontent)
                         message = response_json[0][2]
                         info(self._logger, f"Response: {message}")
                         return True
-                    return False
+                    else:
+                        span.add_event("Error setting mode", {"response": responsecontent, "status": response.status})
+                        return False
 
     async def set_grid_delivery(self, enabled: bool) -> bool:
         pass
