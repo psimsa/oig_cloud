@@ -121,15 +121,7 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     _LOGGER.debug("async_setup_entry")
-    # username = config_entry.data[CONF_USERNAME]
-    # password = config_entry.data[CONF_PASSWORD]
 
-    # if config_entry.data.get(CONF_NO_TELEMETRY) is None:
-    #     no_telemetry = False
-    # else:
-    #     no_telemetry = config_entry.data[CONF_NO_TELEMETRY]
-
-    # oig_cloud = OigCloud(username, password, no_telemetry, hass)
     oig_cloud: OigCloud = hass.data[DOMAIN][config_entry.entry_id]
 
     async def update_data():

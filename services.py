@@ -15,16 +15,11 @@ MODES = {
 
 
 async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    # Get the client instance from the entry
-
-    # Register services
     async def async_set_box_mode(call):
         client: OigCloud = hass.data[DOMAIN][entry.entry_id]
         mode = call.data.get("Mode")
         mode_value = MODES.get(mode)
         success = await client.set_box_mode(mode_value)
-        # if success:
-        #     entity.async_write_ha_state()
 
     # async def async_set_grid_delivery(call):
     #     entity_ids = await async_extract_entity_ids(hass, call)
