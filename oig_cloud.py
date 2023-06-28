@@ -177,15 +177,6 @@ class OigCloud:
                 return to_return
 
     async def set_box_mode(self, mode: str) -> bool:
-        # in c# the structure looks like this:
-        # private record OigCommand(
-        #   [property: JsonPropertyName("id_device")]
-        #   string DeviceId,
-        #   [property: JsonPropertyName("table")] string Table,
-        #   [property: JsonPropertyName("column")] string Column,
-        #   [property: JsonPropertyName("value")] string Value);
-        # table will be box_prms, column will be mode, value will be the mode
-
         with tracer.start_as_current_span("set_mode") as span:
             self._initialize_span()
             debug(self._logger, f"Setting mode to {mode}")
