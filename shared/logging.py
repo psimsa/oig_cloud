@@ -20,6 +20,9 @@ def error(logger: logging.Logger, msg: str):
 
 
 def log(logger: logging.Logger, level: int, msg: str):
+    if logger.level > level:
+        return
+    
     span = trace.get_current_span()
     if span:
         span.add_event("log", {"level": level, "msg": msg})

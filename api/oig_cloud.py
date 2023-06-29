@@ -16,14 +16,27 @@ from ..shared.logging import debug, info, error, warning
 
 resource = Resource.create({"service.name": SERVICE_NAME})
 provider = TracerProvider(resource=resource)
+# processor = BatchSpanProcessor(
+#     OTLPSpanExporter(
+#         endpoint="https://otlp.eu01.nr-data.net",
+#         insecure=False,
+#         headers=[
+#             (
+#                 "api-key",
+#                 "eu01xxefc1a87820b35d1becb5efd5c5FFFFNRAL",
+#             )
+#         ],
+#     )
+# )
+
 processor = BatchSpanProcessor(
     OTLPSpanExporter(
-        endpoint="https://otlp.eu01.nr-data.net",
+        endpoint="https://ingest.lightstep.com:443",
         insecure=False,
         headers=[
             (
-                "api-key",
-                "eu01xxefc1a87820b35d1becb5efd5c5FFFFNRAL",
+                "lightstep-access-token",
+                "pHuPl2wVZ6XXFPTscpzkD7TKyAh/TypqFiO7vvZhwmfSRyZo6rtGxtW+DbHwv9010LiguMogUti7E0WlrInJ2ev3mkn7oBhe/qbgznU6"
             )
         ],
     )
@@ -49,17 +62,18 @@ class OigCloud:
     def __init__(
             self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
     ) -> None:
+      with tracer.start_as_current_span("initialize") as span:
+
         self._username = username
         self._password = password
         self._no_telemetry = no_telemetry
         self._email_hash = hashlib.md5(self._username.encode("utf-8")).hexdigest()
+        self._initialize_span()
         self._logger = logging.getLogger(__name__)
 
         if not self._no_telemetry:
-            provider.add_span_processor(processor)
+                provider.add_span_processor(processor)
 
-            with tracer.start_as_current_span("initialize") as span:
-                self._initialize_span()
                 span.set_attributes(
                     {
                         "hass.language": hass.config.language,
@@ -67,7 +81,7 @@ class OigCloud:
                     }
                 )
                 span.add_event("log", {"level": logging.INFO, "msg": "Initializing"})
-                self._logger.info(f"Telemetry hash is {self._email_hash}")
+                info(self._logger, f"Telemetry hash is {self._email_hash}")
 
         self.last_state = None
         debug(self._logger, "OigCloud initialized")
@@ -78,7 +92,7 @@ class OigCloud:
             span.set_attributes(
                 {
                     "email_hash": self._email_hash,
-                    "oig_cloud.version": COMPONENT_VERSION,
+                    "service.version": COMPONENT_VERSION,
                 }
             )
 
@@ -86,7 +100,6 @@ class OigCloud:
         with tracer.start_as_current_span("authenticate") as span:
             self._initialize_span()
             login_command = {"email": self._username, "password": self._password}
-
             debug(self._logger, "Authenticating")
             async with (aiohttp.ClientSession()) as session:
                 url = self._base_url + self._login_url
