@@ -14,35 +14,7 @@ from homeassistant import core
 from ..release_const import COMPONENT_VERSION, SERVICE_NAME
 from ..shared.logging import debug, info, error, warning
 
-resource = Resource.create({"service.name": SERVICE_NAME})
-provider = TracerProvider(resource=resource)
-# processor = BatchSpanProcessor(
-#     OTLPSpanExporter(
-#         endpoint="https://otlp.eu01.nr-data.net",
-#         insecure=False,
-#         headers=[
-#             (
-#                 "api-key",
-#                 "eu01xxefc1a87820b35d1becb5efd5c5FFFFNRAL",
-#             )
-#         ],
-#     )
-# )
 
-processor = BatchSpanProcessor(
-    OTLPSpanExporter(
-        endpoint="https://ingest.lightstep.com:443",
-        insecure=False,
-        headers=[
-            (
-                "lightstep-access-token",
-                "pHuPl2wVZ6XXFPTscpzkD7TKyAh/TypqFiO7vvZhwmfSRyZo6rtGxtW+DbHwv9010LiguMogUti7E0WlrInJ2ev3mkn7oBhe/qbgznU6"
-            )
-        ],
-    )
-)
-
-trace.set_tracer_provider(provider)
 tracer = trace.get_tracer(__name__)
 
 
@@ -60,20 +32,17 @@ class OigCloud:
     _box_id: str = None
 
     def __init__(
-            self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
+        self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
     ) -> None:
-      with tracer.start_as_current_span("initialize") as span:
+        with tracer.start_as_current_span("initialize") as span:
+            self._username = username
+            self._password = password
+            self._no_telemetry = no_telemetry
+            self._email_hash = hashlib.md5(self._username.encode("utf-8")).hexdigest()
+            self._initialize_span()
+            self._logger = logging.getLogger(__name__)
 
-        self._username = username
-        self._password = password
-        self._no_telemetry = no_telemetry
-        self._email_hash = hashlib.md5(self._username.encode("utf-8")).hexdigest()
-        self._initialize_span()
-        self._logger = logging.getLogger(__name__)
-
-        if not self._no_telemetry:
-                provider.add_span_processor(processor)
-
+            if not self._no_telemetry:
                 span.set_attributes(
                     {
                         "hass.language": hass.config.language,
@@ -83,8 +52,8 @@ class OigCloud:
                 span.add_event("log", {"level": logging.INFO, "msg": "Initializing"})
                 info(self._logger, f"Telemetry hash is {self._email_hash}")
 
-        self.last_state = None
-        debug(self._logger, "OigCloud initialized")
+            self.last_state = None
+            debug(self._logger, "OigCloud initialized")
 
     def _initialize_span(self):
         span = trace.get_current_span()
@@ -106,9 +75,9 @@ class OigCloud:
                 data = json.dumps(login_command)
                 headers = {"Content-Type": "application/json"}
                 async with session.post(
-                        url,
-                        data=data,
-                        headers=headers,
+                    url,
+                    data=data,
+                    headers=headers,
                 ) as response:
                     responsecontent = await response.text()
                     span.add_event(
@@ -149,9 +118,7 @@ class OigCloud:
             to_return: object = None
             async with self.get_session() as session:
                 url = self._base_url + self._get_stats_url
-                async with session.get(
-                        url
-                ) as response:
+                async with session.get(url) as response:
                     if response.status == 200:
                         to_return = await response.json()
                         # the response should be a json dictionary, otherwise it's an error
@@ -179,19 +146,20 @@ class OigCloud:
                         "id_device": self._box_id,
                         "table": "box_prms",
                         "column": "mode",
-                        "value": mode
+                        "value": mode,
                     }
                 )
 
                 _nonce = int(time.time() * 1000)
                 target_url = f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
                 span.add_event(
-                    "Sending mode request", {"data": data.replace(self._box_id, "xxxxxx"), "url": target_url}
+                    "Sending mode request",
+                    {"data": data.replace(self._box_id, "xxxxxx"), "url": target_url},
                 )
                 async with session.post(
-                        target_url,
-                        data=data,
-                        headers={"Content-Type": "application/json"},
+                    target_url,
+                    data=data,
+                    headers={"Content-Type": "application/json"},
                 ) as response:
                     responsecontent = await response.text()
                     if response.status == 200:
@@ -200,7 +168,10 @@ class OigCloud:
                         info(self._logger, f"Response: {message}")
                         return True
                     else:
-                        span.add_event("Error setting mode", {"response": responsecontent, "status": response.status})
+                        span.add_event(
+                            "Error setting mode",
+                            {"response": responsecontent, "status": response.status},
+                        )
                         return False
 
     async def set_grid_delivery(self, enabled: bool) -> bool:

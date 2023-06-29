@@ -64,6 +64,7 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
 
         node_value = pv_data[self._node_id][self._node_key]
 
+        # special cases
         if self._sensor_type == "box_prms_mode":
             if node_value == 0:
                 return "Home 1"
@@ -74,6 +75,10 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
             elif node_value == 3:
                 return "Home UPS"
             return "Unknown Mode"
+        elif self._sensor_type == "invertor_prms_to_grid":
+            if node_value == 0:
+                return "Off"
+            return "On"
 
         try:
             return float(node_value)
