@@ -15,6 +15,21 @@ from .api.oig_cloud import OigCloud
 
 _LOGGER = logging.getLogger(__name__)
 
+LANGS = {
+    "on": {
+        "en": "On",
+        "cs": "Zapnuto",
+    },
+    "off": {
+        "en": "Off",
+        "cs": "Vypnuto",
+    },
+    "unknown": {
+        "en": "Unknown",
+        "cs": "Neznámý",
+    },
+}
+
 
 class OigCloudSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator, sensor_type):
@@ -43,7 +58,7 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
         if self.coordinator.data is None:
             _LOGGER.debug(f"Data is None for {self.entity_id}")
             return None
-
+        language = self.hass.config.language
         data = self.coordinator.data
         vals = data.values()
         pv_data = list(vals)[0]
@@ -57,10 +72,7 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
             )
 
         if self._sensor_type == "dc_in_fv_total":
-            return float(
-                pv_data["dc_in"]["fv_p1"]
-                + pv_data["dc_in"]["fv_p2"]
-            )
+            return float(pv_data["dc_in"]["fv_p1"] + pv_data["dc_in"]["fv_p2"])
 
         node_value = pv_data[self._node_id][self._node_key]
 
@@ -74,11 +86,11 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
                 return "Home 3"
             elif node_value == 3:
                 return "Home UPS"
-            return "Unknown Mode"
+            return LANGS["unknown"][language]
         elif self._sensor_type == "invertor_prms_to_grid":
             if node_value == 0:
-                return "Off"
-            return "On"
+                return LANGS["off"][language]
+            return LANGS["on"][language]
 
         try:
             return float(node_value)
