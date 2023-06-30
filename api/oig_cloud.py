@@ -17,6 +17,7 @@ class OigCloud:
     _login_url = "inc/php/scripts/Login.php"
     _get_stats_url = "json.php"
     _set_mode_url = "inc/php/scripts/Device.Set.Value.php"
+    _set_grid_delivery_url = "inc/php/scripts/ToGrid.Toggle.php"
 
     _username: str = None
     _password: str = None
@@ -168,4 +169,40 @@ class OigCloud:
                         return False
 
     async def set_grid_delivery(self, enabled: bool) -> bool:
-        pass
+        with tracer.start_as_current_span("set_grid_delivery") as span:
+            self._initialize_span()
+            debug(self._logger, f"Setting grid delivery to {enabled}")
+            async with self.get_session() as session:
+                # {"id_device":"2205232120","value":0}
+                data = json.dumps(
+                    {
+                        "id_device": self.box_id,
+                        "value": 1 if enabled else 0,
+                    }
+                )
+
+                _nonce = int(time.time() * 1000)
+                target_url = f"{self._base_url}{self._set_grid_delivery_url}?_nonce={_nonce}"
+                span.add_event(
+                    "Sending grid delivery request",
+                    {"data": data.replace(self.box_id, "xxxxxx"), "url": target_url},
+                )
+                async with session.post(
+                        target_url,
+                        data=data,
+                        headers={"Content-Type": "application/json"},
+                ) as response:
+                    responsecontent = await response.text()
+                    if response.status == 200:
+                        response_json = json.loads(responsecontent)
+                        info(self._logger, f"Response: {response_json}")
+
+                        return True
+                    else:
+                        span.add_event(
+                            "Error setting grid delivery",
+                            {"response": responsecontent, "status": response.status},
+                        )
+                        self._logger.error(f"Error setting grid delivery: {responsecontent}")
+                        return False
+
