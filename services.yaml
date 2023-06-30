@@ -20,6 +20,8 @@ set_box_mode:
             description: |
               I acknowledge that calling the service will result in parameter modification of a live system.
               I take on full responsibility for the changes and any effect they may have, expected or otherwise.
+              Beru na vědomí, že volání této služby povede ke změně parametrů živého systému. 
+              Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný.
             selector:
               boolean: false
 

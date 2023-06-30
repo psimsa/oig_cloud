@@ -1,5 +1,7 @@
 import voluptuous as vol
 
+from opentelemetry import trace
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from .const import DOMAIN
@@ -12,9 +14,15 @@ MODES = {
     "Home UPS": "3",
 }
 
+tracer = trace.get_tracer(__name__)
+
 
 async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) -> None:
     async def async_set_box_mode(call):
+        acknowledged = call.data.get("Acknowledgement")
+        if not acknowledged:
+            raise vol.Invalid("Acknowledgement is required")
+
         client: OigCloud = hass.data[DOMAIN][entry.entry_id]
         mode = call.data.get("Mode")
         mode_value = MODES.get(mode)
@@ -44,7 +52,7 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
                         "Home UPS",
                     ]
                 ),
-                vol.Required("Acknowledgement"): vol.Boolean(1),
+                "Acknowledgement": vol.Boolean(1),
             }
         ),
     )

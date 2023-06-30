@@ -1,19 +1,17 @@
-import hashlib
-
-from .release_const import COMPONENT_VERSION, SERVICE_NAME
-from homeassistant import config_entries, core
-from .const import CONF_NO_TELEMETRY, DOMAIN, CONF_USERNAME, CONF_PASSWORD
-from .api.oig_cloud import OigCloud
-from .services import async_setup_entry_services
-
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
+from homeassistant import config_entries, core
+from .api.oig_cloud import OigCloud
+from .const import CONF_NO_TELEMETRY, DOMAIN, CONF_USERNAME, CONF_PASSWORD
+from .release_const import COMPONENT_VERSION, SERVICE_NAME
+from .services import async_setup_entry_services
 
-resource = Resource.create({"service.name": SERVICE_NAME})
+resource = Resource.create({"service.name": SERVICE_NAME,
+                            "service.version": COMPONENT_VERSION})
 provider = TracerProvider(resource=resource)
 processor = BatchSpanProcessor(
     OTLPSpanExporter(
@@ -38,39 +36,31 @@ async def async_setup(hass: core.HomeAssistant, config: dict):
 
 
 async def async_setup_entry(
-    hass: core.HomeAssistant, entry: config_entries.ConfigEntry
+        hass: core.HomeAssistant, entry: config_entries.ConfigEntry
 ):
-    with tracer.start_as_current_span("async_setup_entry") as span:
-        username = entry.data[CONF_USERNAME]
-        password = entry.data[CONF_PASSWORD]
+    username = entry.data[CONF_USERNAME]
+    password = entry.data[CONF_PASSWORD]
 
-        span.set_attributes(
-            {
-                "email_hash": hashlib.md5(username.encode("utf-8")).hexdigest(),
-                "service.version": COMPONENT_VERSION,
-            }
-        )
+    if entry.data.get(CONF_NO_TELEMETRY) is None:
+        no_telemetry = False
+    else:
+        no_telemetry = entry.data[CONF_NO_TELEMETRY]
 
-        if entry.data.get(CONF_NO_TELEMETRY) is None:
-            no_telemetry = False
-        else:
-            no_telemetry = entry.data[CONF_NO_TELEMETRY]
+    if no_telemetry is False:
+        provider.add_span_processor(processor)
 
-        if no_telemetry is False:
-            provider.add_span_processor(processor)
+    oig_cloud = OigCloud(username, password, no_telemetry, hass)
 
-        oig_cloud = OigCloud(username, password, no_telemetry, hass)
+    # Run the authenticate() method to get the token
+    await oig_cloud.authenticate()
 
-        # Run the authenticate() method to get the token
-        await oig_cloud.authenticate()
+    # Store the authenticated instance for other platforms to use
+    hass.data[DOMAIN][entry.entry_id] = oig_cloud
 
-        # Store the authenticated instance for other platforms to use
-        hass.data[DOMAIN][entry.entry_id] = oig_cloud
+    hass.async_create_task(
+        hass.config_entries.async_forward_entry_setup(entry, "sensor")
+    )
 
-        hass.async_create_task(
-            hass.config_entries.async_forward_entry_setup(entry, "sensor")
-        )
+    hass.async_create_task(async_setup_entry_services(hass, entry))
 
-        hass.async_create_task(async_setup_entry_services(hass, entry))
-
-        return True
+    return True

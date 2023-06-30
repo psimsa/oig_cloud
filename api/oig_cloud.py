@@ -5,15 +5,9 @@ import time
 
 import aiohttp
 from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 from homeassistant import core
-from ..release_const import COMPONENT_VERSION, SERVICE_NAME
-from ..shared.logging import debug, info, error, warning
-
+from ..shared.logging import debug, info, error
 
 tracer = trace.get_tracer(__name__)
 
@@ -29,10 +23,10 @@ class OigCloud:
 
     _phpsessid: str = None
 
-    _box_id: str = None
+    box_id: str = None
 
     def __init__(
-        self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
+            self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
     ) -> None:
         with tracer.start_as_current_span("initialize") as span:
             self._username = username
@@ -61,7 +55,6 @@ class OigCloud:
             span.set_attributes(
                 {
                     "email_hash": self._email_hash,
-                    "service.version": COMPONENT_VERSION,
                 }
             )
 
@@ -75,9 +68,9 @@ class OigCloud:
                 data = json.dumps(login_command)
                 headers = {"Content-Type": "application/json"}
                 async with session.post(
-                    url,
-                    data=data,
-                    headers=headers,
+                        url,
+                        data=data,
+                        headers=headers,
                 ) as response:
                     responsecontent = await response.text()
                     span.add_event(
@@ -108,8 +101,8 @@ class OigCloud:
                 if await self.authenticate():
                     to_return = await self.get_stats_internal()
             debug(self._logger, "Retrieved stats")
-        if self._box_id is None:
-            self._box_id = list(to_return.keys())[0]
+        if self.box_id is None:
+            self.box_id = list(to_return.keys())[0]
         return to_return
 
     async def get_stats_internal(self, dependent: bool = False) -> object:
@@ -143,7 +136,7 @@ class OigCloud:
             async with self.get_session() as session:
                 data = json.dumps(
                     {
-                        "id_device": self._box_id,
+                        "id_device": self.box_id,
                         "table": "box_prms",
                         "column": "mode",
                         "value": mode,
@@ -154,12 +147,12 @@ class OigCloud:
                 target_url = f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
                 span.add_event(
                     "Sending mode request",
-                    {"data": data.replace(self._box_id, "xxxxxx"), "url": target_url},
+                    {"data": data.replace(self.box_id, "xxxxxx"), "url": target_url},
                 )
                 async with session.post(
-                    target_url,
-                    data=data,
-                    headers={"Content-Type": "application/json"},
+                        target_url,
+                        data=data,
+                        headers={"Content-Type": "application/json"},
                 ) as response:
                     responsecontent = await response.text()
                     if response.status == 200:
