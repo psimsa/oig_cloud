@@ -1,3 +1,4 @@
+from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.sensor import SensorStateClass, SensorDeviceClass
 
 DOMAIN = "oig_cloud"
@@ -34,7 +35,7 @@ SENSOR_NAMES = {
         "box_temp": "Box Temperature",
         "box_humid": "Box Humidity",
         "box_prms_sw": "Firmware Version",
-        "invertor_prms_to_grid": "Grid Deliver",
+        "invertor_prms_to_grid": "Grid Delivery",
     },
     "cs": {
         "dc_in_fv_p1": "Výkon panelů string 1",
@@ -258,12 +259,14 @@ SENSOR_TYPES = {
         "node_key": "sw",
         "state_class": None,
     },
+    
+}
+
+BINARY_SENSOR_TYPES= {
     "invertor_prms_to_grid":{
         "name": "Grid Delivery",
-        "device_class": None,
-        "unit_of_measurement": None,
+        "device_class": BinarySensorDeviceClass.POWER	,
         "node_id": "invertor_prms",
-        "node_key": "to_grid",
-        "state_class": None,
+        "node_key": "to_grid"
     }
 }
