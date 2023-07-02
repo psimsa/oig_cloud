@@ -7,9 +7,9 @@ import time
 
 import aiohttp
 from opentelemetry import trace
+from ..shared.logging import LOGGING_HANDLER
 
 from homeassistant import core
-from ..shared.logging import debug, info, error
 
 tracer = trace.get_tracer(__name__)
 
@@ -34,13 +34,16 @@ class OigCloud:
         self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
     ) -> None:
         with tracer.start_as_current_span("initialize") as span:
+            self._no_telemetry = no_telemetry
+            self._logger = logging.getLogger(__name__)
+            if no_telemetry is False:
+                self._logger.addHandler(LOGGING_HANDLER)
+
             self._last_update = datetime.datetime(1, 1, 1, 0, 0)
             self._username = username
             self._password = password
-            self._no_telemetry = no_telemetry
             self._email_hash = hashlib.md5(self._username.encode("utf-8")).hexdigest()
             self._initialize_span()
-            self._logger = logging.getLogger(__name__)
 
             if not self._no_telemetry:
                 span.set_attributes(
@@ -50,10 +53,10 @@ class OigCloud:
                     }
                 )
                 span.add_event("log", {"level": logging.INFO, "msg": "Initializing"})
-                info(self._logger, f"Telemetry hash is {self._email_hash}")
+                self._logger.info(f"Telemetry hash is {self._email_hash}")
 
             self.last_state = None
-            debug(self._logger, "OigCloud initialized")
+            self._logger.debug("OigCloud initialized")
 
     def _initialize_span(self):
         span = trace.get_current_span()
@@ -66,164 +69,173 @@ class OigCloud:
 
     async def authenticate(self) -> bool:
         with tracer.start_as_current_span("authenticate") as span:
-            self._initialize_span()
-            login_command = {"email": self._username, "password": self._password}
-            debug(self._logger, "Authenticating")
-            async with (aiohttp.ClientSession()) as session:
-                url = self._base_url + self._login_url
-                data = json.dumps(login_command)
-                headers = {"Content-Type": "application/json"}
-                async with session.post(
-                    url,
-                    data=data,
-                    headers=headers,
-                ) as response:
-                    responsecontent = await response.text()
-                    span.add_event(
-                        "Received auth response",
-                        {"response": responsecontent, "status": response.status},
-                    )
-                    if response.status == 200:
-                        if responsecontent == '[[2,"",false]]':
-                            self._phpsessid = (
-                                session.cookie_jar.filter_cookies(self._base_url)
-                                .get("PHPSESSID")
-                                .value
-                            )
-                            return True
-                    return False
+            try:
+                self._initialize_span()
+                login_command = {"email": self._username, "password": self._password}
+                self._logger.debug("Authenticating")
+
+                async with (aiohttp.ClientSession()) as session:
+                    url = self._base_url + self._login_url
+                    data = json.dumps(login_command)
+                    headers = {"Content-Type": "application/json"}
+                    async with session.post(
+                        url,
+                        data=data,
+                        headers=headers,
+                    ) as response:
+                        responsecontent = await response.text()
+                        span.add_event(
+                            "Received auth response",
+                            {"response": responsecontent, "status": response.status},
+                        )
+                        if response.status == 200:
+                            if responsecontent == '[[2,"",false]]':
+                                self._phpsessid = (
+                                    session.cookie_jar.filter_cookies(self._base_url)
+                                    .get("PHPSESSID")
+                                    .value
+                                )
+                                return True
+                        raise Exception("Authentication failed")
+            except Exception as e:
+                self._logger.error(f"Error: {e}", stack_info=True)
+                raise e
 
     def get_session(self) -> aiohttp.ClientSession:
         return aiohttp.ClientSession(headers={"Cookie": f"PHPSESSID={self._phpsessid}"})
 
     async def get_stats(self) -> object:
-        async with lock:
-            current_time = datetime.datetime.now()
-            if (current_time - self._last_update).total_seconds() < 10:
-                debug(self._logger, "Using cached stats")
-                return self.last_state
+        try:
+            async with lock:
+                current_time = datetime.datetime.now()
+                if (current_time - self._last_update).total_seconds() < 10:
+                    self._logger.debug("Using cached stats")
+                    return self.last_state
 
-            with tracer.start_as_current_span("get_stats") as span:
-                self._initialize_span()
+                with tracer.start_as_current_span("get_stats") as span:
+                    self._initialize_span()
 
-                to_return: object = None
-                try:
-                    to_return = await self.get_stats_internal()
-                except:
-                    debug(self._logger, "Retrying authentication")
-                    if await self.authenticate():
+                    to_return: object = None
+                    try:
                         to_return = await self.get_stats_internal()
-                debug(self._logger, "Retrieved stats")
-                if self.box_id is None:
-                    self.box_id = list(to_return.keys())[0]
+                    except:
+                        self._logger.debug("Retrying authentication")
+                        if await self.authenticate():
+                            to_return = await self.get_stats_internal()
+                    self._logger.debug("Retrieved stats")
+                    if self.box_id is None:
+                        self.box_id = list(to_return.keys())[0]
 
-                self._last_update = datetime.datetime.now()
-                debug(self._logger, f"Last update: {self._last_update}")
-                return to_return
+                    self._last_update = datetime.datetime.now()
+                    self._logger.debug(f"Last update: {self._last_update}")
+                    return to_return
+        except Exception as e:
+            self._logger.error(f"Error: {e}", stack_info=True)
+            raise e
 
     async def get_stats_internal(self, dependent: bool = False) -> object:
         with tracer.start_as_current_span("get_stats_internal"):
             self._initialize_span()
             to_return: object = None
-            debug(self._logger, "Starting session")
+            self._logger.debug("Starting session")
             async with self.get_session() as session:
                 url = self._base_url + self._get_stats_url
-                debug(self._logger, f"Getting stats from {url}")
+                self._logger.debug(f"Getting stats from {url}")
                 async with session.get(url) as response:
                     if response.status == 200:
                         to_return = await response.json()
                         # the response should be a json dictionary, otherwise it's an error
                         if not isinstance(to_return, dict) and not dependent:
-                            info(self._logger, "Retrying authentication")
+                            self._logger.info("Retrying authentication")
                             if await self.authenticate():
                                 second_try = await self.get_stats_internal(True)
                                 if not isinstance(second_try, dict):
-                                    error(self._logger, f"Error: {second_try}")
+                                    self._logger.warn(f"Error: {second_try}")
                                     return None
                                 else:
                                     to_return = second_try
                             else:
                                 return None
                     self.last_state = to_return
-                    debug(self._logger, "Retrieved stats internal finished")
+                    self._logger.debug("Retrieved stats internal finished")
                 return to_return
 
     async def set_box_mode(self, mode: str) -> bool:
-        with tracer.start_as_current_span("set_mode") as span:
-            self._initialize_span()
-            debug(self._logger, f"Setting mode to {mode}")
-            async with self.get_session() as session:
-                data = json.dumps(
-                    {
-                        "id_device": self.box_id,
-                        "table": "box_prms",
-                        "column": "mode",
-                        "value": mode,
-                    }
-                )
+        try:
+            with tracer.start_as_current_span("set_mode") as span:
+                self._initialize_span()
+                self._logger.debug(f"Setting mode to {mode}")
+                async with self.get_session() as session:
+                    data = json.dumps(
+                        {
+                            "id_device": self.box_id,
+                            "table": "box_prms",
+                            "column": "mode",
+                            "value": mode,
+                        }
+                    )
 
-                _nonce = int(time.time() * 1000)
-                target_url = f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
-                span.add_event(
-                    "Sending mode request",
-                    {"data": data.replace(self.box_id, "xxxxxx"), "url": target_url},
-                )
-                async with session.post(
-                    target_url,
-                    data=data,
-                    headers={"Content-Type": "application/json"},
-                ) as response:
-                    responsecontent = await response.text()
-                    if response.status == 200:
-                        response_json = json.loads(responsecontent)
-                        message = response_json[0][2]
-                        info(self._logger, f"Response: {message}")
-                        return True
-                    else:
-                        span.add_event(
-                            "Error setting mode",
-                            {"response": responsecontent, "status": response.status},
-                        )
-                        return False
+                    _nonce = int(time.time() * 1000)
+                    target_url = f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
+
+                    self._logger.debug(
+                        f"Sending mode request to {target_url} with {data.replace(self.box_id, 'xxxxxx')}"
+                    )
+                    async with session.post(
+                        target_url,
+                        data=data,
+                        headers={"Content-Type": "application/json"},
+                    ) as response:
+                        responsecontent = await response.text()
+                        if response.status == 200:
+                            response_json = json.loads(responsecontent)
+                            message = response_json[0][2]
+                            self._logger.info(f"Response: {message}")
+                            return True
+                        else:
+                            raise Exception(
+                                f"Error setting mode: {response.status}",
+                                responsecontent,
+                            )
+        except Exception as e:
+            self._logger.error(f"Error: {e}", stack_info=True)
+            raise e
 
     async def set_grid_delivery(self, enabled: bool) -> bool:
-        with tracer.start_as_current_span("set_grid_delivery") as span:
-            self._initialize_span()
-            debug(self._logger, f"Setting grid delivery to {enabled}")
-            async with self.get_session() as session:
-                # {"id_device":"2205232120","value":0}
-                data = json.dumps(
-                    {
-                        "id_device": self.box_id,
-                        "value": 1 if enabled else 0,
-                    }
-                )
+        try:
+            with tracer.start_as_current_span("set_grid_delivery") as span:
+                self._initialize_span()
+                self._logger.debug(f"Setting grid delivery to {enabled}")
+                async with self.get_session() as session:
+                    data = json.dumps(
+                        {
+                            "id_device": self.box_id,
+                            "value": 1 if enabled else 0,
+                        }
+                    )
 
-                _nonce = int(time.time() * 1000)
-                target_url = (
-                    f"{self._base_url}{self._set_grid_delivery_url}?_nonce={_nonce}"
-                )
-                span.add_event(
-                    "Sending grid delivery request",
-                    {"data": data.replace(self.box_id, "xxxxxx"), "url": target_url},
-                )
-                async with session.post(
-                    target_url,
-                    data=data,
-                    headers={"Content-Type": "application/json"},
-                ) as response:
-                    responsecontent = await response.text()
-                    if response.status == 200:
-                        response_json = json.loads(responsecontent)
-                        info(self._logger, f"Response: {response_json}")
+                    _nonce = int(time.time() * 1000)
+                    target_url = (
+                        f"{self._base_url}{self._set_grid_delivery_url}?_nonce={_nonce}"
+                    )
+                    self._logger.info(
+                        f"Sending grid delivery request to {target_url} for {data.replace(self.box_id, 'xxxxxx')}"
+                    )
+                    async with session.post(
+                        target_url,
+                        data=data,
+                        headers={"Content-Type": "application/json"},
+                    ) as response:
+                        responsecontent = await response.text()
+                        if response.status == 200:
+                            response_json = json.loads(responsecontent)
+                            self._logger.debug(f"Response: {response_json}")
 
-                        return True
-                    else:
-                        span.add_event(
-                            "Error setting grid delivery",
-                            {"response": responsecontent, "status": response.status},
-                        )
-                        self._logger.error(
-                            f"Error setting grid delivery: {responsecontent}"
-                        )
-                        return False
+                            return True
+                        else:
+                            raise Exception(
+                                "Error setting grid delivery", responsecontent
+                            )
+        except Exception as e:
+            self._logger.error(f"Error: {e}", stack_info=True)
+            raise e

@@ -1,39 +1,30 @@
+import logging
 from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 from homeassistant import config_entries, core
 from .api.oig_cloud import OigCloud
 from .const import CONF_NO_TELEMETRY, DOMAIN, CONF_USERNAME, CONF_PASSWORD
-from .release_const import COMPONENT_VERSION, SERVICE_NAME
 from .services import async_setup_entry_services
+from .shared.tracing import trace_provider, trace_processor
+from .shared.logging import LOGGING_HANDLER
 
-resource = Resource.create(
-    {
-        "service.name": SERVICE_NAME,
-        "service.version": COMPONENT_VERSION,
-        "service.namespace": "oig_cloud",
-    }
-)
 
-provider = TracerProvider(resource=resource)
+# trace_provider = TracerProvider(resource=resource)
 
-processor = BatchSpanProcessor(
-    OTLPSpanExporter(
-        endpoint="https://otlp.eu01.nr-data.net",
-        insecure=False,
-        headers=[
-            (
-                "api-key",
-                "eu01xxefc1a87820b35d1becb5efd5c5FFFFNRAL",
-            )
-        ],
-    )
-)
+# trace_processor = BatchSpanProcessor(
+#     OTLPSpanExporter(
+#         endpoint="https://otlp.eu01.nr-data.net",
+#         insecure=False,
+#         headers=[
+#             (
+#                 "api-key",
+#                 "eu01xxefc1a87820b35d1becb5efd5c5FFFFNRAL",
+#             )
+#         ],
+#     )
+# )
 
-trace.set_tracer_provider(provider)
+# trace.set_tracer_provider(trace_provider)
 tracer = trace.get_tracer(__name__)
 
 
@@ -54,7 +45,7 @@ async def async_setup_entry(
         no_telemetry = entry.data[CONF_NO_TELEMETRY]
 
     if no_telemetry is False:
-        provider.add_span_processor(processor)
+        trace_provider.add_span_processor(trace_processor)
 
     oig_cloud = OigCloud(username, password, no_telemetry, hass)
 
