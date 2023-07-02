@@ -56,14 +56,16 @@ async def async_setup_entry(
 
     # Store the authenticated instance for other platforms to use
     hass.data[DOMAIN][entry.entry_id] = oig_cloud
+    
 
     hass.async_create_task(
         hass.config_entries.async_forward_entry_setup(entry, "sensor")
     )
-
+    
     hass.async_create_task(
         hass.config_entries.async_forward_entry_setup(entry, "binary_sensor")
     )
+
 
     hass.async_create_task(async_setup_entry_services(hass, entry))
 

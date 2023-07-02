@@ -1,3 +1,5 @@
+import asyncio
+import datetime
 import hashlib
 import json
 import logging
@@ -10,6 +12,8 @@ from homeassistant import core
 from ..shared.logging import debug, info, error
 
 tracer = trace.get_tracer(__name__)
+
+lock = asyncio.Lock()
 
 
 class OigCloud:
@@ -27,9 +31,10 @@ class OigCloud:
     box_id: str = None
 
     def __init__(
-            self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
+        self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
     ) -> None:
         with tracer.start_as_current_span("initialize") as span:
+            self._last_update = datetime.datetime(1, 1, 1, 0, 0)
             self._username = username
             self._password = password
             self._no_telemetry = no_telemetry
@@ -69,9 +74,9 @@ class OigCloud:
                 data = json.dumps(login_command)
                 headers = {"Content-Type": "application/json"}
                 async with session.post(
-                        url,
-                        data=data,
-                        headers=headers,
+                    url,
+                    data=data,
+                    headers=headers,
                 ) as response:
                     responsecontent = await response.text()
                     span.add_event(
@@ -92,19 +97,29 @@ class OigCloud:
         return aiohttp.ClientSession(headers={"Cookie": f"PHPSESSID={self._phpsessid}"})
 
     async def get_stats(self) -> object:
-        with tracer.start_as_current_span("get_stats") as span:
-            self._initialize_span()
-            to_return: object = None
-            try:
-                to_return = await self.get_stats_internal()
-            except:
-                debug(self._logger, "Retrying authentication")
-                if await self.authenticate():
+        async with lock:
+            current_time = datetime.datetime.now()
+            if (current_time - self._last_update).total_seconds() < 10:
+                debug(self._logger, "Using cached stats")
+                return self.last_state
+
+            with tracer.start_as_current_span("get_stats") as span:
+                self._initialize_span()
+
+                to_return: object = None
+                try:
                     to_return = await self.get_stats_internal()
-            debug(self._logger, "Retrieved stats")
-        if self.box_id is None:
-            self.box_id = list(to_return.keys())[0]
-        return to_return
+                except:
+                    debug(self._logger, "Retrying authentication")
+                    if await self.authenticate():
+                        to_return = await self.get_stats_internal()
+                debug(self._logger, "Retrieved stats")
+                if self.box_id is None:
+                    self.box_id = list(to_return.keys())[0]
+
+                self._last_update = datetime.datetime.now()
+                debug(self._logger, f"Last update: {self._last_update}")
+                return to_return
 
     async def get_stats_internal(self, dependent: bool = False) -> object:
         with tracer.start_as_current_span("get_stats_internal"):
@@ -151,9 +166,9 @@ class OigCloud:
                     {"data": data.replace(self.box_id, "xxxxxx"), "url": target_url},
                 )
                 async with session.post(
-                        target_url,
-                        data=data,
-                        headers={"Content-Type": "application/json"},
+                    target_url,
+                    data=data,
+                    headers={"Content-Type": "application/json"},
                 ) as response:
                     responsecontent = await response.text()
                     if response.status == 200:
@@ -182,15 +197,17 @@ class OigCloud:
                 )
 
                 _nonce = int(time.time() * 1000)
-                target_url = f"{self._base_url}{self._set_grid_delivery_url}?_nonce={_nonce}"
+                target_url = (
+                    f"{self._base_url}{self._set_grid_delivery_url}?_nonce={_nonce}"
+                )
                 span.add_event(
                     "Sending grid delivery request",
                     {"data": data.replace(self.box_id, "xxxxxx"), "url": target_url},
                 )
                 async with session.post(
-                        target_url,
-                        data=data,
-                        headers={"Content-Type": "application/json"},
+                    target_url,
+                    data=data,
+                    headers={"Content-Type": "application/json"},
                 ) as response:
                     responsecontent = await response.text()
                     if response.status == 200:
@@ -203,6 +220,7 @@ class OigCloud:
                             "Error setting grid delivery",
                             {"response": responsecontent, "status": response.status},
                         )
-                        self._logger.error(f"Error setting grid delivery: {responsecontent}")
+                        self._logger.error(
+                            f"Error setting grid delivery: {responsecontent}"
+                        )
                         return False
-
