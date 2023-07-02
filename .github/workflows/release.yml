@@ -22,8 +22,8 @@ jobs:
 
     - name: Replace version and service in release_const.py
       run: |
-        sed -i 's/VERSION = "dev"/VERSION = "${{ github.event.inputs.version }}"/g' release_const.py
-        sed -i 's/SERVICE = "oig_cloud_dev"/SERVICE = "oig_cloud"/g' release_const.py
+        sed -i 's/COMPONENT_VERSION = "dev"/COMPONENT_VERSION = "${{ github.event.inputs.version }}"/g' release_const.py
+        sed -i 's/SERVICE_NAME = "oig_cloud_dev"/SERVICE_NAME = "oig_cloud"/g' release_const.py
 
     - name: Update version property in manifest.json
       run: |
