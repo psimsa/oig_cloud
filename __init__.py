@@ -1,30 +1,17 @@
 import logging
 from opentelemetry import trace
 
+from .sensor import OigCloudSensor
+from .binary_sensor import OigCloudBinarySensor
+from .api import oig_cloud_api
+
 from homeassistant import config_entries, core
-from .api.oig_cloud import OigCloud
+from .api.oig_cloud_api import OigCloudApi
 from .const import CONF_NO_TELEMETRY, DOMAIN, CONF_USERNAME, CONF_PASSWORD
 from .services import async_setup_entry_services
 from .shared.tracing import trace_provider, trace_processor
 from .shared.logging import LOGGING_HANDLER
 
-
-# trace_provider = TracerProvider(resource=resource)
-
-# trace_processor = BatchSpanProcessor(
-#     OTLPSpanExporter(
-#         endpoint="https://otlp.eu01.nr-data.net",
-#         insecure=False,
-#         headers=[
-#             (
-#                 "api-key",
-#                 "eu01xxefc1a87820b35d1becb5efd5c5FFFFNRAL",
-#             )
-#         ],
-#     )
-# )
-
-# trace.set_tracer_provider(trace_provider)
 tracer = trace.get_tracer(__name__)
 
 
@@ -46,14 +33,17 @@ async def async_setup_entry(
 
     if no_telemetry is False:
         trace_provider.add_span_processor(trace_processor)
+        logging.getLogger(oig_cloud_api.__name__).addHandler(LOGGING_HANDLER)
+        # logging.getLogger(binary_sensor.__name__).addHandler(LOGGING_HANDLER)
+        # logging.getLogger(sensor.__name__).addHandler(LOGGING_HANDLER)
 
-    oig_cloud = OigCloud(username, password, no_telemetry, hass)
+    oig_api = OigCloudApi(username, password, no_telemetry, hass)
 
     # Run the authenticate() method to get the token
-    await oig_cloud.authenticate()
+    await oig_api.authenticate()
 
     # Store the authenticated instance for other platforms to use
-    hass.data[DOMAIN][entry.entry_id] = oig_cloud
+    hass.data[DOMAIN][entry.entry_id] = oig_api
 
     hass.async_create_task(
         hass.config_entries.async_forward_entry_setup(entry, "sensor")

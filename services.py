@@ -5,7 +5,7 @@ from opentelemetry import trace
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from .const import DOMAIN
-from .api.oig_cloud import OigCloud
+from .api.oig_cloud_api import OigCloudApi
 
 MODES = {
     "Home 1": "0",
@@ -28,13 +28,13 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
         if not acknowledged:
             raise vol.Invalid("Acknowledgement is required")
 
-        client: OigCloud = hass.data[DOMAIN][entry.entry_id]
+        client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
         mode = call.data.get("Mode")
         mode_value = MODES.get(mode)
         success = await client.set_box_mode(mode_value)
 
     async def async_set_grid_delivery(call):
-        client: OigCloud = hass.data[DOMAIN][entry.entry_id]
+        client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
         if client.box_id != "2205232120" and client.box_id != "2111232079":
             raise vol.Invalid("Tato funkce není momentálně dostupná.")
 

@@ -11,7 +11,7 @@ from .const import (
     SENSOR_NAMES,
     SENSOR_TYPES,
 )
-from .api.oig_cloud import OigCloud
+from .api.oig_cloud_api import OigCloudApi
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -141,7 +141,7 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
 async def async_setup_entry(hass, config_entry, async_add_entities):
     _LOGGER.debug("async_setup_entry")
 
-    oig_cloud: OigCloud = hass.data[DOMAIN][config_entry.entry_id]
+    oig_cloud: OigCloudApi = hass.data[DOMAIN][config_entry.entry_id]
 
     async def update_data():
         """Fetch data from API endpoint."""

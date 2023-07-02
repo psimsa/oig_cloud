@@ -16,7 +16,7 @@ tracer = trace.get_tracer(__name__)
 lock = asyncio.Lock()
 
 
-class OigCloud:
+class OigCloudApi:
     _base_url = "https://www.oigpower.cz/cez/"
     _login_url = "inc/php/scripts/Login.php"
     _get_stats_url = "json.php"
@@ -36,8 +36,6 @@ class OigCloud:
         with tracer.start_as_current_span("initialize") as span:
             self._no_telemetry = no_telemetry
             self._logger = logging.getLogger(__name__)
-            if no_telemetry is False:
-                self._logger.addHandler(LOGGING_HANDLER)
 
             self._last_update = datetime.datetime(1, 1, 1, 0, 0)
             self._username = username
@@ -105,15 +103,14 @@ class OigCloud:
         return aiohttp.ClientSession(headers={"Cookie": f"PHPSESSID={self._phpsessid}"})
 
     async def get_stats(self) -> object:
-        try:
-            async with lock:
-                current_time = datetime.datetime.now()
-                if (current_time - self._last_update).total_seconds() < 10:
-                    self._logger.debug("Using cached stats")
-                    return self.last_state
-
-                with tracer.start_as_current_span("get_stats") as span:
+        async with lock:
+            with tracer.start_as_current_span("get_stats") as span:
+                try:
                     self._initialize_span()
+                    current_time = datetime.datetime.now()
+                    if (current_time - self._last_update).total_seconds() < 10:
+                        self._logger.debug("Using cached stats")
+                        return self.last_state
 
                     to_return: object = None
                     try:
@@ -129,9 +126,9 @@ class OigCloud:
                     self._last_update = datetime.datetime.now()
                     self._logger.debug(f"Last update: {self._last_update}")
                     return to_return
-        except Exception as e:
-            self._logger.error(f"Error: {e}", stack_info=True)
-            raise e
+                except Exception as e:
+                    self._logger.error(f"Error: {e}", stack_info=True)
+                    raise e
 
     async def get_stats_internal(self, dependent: bool = False) -> object:
         with tracer.start_as_current_span("get_stats_internal"):
@@ -161,8 +158,8 @@ class OigCloud:
                 return to_return
 
     async def set_box_mode(self, mode: str) -> bool:
-        try:
-            with tracer.start_as_current_span("set_mode") as span:
+        with tracer.start_as_current_span("set_mode") as span:
+            try:
                 self._initialize_span()
                 self._logger.debug(f"Setting mode to {mode}")
                 async with self.get_session() as session:
@@ -197,14 +194,19 @@ class OigCloud:
                                 f"Error setting mode: {response.status}",
                                 responsecontent,
                             )
-        except Exception as e:
-            self._logger.error(f"Error: {e}", stack_info=True)
-            raise e
+            except Exception as e:
+                self._logger.error(f"Error: {e}", stack_info=True)
+                raise e
 
     async def set_grid_delivery(self, enabled: bool) -> bool:
-        try:
-            with tracer.start_as_current_span("set_grid_delivery") as span:
+        with tracer.start_as_current_span("set_grid_delivery") as span:
+            try:
                 self._initialize_span()
+                if self._no_telemetry:
+                    raise Exception(
+                        "Tato funkce je ve vývoji a proto je momentálně dostupná pouze pro systémy s aktivní telemetrií."
+                    )
+
                 self._logger.debug(f"Setting grid delivery to {enabled}")
                 async with self.get_session() as session:
                     data = json.dumps(
@@ -236,6 +238,6 @@ class OigCloud:
                             raise Exception(
                                 "Error setting grid delivery", responsecontent
                             )
-        except Exception as e:
-            self._logger.error(f"Error: {e}", stack_info=True)
-            raise e
+            except Exception as e:
+                self._logger.error(f"Error: {e}", stack_info=True)
+                raise e

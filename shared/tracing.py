@@ -1,3 +1,4 @@
+from grpc import Compression
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace import TracerProvider
@@ -12,6 +13,7 @@ trace_processor = BatchSpanProcessor(
         endpoint=OT_ENDPOINT,
         insecure=False,
         headers=OT_HEADERS,
+        compression=Compression(2),
     )
 )
 

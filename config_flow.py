@@ -2,13 +2,13 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from .const import CONF_NO_TELEMETRY, DEFAULT_NAME, DOMAIN, CONF_USERNAME, CONF_PASSWORD
-from .api.oig_cloud import OigCloud
+from .api.oig_cloud_api import OigCloudApi
 
 
 class OigCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input=None):
         if user_input is not None:
-            oig = OigCloud(user_input[CONF_USERNAME], user_input[CONF_PASSWORD], user_input[CONF_NO_TELEMETRY],
+            oig = OigCloudApi(user_input[CONF_USERNAME], user_input[CONF_PASSWORD], user_input[CONF_NO_TELEMETRY],
                            self.hass)
             valid = await oig.authenticate()
             if valid:
