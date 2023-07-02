@@ -7,6 +7,7 @@ import time
 
 import aiohttp
 from opentelemetry import trace
+from opentelemetry.trace import SpanKind
 from ..shared.logging import LOGGING_HANDLER
 
 from homeassistant import core
@@ -76,25 +77,35 @@ class OigCloudApi:
                     url = self._base_url + self._login_url
                     data = json.dumps(login_command)
                     headers = {"Content-Type": "application/json"}
-                    async with session.post(
-                        url,
-                        data=data,
-                        headers=headers,
-                    ) as response:
-                        responsecontent = await response.text()
-                        span.add_event(
-                            "Received auth response",
-                            {"response": responsecontent, "status": response.status},
-                        )
-                        if response.status == 200:
-                            if responsecontent == '[[2,"",false]]':
-                                self._phpsessid = (
-                                    session.cookie_jar.filter_cookies(self._base_url)
-                                    .get("PHPSESSID")
-                                    .value
-                                )
-                                return True
-                        raise Exception("Authentication failed")
+                    with tracer.start_as_current_span(
+                        "authenticate.post",
+                        kind=SpanKind.SERVER,
+                        attributes={"http.url": url, "http.method": "POST"},
+                    ):
+                        async with session.post(
+                            url,
+                            data=data,
+                            headers=headers,
+                        ) as response:
+                            responsecontent = await response.text()
+                            span.add_event(
+                                "Received auth response",
+                                {
+                                    "response": responsecontent,
+                                    "status": response.status,
+                                },
+                            )
+                            if response.status == 200:
+                                if responsecontent == '[[2,"",false]]':
+                                    self._phpsessid = (
+                                        session.cookie_jar.filter_cookies(
+                                            self._base_url
+                                        )
+                                        .get("PHPSESSID")
+                                        .value
+                                    )
+                                    return True
+                            raise Exception("Authentication failed")
             except Exception as e:
                 self._logger.error(f"Error: {e}", stack_info=True)
                 raise e
@@ -104,13 +115,13 @@ class OigCloudApi:
 
     async def get_stats(self) -> object:
         async with lock:
+            current_time = datetime.datetime.now()
+            if (current_time - self._last_update).total_seconds() < 10:
+                self._logger.debug("Using cached stats")
+                return self.last_state
             with tracer.start_as_current_span("get_stats") as span:
                 try:
                     self._initialize_span()
-                    current_time = datetime.datetime.now()
-                    if (current_time - self._last_update).total_seconds() < 10:
-                        self._logger.debug("Using cached stats")
-                        return self.last_state
 
                     to_return: object = None
                     try:
@@ -138,24 +149,29 @@ class OigCloudApi:
             async with self.get_session() as session:
                 url = self._base_url + self._get_stats_url
                 self._logger.debug(f"Getting stats from {url}")
-                async with session.get(url) as response:
-                    if response.status == 200:
-                        to_return = await response.json()
-                        # the response should be a json dictionary, otherwise it's an error
-                        if not isinstance(to_return, dict) and not dependent:
-                            self._logger.info("Retrying authentication")
-                            if await self.authenticate():
-                                second_try = await self.get_stats_internal(True)
-                                if not isinstance(second_try, dict):
-                                    self._logger.warn(f"Error: {second_try}")
-                                    return None
+                with tracer.start_as_current_span(
+                    "get_stats_internal.get",
+                    kind=SpanKind.SERVER,
+                    attributes={"http.url": url, "http.method": "GET"},
+                ):
+                    async with session.get(url) as response:
+                        if response.status == 200:
+                            to_return = await response.json()
+                            # the response should be a json dictionary, otherwise it's an error
+                            if not isinstance(to_return, dict) and not dependent:
+                                self._logger.info("Retrying authentication")
+                                if await self.authenticate():
+                                    second_try = await self.get_stats_internal(True)
+                                    if not isinstance(second_try, dict):
+                                        self._logger.warn(f"Error: {second_try}")
+                                        return None
+                                    else:
+                                        to_return = second_try
                                 else:
-                                    to_return = second_try
-                            else:
-                                return None
-                    self.last_state = to_return
-                    self._logger.debug("Retrieved stats internal finished")
-                return to_return
+                                    return None
+                        self.last_state = to_return
+                        self._logger.debug("Retrieved stats internal finished")
+                    return to_return
 
     async def set_box_mode(self, mode: str) -> bool:
         with tracer.start_as_current_span("set_mode") as span:
@@ -178,22 +194,27 @@ class OigCloudApi:
                     self._logger.debug(
                         f"Sending mode request to {target_url} with {data.replace(self.box_id, 'xxxxxx')}"
                     )
-                    async with session.post(
-                        target_url,
-                        data=data,
-                        headers={"Content-Type": "application/json"},
-                    ) as response:
-                        responsecontent = await response.text()
-                        if response.status == 200:
-                            response_json = json.loads(responsecontent)
-                            message = response_json[0][2]
-                            self._logger.info(f"Response: {message}")
-                            return True
-                        else:
-                            raise Exception(
-                                f"Error setting mode: {response.status}",
-                                responsecontent,
-                            )
+                    with tracer.start_as_current_span(
+                        "set_mode.post",
+                        kind=SpanKind.SERVER,
+                        attributes={"http.url": target_url, "http.method": "POST"},
+                    ):
+                        async with session.post(
+                            target_url,
+                            data=data,
+                            headers={"Content-Type": "application/json"},
+                        ) as response:
+                            responsecontent = await response.text()
+                            if response.status == 200:
+                                response_json = json.loads(responsecontent)
+                                message = response_json[0][2]
+                                self._logger.info(f"Response: {message}")
+                                return True
+                            else:
+                                raise Exception(
+                                    f"Error setting mode: {response.status}",
+                                    responsecontent,
+                                )
             except Exception as e:
                 self._logger.error(f"Error: {e}", stack_info=True)
                 raise e
@@ -223,21 +244,26 @@ class OigCloudApi:
                     self._logger.info(
                         f"Sending grid delivery request to {target_url} for {data.replace(self.box_id, 'xxxxxx')}"
                     )
-                    async with session.post(
-                        target_url,
-                        data=data,
-                        headers={"Content-Type": "application/json"},
-                    ) as response:
-                        responsecontent = await response.text()
-                        if response.status == 200:
-                            response_json = json.loads(responsecontent)
-                            self._logger.debug(f"Response: {response_json}")
+                    with tracer.start_as_current_span(
+                        "set_grid_delivery.post",
+                        kind=SpanKind.SERVER,
+                        attributes={"http.url": target_url, "http.method": "POST"},
+                    ):
+                        async with session.post(
+                            target_url,
+                            data=data,
+                            headers={"Content-Type": "application/json"},
+                        ) as response:
+                            responsecontent = await response.text()
+                            if response.status == 200:
+                                response_json = json.loads(responsecontent)
+                                self._logger.debug(f"Response: {response_json}")
 
-                            return True
-                        else:
-                            raise Exception(
-                                "Error setting grid delivery", responsecontent
-                            )
+                                return True
+                            else:
+                                raise Exception(
+                                    "Error setting grid delivery", responsecontent
+                                )
             except Exception as e:
                 self._logger.error(f"Error: {e}", stack_info=True)
                 raise e
