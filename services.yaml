@@ -29,11 +29,13 @@ set_grid_delivery:
     name: Nastavení přetoků
     description: Povolení nebo zakázání přetoků do distribuční sítě. Tato funkce momentálně není implementována.
     fields:
-        Enabled:
-            description: True to enable, False to disable.
-            example: true
+        Mode:
+            description: Režim přetoků
             selector:
-              boolean: true
+              select:
+                options:
+                - Zapnuto / On
+                - Vypnuto / Off
         Acknowledgement:
             description: |
               I acknowledge that calling the service will result in parameter modification of a live system.

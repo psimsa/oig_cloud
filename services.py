@@ -14,6 +14,11 @@ MODES = {
     "Home UPS": "3",
 }
 
+GRID_DELIVERY = {
+    "Zapnuto / On": True,
+    "Vypnuto / Off": False,
+}
+
 tracer = trace.get_tracer(__name__)
 
 
@@ -41,7 +46,8 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
         if not accepted:
             raise vol.Invalid("Upozornění je třeba odsouhlasit")
 
-        enabled = call.data.get("Enabled")
+        grid_mode = call.data.get("Mode")
+        enabled = GRID_DELIVERY.get(grid_mode)
         await client.set_grid_delivery(enabled)
 
     hass.services.async_register(
@@ -69,7 +75,12 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
         async_set_grid_delivery,
         schema=vol.Schema(
             {
-                vol.Required("Enabled"): bool,
+                vol.Required("Mode"): vol.In(
+                    [
+                        "Zapnuto / On",
+                        "Vypnuto / Off",
+                    ]
+                ),
                 "Acknowledgement": vol.Boolean(1),
                 "Upozornění": vol.Boolean(1),
             }
