@@ -10,21 +10,48 @@ from .const import CONF_NO_TELEMETRY, DOMAIN, CONF_USERNAME, CONF_PASSWORD
 from .release_const import COMPONENT_VERSION, SERVICE_NAME
 from .services import async_setup_entry_services
 
-resource = Resource.create({"service.name": SERVICE_NAME,
-                            "service.version": COMPONENT_VERSION})
+resource = Resource.create(
+    {
+        "service.name": SERVICE_NAME,
+        "service.version": COMPONENT_VERSION,
+        "service.namespace": "oig_cloud",
+    }
+)
+
 provider = TracerProvider(resource=resource)
+
+# processor = BatchSpanProcessor(
+#     OTLPSpanExporter(
+#         endpoint="https://otlp.eu01.nr-data.net",
+#         insecure=False,
+#         headers=[
+#             (
+#                 "api-key",
+#                 "eu01xxefc1a87820b35d1becb5efd5c5FFFFNRAL",
+#             )
+#         ],
+#     )
+# )
+
 processor = BatchSpanProcessor(
     OTLPSpanExporter(
-        endpoint="https://otlp.eu01.nr-data.net",
+        endpoint="https://api.honeycomb.io",
         insecure=False,
         headers=[
-            (
-                "api-key",
-                "eu01xxefc1a87820b35d1becb5efd5c5FFFFNRAL",
-            )
+            ("x-honeycomb-team", "hTnPGhWUrkAleVhDHsBZ7G")
         ],
     )
 )
+
+# processor = BatchSpanProcessor(
+#     OTLPSpanExporter(
+#         endpoint="https://otlp.telemetryhub.com:4317",
+#         insecure=False,
+#         headers={
+#             "x-telemetryhub-key": "d3421efb-6e9a-40bf-9b01-fe8ac3c947d6:8722b4ba-d435-4dee-8987-c67d6636211a:3131394"
+#         },
+#     )
+# )
 
 trace.set_tracer_provider(provider)
 tracer = trace.get_tracer(__name__)
@@ -36,7 +63,7 @@ async def async_setup(hass: core.HomeAssistant, config: dict):
 
 
 async def async_setup_entry(
-        hass: core.HomeAssistant, entry: config_entries.ConfigEntry
+    hass: core.HomeAssistant, entry: config_entries.ConfigEntry
 ):
     username = entry.data[CONF_USERNAME]
     password = entry.data[CONF_PASSWORD]
@@ -56,16 +83,14 @@ async def async_setup_entry(
 
     # Store the authenticated instance for other platforms to use
     hass.data[DOMAIN][entry.entry_id] = oig_cloud
-    
 
     hass.async_create_task(
         hass.config_entries.async_forward_entry_setup(entry, "sensor")
     )
-    
+
     hass.async_create_task(
         hass.config_entries.async_forward_entry_setup(entry, "binary_sensor")
     )
-
 
     hass.async_create_task(async_setup_entry_services(hass, entry))
 

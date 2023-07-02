@@ -48,7 +48,9 @@ class OigCloudBinarySensor(CoordinatorEntity, BinarySensorEntity):
 
         node_value = pv_data[self._node_id][self._node_key]
 
-        return bool(node_value)
+        val = bool(node_value)
+
+        return val
 
     @property
     def unique_id(self):

@@ -125,8 +125,10 @@ class OigCloud:
         with tracer.start_as_current_span("get_stats_internal"):
             self._initialize_span()
             to_return: object = None
+            debug(self._logger, "Starting session")
             async with self.get_session() as session:
                 url = self._base_url + self._get_stats_url
+                debug(self._logger, f"Getting stats from {url}")
                 async with session.get(url) as response:
                     if response.status == 200:
                         to_return = await response.json()
@@ -143,6 +145,7 @@ class OigCloud:
                             else:
                                 return None
                     self.last_state = to_return
+                    debug(self._logger, "Retrieved stats internal finished")
                 return to_return
 
     async def set_box_mode(self, mode: str) -> bool:
