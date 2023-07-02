@@ -20,38 +20,18 @@ resource = Resource.create(
 
 provider = TracerProvider(resource=resource)
 
-# processor = BatchSpanProcessor(
-#     OTLPSpanExporter(
-#         endpoint="https://otlp.eu01.nr-data.net",
-#         insecure=False,
-#         headers=[
-#             (
-#                 "api-key",
-#                 "eu01xxefc1a87820b35d1becb5efd5c5FFFFNRAL",
-#             )
-#         ],
-#     )
-# )
-
 processor = BatchSpanProcessor(
     OTLPSpanExporter(
-        endpoint="https://api.honeycomb.io",
+        endpoint="https://otlp.eu01.nr-data.net",
         insecure=False,
         headers=[
-            ("x-honeycomb-team", "hTnPGhWUrkAleVhDHsBZ7G")
+            (
+                "api-key",
+                "eu01xxefc1a87820b35d1becb5efd5c5FFFFNRAL",
+            )
         ],
     )
 )
-
-# processor = BatchSpanProcessor(
-#     OTLPSpanExporter(
-#         endpoint="https://otlp.telemetryhub.com:4317",
-#         insecure=False,
-#         headers={
-#             "x-telemetryhub-key": "d3421efb-6e9a-40bf-9b01-fe8ac3c947d6:8722b4ba-d435-4dee-8987-c67d6636211a:3131394"
-#         },
-#     )
-# )
 
 trace.set_tracer_provider(provider)
 tracer = trace.get_tracer(__name__)
