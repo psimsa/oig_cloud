@@ -22,8 +22,8 @@ jobs:
 
     - name: Replace version and service in release_const.py
       run: |
-        echo 'COMPONENT_VERSION = "${{ github.event.inputs.version }}"
-SERVICE_NAME = "oig_cloud"' > release_const.py
+        echo 'COMPONENT_VERSION = "${{ github.event.inputs.version }}"' > release_const.py
+        echo 'SERVICE_NAME = "oig_cloud"' >> release_const.py
 
     - name: Update version property in manifest.json
       run: |
