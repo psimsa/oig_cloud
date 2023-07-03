@@ -27,7 +27,7 @@ set_box_mode:
 
 set_grid_delivery:
     name: Nastavení přetoků
-    description: Povolení nebo zakázání přetoků do distribuční sítě. Tato funkce momentálně není implementována.
+    description: Povolení nebo zakázání přetoků do distribuční sítě. Tato funkce momentálně funguje v režimu privátního testování.
     fields:
         Mode:
             description: Režim přetoků
