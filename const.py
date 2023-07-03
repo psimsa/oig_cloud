@@ -1,4 +1,7 @@
+from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.sensor import SensorStateClass, SensorDeviceClass
+from opentelemetry.sdk.resources import Resource
+from .release_const import COMPONENT_VERSION, SERVICE_NAME
 
 DOMAIN = "oig_cloud"
 
@@ -34,6 +37,7 @@ SENSOR_NAMES = {
         "box_temp": "Box Temperature",
         "box_humid": "Box Humidity",
         "box_prms_sw": "Firmware Version",
+        "invertor_prms_to_grid": "Grid Delivery",
     },
     "cs": {
         "dc_in_fv_p1": "Výkon panelů string 1",
@@ -60,6 +64,7 @@ SENSOR_NAMES = {
         "box_temp": "Teplota boxu",
         "box_humid": "Vlhkost v boxu",
         "box_prms_sw": "Verze firmware",
+        "invertor_prms_to_grid": "Přetoky do sítě",
     },
 }
 
@@ -256,4 +261,29 @@ SENSOR_TYPES = {
         "node_key": "sw",
         "state_class": None,
     },
+    
 }
+
+BINARY_SENSOR_TYPES= {
+    "invertor_prms_to_grid":{
+        "name": "Grid Delivery",
+        "device_class": BinarySensorDeviceClass.POWER	,
+        "node_id": "invertor_prms",
+        "node_key": "to_grid"
+    }
+}
+
+OT_RESOURCE = Resource.create(
+    {
+        "service.name": SERVICE_NAME,
+        "service.version": COMPONENT_VERSION,
+        "service.namespace": "oig_cloud",
+    }
+)
+OT_ENDPOINT = "https://otlp.eu01.nr-data.net"
+OT_HEADERS = [
+            (
+                "api-key",
+                "eu01xxefc1a87820b35d1becb5efd5c5FFFFNRAL",
+            )
+        ]

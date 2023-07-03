@@ -1,27 +1,21 @@
-from opentelemetry import trace
+from grpc import Compression
+from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
+    OTLPLogExporter,
+)
+from opentelemetry._logs import set_logger_provider
+
+from ..const import OT_RESOURCE, OT_ENDPOINT, OT_HEADERS
 
 import logging
 
+logger_provider = LoggerProvider(resource=OT_RESOURCE)
+set_logger_provider(logger_provider)
 
-def info(logger: logging.Logger, msg: str):
-    log(logger=logger, level=logging.INFO, msg=msg)
+exporter = OTLPLogExporter(
+    endpoint=OT_ENDPOINT, insecure=False, headers=OT_HEADERS, compression=Compression(2)
+)
 
-
-def debug(logger: logging.Logger, msg: str):
-    log(logger=logger, level=logging.DEBUG, msg=msg)
-
-
-def warning(logger: logging.Logger, msg: str):
-    log(logger=logger, level=logging.WARNING, msg=msg)
-
-
-def error(logger: logging.Logger, msg: str):
-    log(logger=logger, level=logging.ERROR, msg=msg)
-
-
-def log(logger: logging.Logger, level: int, msg: str):
-    span = trace.get_current_span()
-    if span:
-        span.add_event("log", {"level": level, "msg": msg})
-
-    logger.log(level=level, msg=msg)
+logger_provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
+LOGGING_HANDLER = LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider)

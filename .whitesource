@@ -1,0 +1,14 @@
+{
+  "scanSettings": {
+    "baseBranches": ["main"]
+  },
+  "checkRunSettings": {
+    "vulnerableCheckRunConclusionLevel": "success",
+    "displayMode": "diff",
+    "useMendCheckNames": true
+  },
+  "issueSettings": {
+    "minSeverityLevel": "LOW",
+    "issueType": "DEPENDENCY"
+  }
+}

@@ -1,9 +1,11 @@
 import voluptuous as vol
 
+from opentelemetry import trace
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from .const import DOMAIN
-from .api.oig_cloud import OigCloud
+from .api.oig_cloud_api import OigCloudApi
 
 MODES = {
     "Home 1": "0",
@@ -12,23 +14,41 @@ MODES = {
     "Home UPS": "3",
 }
 
+GRID_DELIVERY = {
+    "Zapnuto / On": True,
+    "Vypnuto / Off": False,
+}
+
+tracer = trace.get_tracer(__name__)
+
 
 async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) -> None:
     async def async_set_box_mode(call):
-        client: OigCloud = hass.data[DOMAIN][entry.entry_id]
+        acknowledged = call.data.get("Acknowledgement")
+        if not acknowledged:
+            raise vol.Invalid("Acknowledgement is required")
+
+        client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
         mode = call.data.get("Mode")
         mode_value = MODES.get(mode)
         success = await client.set_box_mode(mode_value)
 
-    # async def async_set_grid_delivery(call):
-    #     entity_ids = await async_extract_entity_ids(hass, call)
-    #     enabled = call.data.get("enabled")
-    #     for entity_id in entity_ids:
-    #         entity = hass.data[DOMAIN].get(entity_id)
-    #         if entity:
-    #             success = await client.set_grid_delivery(enabled)
-    #             if success:
-    #                 entity.async_write_ha_state()
+    async def async_set_grid_delivery(call):
+        client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
+        if client.box_id != "2205232120" and client.box_id != "2111232079":
+            raise vol.Invalid("Tato funkce není momentálně dostupná.")
+
+        acknowledged = call.data.get("Acknowledgement")
+        if not acknowledged:
+            raise vol.Invalid("Acknowledgement is required")
+
+        accepted = call.data.get("Upozornění")
+        if not accepted:
+            raise vol.Invalid("Upozornění je třeba odsouhlasit")
+
+        grid_mode = call.data.get("Mode")
+        enabled = GRID_DELIVERY.get(grid_mode)
+        await client.set_grid_delivery(enabled)
 
     hass.services.async_register(
         DOMAIN,
@@ -44,11 +64,25 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
                         "Home UPS",
                     ]
                 ),
-                vol.Required("Acknowledgement"): vol.Boolean(1),
+                "Acknowledgement": vol.Boolean(1),
             }
         ),
     )
 
-    # hass.services.async_register(
-    #     DOMAIN, "set_grid_delivery", async_set_grid_delivery, schema=vol.Schema({vol.Required("enabled"): bool})
-    # )
+    hass.services.async_register(
+        DOMAIN,
+        "set_grid_delivery",
+        async_set_grid_delivery,
+        schema=vol.Schema(
+            {
+                vol.Required("Mode"): vol.In(
+                    [
+                        "Zapnuto / On",
+                        "Vypnuto / Off",
+                    ]
+                ),
+                "Acknowledgement": vol.Boolean(1),
+                "Upozornění": vol.Boolean(1),
+            }
+        ),
+    )

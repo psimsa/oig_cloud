@@ -1,0 +1,6 @@
+{
+    "extends": [
+        "config:base",
+        "github>ofcoursedude/renovate-config"
+    ]
+}
