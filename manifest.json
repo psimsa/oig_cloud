@@ -13,6 +13,6 @@
     "opentelemetry-exporter-otlp-proto-grpc==1.18.0"
   ],
   "ssdp": [],
-  "version": "0.0.0",
+  "version": "0.0.7-beta2",
   "zeroconf": []
 }
