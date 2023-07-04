@@ -11,78 +11,10 @@ CONF_NO_TELEMETRY = "no_telemetry"
 
 DEFAULT_NAME = "Battery Box"
 
-SENSOR_NAMES = {
-    "en": {
-        "dc_in_fv_p1": "Panels Output String 1",
-        "dc_in_fv_p2": "Panels Output String 2",
-        "dc_in_fv_total": "Panels Output Total",
-        "dc_in_fv_proc": "Panels Output Percent",
-        "batt_bat_c": "Battery Percent",
-        "ac_out_aco_vr": "Voltage Line 1",
-        "ac_out_aco_vs": "Voltage Line 2",
-        "ac_out_aco_vt": "Voltage Line 3",
-        "ac_out_aco_pr": "Load Line 1",
-        "ac_out_aco_ps": "Load Line 2",
-        "ac_out_aco_pt": "Load Line 3",
-        "ac_out_aco_p": "Load Total",
-        "ac_in_aci_wr": "Grid Load Line 1",
-        "ac_in_aci_ws": "Grid Load Line 2",
-        "ac_in_aci_wt": "Grid Load Line 3",
-        "ac_in_aci_vr": "Grid Voltage Line 1",
-        "ac_in_aci_vs": "Grid Voltage Line 2",
-        "ac_in_aci_vt": "Grid Voltage Line 3",
-        "ac_in_aci_wtotal": "Grid Load Total",
-        "dc_in_fv_ad": "PV Output Today",
-        "ac_out_en_day": "Consumption Today",
-        "ac_in_ac_ad": "Grid Consumption Today",
-        "ac_in_ac_pd": "Grid Delivery Today",
-        "batt_bat_apd": "Battery Charge Today",
-        "batt_bat_and": "Battery Discharge Today",
-        "device_lastcall": "Last Call",
-        "box_prms_mode": "Operation Mode",
-        "box_temp": "Box Temperature",
-        "box_humid": "Box Humidity",
-        "box_prms_sw": "Firmware Version",
-        "invertor_prms_to_grid": "Grid Delivery",
-    },
-    "cs": {
-        "dc_in_fv_p1": "Výkon panelů string 1",
-        "dc_in_fv_p2": "Výkon panelů string 2",
-        "dc_in_fv_total": "Výkon panelů celkem",
-        "dc_in_fv_proc": "Výkon panelů (procenta)",
-        "batt_bat_c": "Nabití baterie (procenta)",
-        "ac_out_aco_vr": "Napětí fáze 1",
-        "ac_out_aco_vs": "Napětí fáze 2",
-        "ac_out_aco_vt": "Napětí fáze 3",
-        "ac_out_aco_pr": "Zátěž fáze 1",
-        "ac_out_aco_ps": "Zátěž fáze 2",
-        "ac_out_aco_pt": "Zátěž fáze 3",
-        "ac_out_aco_p": "Zátěž celkem",
-        "ac_in_aci_wr": "Síť - Zátěž fáze 1",
-        "ac_in_aci_ws": "Síť - Zátěž fáze 2",
-        "ac_in_aci_wt": "Síť - Zátěž fáze 3",
-        "ac_in_aci_vr": "Síť - Napětí fáze 1",
-        "ac_in_aci_vs": "Síť - Napětí fáze 2",
-        "ac_in_aci_vt": "Síť - Napětí fáze 3",
-        "ac_in_aci_wtotal": "Síť - Zátěž celkem",
-        "dc_in_fv_ad": "Dnešní výroba",
-        "ac_out_en_day": "Dnešní spotřeba (FVE)",
-        "ac_in_ac_ad": "Dnešní spotřeba (síť)",
-        "ac_in_ac_pd": "Dnešní dodávka do sítě",
-        "batt_bat_apd": "Dnešní nabíjení baterie",
-        "batt_bat_and": "Dnešní vybíjení baterie",
-        "device_lastcall": "Poslední komunikace",
-        "box_prms_mode": "Režim provozu",
-        "box_temp": "Teplota boxu",
-        "box_humid": "Vlhkost v boxu",
-        "box_prms_sw": "Verze firmware",
-        "invertor_prms_to_grid": "Přetoky do sítě",
-    },
-}
-
 SENSOR_TYPES = {
     "dc_in_fv_p1": {
         "name": "Panels Output String 1",
+        "name_cs": "Výkon panelů string 1",
         "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "dc_in",
@@ -91,6 +23,7 @@ SENSOR_TYPES = {
     },
     "dc_in_fv_p2": {
         "name": "Panels Output String 2",
+        "name_cs": "Výkon panelů string 2",
         "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "dc_in",
@@ -99,6 +32,7 @@ SENSOR_TYPES = {
     },
     "dc_in_fv_total": {
         "name": "Panels Output Total",
+        "name_cs": "Výkon panelů celkem",
         "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "",
@@ -107,6 +41,7 @@ SENSOR_TYPES = {
     },
     "dc_in_fv_proc": {
         "name": "Panels Output Percent",
+        "name_cs": "Výkon panelů (procenta)",
         "device_class": SensorDeviceClass.POWER_FACTOR,
         "unit_of_measurement": "%",
         "node_id": "dc_in",
@@ -115,6 +50,7 @@ SENSOR_TYPES = {
     },
     "batt_bat_c": {
         "name": "Battery Percent",
+        "name_cs": "Nabití baterie (procenta)",
         "device_class": SensorDeviceClass.BATTERY,
         "unit_of_measurement": "%",
         "node_id": "batt",
@@ -123,6 +59,7 @@ SENSOR_TYPES = {
     },
     "ac_out_aco_vr": {
         "name": "Voltage Line 1",
+        "name_cs": "Napětí fáze 1",
         "device_class": SensorDeviceClass.VOLTAGE,
         "unit_of_measurement": "V",
         "node_id": "ac_out",
@@ -131,6 +68,7 @@ SENSOR_TYPES = {
     },
     "ac_out_aco_vs": {
         "name": "Voltage Line 2",
+        "name_cs": "Napětí fáze 2",
         "device_class": SensorDeviceClass.VOLTAGE,
         "unit_of_measurement": "V",
         "node_id": "ac_out",
@@ -139,6 +77,7 @@ SENSOR_TYPES = {
     },
     "ac_out_aco_vt": {
         "name": "Voltage Line 3",
+        "name_cs": "Napětí fáze 3",
         "device_class": SensorDeviceClass.VOLTAGE,
         "unit_of_measurement": "V",
         "node_id": "ac_out",
@@ -147,6 +86,7 @@ SENSOR_TYPES = {
     },
     "ac_out_aco_pr": {
         "name": "Load Line 1",
+        "name_cs": "Zátěž fáze 1",
         "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "ac_out",
@@ -155,6 +95,7 @@ SENSOR_TYPES = {
     },
     "ac_out_aco_ps": {
         "name": "Load Line 2",
+        "name_cs": "Zátěž fáze 2",
         "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "ac_out",
@@ -163,6 +104,7 @@ SENSOR_TYPES = {
     },
     "ac_out_aco_pt": {
         "name": "Load Line 3",
+        "name_cs": "Zátěž fáze 3",
         "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "ac_out",
@@ -171,6 +113,7 @@ SENSOR_TYPES = {
     },
     "ac_out_aco_p": {
         "name": "Load Total",
+        "name_cs": "Zátěž celkem",
         "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "ac_out",
@@ -179,6 +122,7 @@ SENSOR_TYPES = {
     },
     "ac_in_aci_wr": {
         "name": "Grid Load Line 1",
+        "name_cs": "Síť - zátěž fáze 1",
         "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "ac_in",
@@ -187,6 +131,7 @@ SENSOR_TYPES = {
     },
     "ac_in_aci_ws": {
         "name": "Grid Load Line 2",
+        "name_cs": "Síť - zátěž fáze 2",
         "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "ac_in",
@@ -195,6 +140,7 @@ SENSOR_TYPES = {
     },
     "ac_in_aci_wt": {
         "name": "Grid Load Line 3",
+        "name_cs": "Síť - zátěž fáze 3",
         "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "ac_in",
@@ -203,6 +149,7 @@ SENSOR_TYPES = {
     },
     "ac_in_aci_vr": {
         "name": "Grid Voltage Line 1",
+        "name_cs": "Síť - Napětí fáze 1",
         "device_class": SensorDeviceClass.VOLTAGE,
         "unit_of_measurement": "V",
         "node_id": "ac_in",
@@ -211,6 +158,7 @@ SENSOR_TYPES = {
     },
     "ac_in_aci_vs": {
         "name": "Grid Voltage Line 2",
+        "name_cs": "Síť - Napětí fáze 2",
         "device_class": SensorDeviceClass.VOLTAGE,
         "unit_of_measurement": "V",
         "node_id": "ac_in",
@@ -219,6 +167,7 @@ SENSOR_TYPES = {
     },
     "ac_in_aci_vt": {
         "name": "Grid Voltage Line 3",
+        "name_cs": "Síť - Napětí fáze 3",
         "device_class": SensorDeviceClass.VOLTAGE,
         "unit_of_measurement": "V",
         "node_id": "ac_in",
@@ -227,6 +176,7 @@ SENSOR_TYPES = {
     },
     "ac_in_aci_wtotal": {
         "name": "Grid Load Total",
+        "name_cs": "Síť - Zátěž celkem",
         "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "",
@@ -235,6 +185,7 @@ SENSOR_TYPES = {
     },
     "dc_in_fv_ad": {
         "name": "PV Output Today",
+        "name_cs": "Dnešní výroba",
         "device_class": SensorDeviceClass.ENERGY,
         "unit_of_measurement": "Wh",
         "node_id": "dc_in",
@@ -243,6 +194,7 @@ SENSOR_TYPES = {
     },
     "ac_out_en_day": {
         "name": "Consumption Today",
+        "name_cs": "Dnešní spotřeba",
         "device_class": SensorDeviceClass.ENERGY,
         "unit_of_measurement": "Wh",
         "node_id": "ac_out",
@@ -251,6 +203,7 @@ SENSOR_TYPES = {
     },
     "ac_in_ac_ad": {
         "name": "Grid Consumption Today",
+        "name_cs": "Dnešní odběr ze sítě",
         "device_class": SensorDeviceClass.ENERGY,
         "unit_of_measurement": "Wh",
         "node_id": "ac_in",
@@ -259,6 +212,7 @@ SENSOR_TYPES = {
     },
     "ac_in_ac_pd": {
         "name": "Grid Delivery Today",
+        "name_cs": "Dnešní dodávka do sítě",
         "device_class": SensorDeviceClass.ENERGY,
         "unit_of_measurement": "Wh",
         "node_id": "ac_in",
@@ -267,6 +221,7 @@ SENSOR_TYPES = {
     },
     "batt_bat_apd": {
         "name": "Battery Charge Today",
+        "name_cs": "Dnešní nabíjení baterie",
         "device_class": SensorDeviceClass.ENERGY,
         "unit_of_measurement": "Wh",
         "node_id": "batt",
@@ -275,6 +230,7 @@ SENSOR_TYPES = {
     },
     "batt_bat_and": {
         "name": "Battery Discharge Today",
+        "name_cs": "Dnešní vybíjení baterie",
         "device_class": SensorDeviceClass.ENERGY,
         "unit_of_measurement": "Wh",
         "node_id": "batt",
@@ -283,6 +239,7 @@ SENSOR_TYPES = {
     },
     "device_lastcall": {
         "name": "Last Call",
+        "name_cs": "Poslední komunikace",
         "device_class": SensorDeviceClass.TIMESTAMP,
         "unit_of_measurement": None,
         "node_id": "device",
@@ -291,6 +248,7 @@ SENSOR_TYPES = {
     },
     "box_prms_mode": {
         "name": "Operation Mode",
+        "name_cs": "Režim",
         "device_class": None,
         "unit_of_measurement": None,
         "node_id": "box_prms",
@@ -299,6 +257,7 @@ SENSOR_TYPES = {
     },
     "box_temp": {
         "name": "Temperature",
+        "name_cs": "Teplota v boxu",
         "device_class": SensorDeviceClass.TEMPERATURE,
         "unit_of_measurement": "°C",
         "node_id": "box",
@@ -307,6 +266,7 @@ SENSOR_TYPES = {
     },
     "box_humid": {
         "name": "Humidity",
+        "name_cs": "Vlhkost v boxu",
         "device_class": SensorDeviceClass.HUMIDITY,
         "unit_of_measurement": "%",
         "node_id": "box",
@@ -315,6 +275,7 @@ SENSOR_TYPES = {
     },
     "box_prms_sw": {
         "name": "Software Version",
+        "name_cs": "Verze firmware",
         "device_class": None,
         "unit_of_measurement": None,
         "node_id": "box_prms",
@@ -327,6 +288,7 @@ SENSOR_TYPES = {
 BINARY_SENSOR_TYPES= {
     "invertor_prms_to_grid":{
         "name": "Grid Delivery",
+        "name_cs": "Přetoky povoleny",
         "device_class": BinarySensorDeviceClass.POWER	,
         "node_id": "invertor_prms",
         "node_key": "to_grid"

@@ -8,7 +8,6 @@ from homeassistant.helpers.update_coordinator import (
 )
 from .const import (
     DOMAIN,
-    SENSOR_NAMES,
     BINARY_SENSOR_TYPES,
 )
 from .api.oig_cloud_api import OigCloudApi
@@ -29,7 +28,9 @@ class OigCloudBinarySensor(CoordinatorEntity, BinarySensorEntity):
     def name(self):
         """Return the name of the sensor."""
         language = self.hass.config.language
-        return SENSOR_NAMES.get(language, SENSOR_NAMES["en"])[self._sensor_type]
+        if language == "cs":
+            return BINARY_SENSOR_TYPES[self._sensor_type]["name_cs"]
+        return BINARY_SENSOR_TYPES[self._sensor_type]["name"]
 
     @property
     def device_class(self):
