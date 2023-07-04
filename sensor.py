@@ -33,6 +33,9 @@ LANGS = {
 
 class OigCloudSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator, sensor_type):
+        if not isinstance(sensor_type, str):
+            raise TypeError("sensor_type must be a string")
+
         self.coordinator = coordinator
         self._sensor_type = sensor_type
         self._attr_state_class = SENSOR_TYPES[sensor_type]["state_class"]
@@ -49,7 +52,6 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
         if language == "cs":
             return SENSOR_TYPES[self._sensor_type]["name_cs"]
         return SENSOR_TYPES[self._sensor_type]["name"]
-        # return SENSOR_NAMES.get(language, SENSOR_NAMES["en"])[self._sensor_type]
 
     @property
     def device_class(self):
@@ -90,11 +92,8 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
             elif node_value == 3:
                 return "Home UPS"
             return LANGS["unknown"][language]
-        elif self._sensor_type == "invertor_prms_to_grid":
-            if node_value == 0:
-                return LANGS["off"][language]
-            return LANGS["on"][language]
-
+        
+        # return node_value
         try:
             return float(node_value)
         except ValueError:
@@ -106,11 +105,11 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def unique_id(self):
-        return f"oig_cloud_{self._sensor_type}"
-    
+        return f"oig_cloud_{self._box_id}_{self._sensor_type}"
+
     @property
     def entity_category(self):
-      return SENSOR_TYPES[self._sensor_type].get("entity_category")
+        return SENSOR_TYPES[self._sensor_type].get("entity_category")
 
     @property
     def should_poll(self):
@@ -127,7 +126,7 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
         data = self.coordinator.data
         vals = data.values()
         pv_data = list(vals)[0]
-        is_queen =pv_data["queen"]
+        is_queen = pv_data["queen"]
         if is_queen:
             model_name = f"{DEFAULT_NAME} Queen"
         else:
@@ -180,4 +179,23 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     async_add_entities(
         OigCloudSensor(coordinator, sensor_type) for sensor_type in SENSOR_TYPES
     )
+
+    # last_state = oig_cloud.last_state
+    # # last_state is a dictionary of string/object. we need to get all objects from the first key
+    # vals = last_state.values()
+    # pv_data = list(vals)[0]
+
+    # # for each node, we need to get name in form of "{node_id}_{node_property}". if node is a property, skip it.
+
+    # for node_id in pv_data:
+    #     node = pv_data[node_id]
+    #     for node_property in node:
+    #         node_property_value = node[node_property]
+    #         if not isinstance(node_property_value, dict):
+    #             continue
+    #         node_name = f"{node_id}_{node_property}"
+    #         async_add_entities(
+    #             OigCloudSensor(coordinator, node_name)
+    #         )
+
     _LOGGER.debug("async_setup_entry done")

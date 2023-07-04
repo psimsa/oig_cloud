@@ -265,6 +265,7 @@ SENSOR_TYPES = {
         "node_id": "box",
         "node_key": "temp",
         "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
     },
     "box_humid": {
         "name": "Humidity",
@@ -274,6 +275,7 @@ SENSOR_TYPES = {
         "node_id": "box",
         "node_key": "humid",
         "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
     },
     "box_prms_sw": {
         "name": "Software Version",
@@ -285,16 +287,35 @@ SENSOR_TYPES = {
         "state_class": None,
         "entity_category": EntityCategory.DIAGNOSTIC,
     },
-    
+    "box_prms_fan1":{
+        "name": "Fan 1",
+        "name_cs": "Ventilátor 1",
+        "device_class": SensorDeviceClass.SPEED,
+        "unit_of_measurement": "%",
+        "node_id": "box_prms",
+        "node_key": "fan1",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "box_prms_fan2":{
+        "name": "Fan 2",    
+        "name_cs": "Ventilátor 2",
+        "device_class": SensorDeviceClass.SPEED,
+        "unit_of_measurement": "%",
+        "node_id": "box_prms",
+        "node_key": "fan2",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
 }
 
-BINARY_SENSOR_TYPES= {
-    "invertor_prms_to_grid":{
+BINARY_SENSOR_TYPES = {
+    "invertor_prms_to_grid": {
         "name": "Grid Delivery",
         "name_cs": "Přetoky povoleny",
-        "device_class": BinarySensorDeviceClass.POWER	,
+        "device_class": BinarySensorDeviceClass.POWER,
         "node_id": "invertor_prms",
-        "node_key": "to_grid"
+        "node_key": "to_grid",
     }
 }
 
@@ -307,8 +328,8 @@ OT_RESOURCE = Resource.create(
 )
 OT_ENDPOINT = "https://otlp.eu01.nr-data.net"
 OT_HEADERS = [
-            (
-                "api-key",
-                "eu01xxefc1a87820b35d1becb5efd5c5FFFFNRAL",
-            )
-        ]
+    (
+        "api-key",
+        "eu01xxefc1a87820b35d1becb5efd5c5FFFFNRAL",
+    )
+]
