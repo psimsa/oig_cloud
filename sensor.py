@@ -9,8 +9,8 @@ from homeassistant.helpers.update_coordinator import (
 from .const import (
     DEFAULT_NAME,
     DOMAIN,
-    SENSOR_TYPES,
 )
+from .sensor_types import SENSOR_TYPES
 from .api.oig_cloud_api import OigCloudApi
 
 _LOGGER = logging.getLogger(__name__)
@@ -179,23 +179,5 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     async_add_entities(
         OigCloudSensor(coordinator, sensor_type) for sensor_type in SENSOR_TYPES
     )
-
-    # last_state = oig_cloud.last_state
-    # # last_state is a dictionary of string/object. we need to get all objects from the first key
-    # vals = last_state.values()
-    # pv_data = list(vals)[0]
-
-    # # for each node, we need to get name in form of "{node_id}_{node_property}". if node is a property, skip it.
-
-    # for node_id in pv_data:
-    #     node = pv_data[node_id]
-    #     for node_property in node:
-    #         node_property_value = node[node_property]
-    #         if not isinstance(node_property_value, dict):
-    #             continue
-    #         node_name = f"{node_id}_{node_property}"
-    #         async_add_entities(
-    #             OigCloudSensor(coordinator, node_name)
-    #         )
 
     _LOGGER.debug("async_setup_entry done")

@@ -9,8 +9,8 @@ from homeassistant.helpers.update_coordinator import (
 from .const import (
     DEFAULT_NAME,
     DOMAIN,
-    BINARY_SENSOR_TYPES,
 )
+from .binary_sensor_types import BINARY_SENSOR_TYPES
 from .api.oig_cloud_api import OigCloudApi
 
 _LOGGER = logging.getLogger(__name__)
