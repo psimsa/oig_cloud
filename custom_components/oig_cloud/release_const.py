@@ -1,2 +1,2 @@
-COMPONENT_VERSION = "0.0.7-beta2"
+COMPONENT_VERSION = "1.0.0-preview1"
 SERVICE_NAME = "oig_cloud"
