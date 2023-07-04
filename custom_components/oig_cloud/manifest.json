@@ -7,6 +7,7 @@
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/psimsa/oig_cloud",
+  "issue_tracker": "https://github.com/psimsa/oig_cloud/issues",
   "homekit": {},
   "iot_class": "cloud_polling",
   "requirements": [

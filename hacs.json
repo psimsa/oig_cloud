@@ -1,5 +1,6 @@
 {
 	"content_in_root": true,
 	"render_readme": true,
-	"hide_default_branch": true
+	"hide_default_branch": true,
+	"name":"OIG Cloud (CBB)"
 }
