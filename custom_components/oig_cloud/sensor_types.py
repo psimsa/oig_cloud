@@ -276,6 +276,7 @@ SENSOR_TYPES = {
         "state_class": None,
         "entity_category": EntityCategory.DIAGNOSTIC,
     },
+    # these don't seem to work like this, disabling
     # "box_prms_fan1":{
     #     "name": "Fan 1",
     #     "name_cs": "Ventilátor 1",
