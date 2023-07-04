@@ -14,12 +14,8 @@ class OigCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if valid:
                 state = await oig.get_stats()
                 box_id = list(state.keys())[0]
-                is_queen = state[box_id]["queen"]
-                if is_queen:
-                    full_name = f"{DEFAULT_NAME} Queen {box_id}"
-                else:
-                    full_name = f"{DEFAULT_NAME} Home {box_id}"
-
+                full_name = f"{DEFAULT_NAME}"
+                
                 return self.async_create_entry(
                     title=full_name, data=user_input
                 )

@@ -7,10 +7,10 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 from .const import (
+    DEFAULT_NAME,
     DOMAIN,
-    SENSOR_NAMES,
-    SENSOR_TYPES,
 )
+from .sensor_types import SENSOR_TYPES
 from .api.oig_cloud_api import OigCloudApi
 
 _LOGGER = logging.getLogger(__name__)
@@ -33,6 +33,9 @@ LANGS = {
 
 class OigCloudSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator, sensor_type):
+        if not isinstance(sensor_type, str):
+            raise TypeError("sensor_type must be a string")
+
         self.coordinator = coordinator
         self._sensor_type = sensor_type
         self._attr_state_class = SENSOR_TYPES[sensor_type]["state_class"]
@@ -46,7 +49,9 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
     def name(self):
         """Return the name of the sensor."""
         language = self.hass.config.language
-        return SENSOR_NAMES.get(language, SENSOR_NAMES["en"])[self._sensor_type]
+        if language == "cs":
+            return SENSOR_TYPES[self._sensor_type]["name_cs"]
+        return SENSOR_TYPES[self._sensor_type]["name"]
 
     @property
     def device_class(self):
@@ -87,11 +92,8 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
             elif node_value == 3:
                 return "Home UPS"
             return LANGS["unknown"][language]
-        elif self._sensor_type == "invertor_prms_to_grid":
-            if node_value == 0:
-                return LANGS["off"][language]
-            return LANGS["on"][language]
-
+        
+        # return node_value
         try:
             return float(node_value)
         except ValueError:
@@ -103,7 +105,11 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def unique_id(self):
-        return f"oig_cloud_{self._sensor_type}"
+        return f"oig_cloud_{self._box_id}_{self._sensor_type}"
+
+    @property
+    def entity_category(self):
+        return SENSOR_TYPES[self._sensor_type].get("entity_category")
 
     @property
     def should_poll(self):
@@ -117,11 +123,20 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
+        data = self.coordinator.data
+        vals = data.values()
+        pv_data = list(vals)[0]
+        is_queen = pv_data["queen"]
+        if is_queen:
+            model_name = f"{DEFAULT_NAME} Queen"
+        else:
+            model_name = f"{DEFAULT_NAME} Home"
+
         return {
             "identifiers": {(DOMAIN, self._box_id)},
-            "name": f"Battery Box {self._box_id}",
+            "name": f"{model_name} {self._box_id}",
             "manufacturer": "OIG",
-            "model": "Unknown",
+            "model": model_name,
         }
 
     async def async_added_to_hass(self):
@@ -164,4 +179,5 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     async_add_entities(
         OigCloudSensor(coordinator, sensor_type) for sensor_type in SENSOR_TYPES
     )
+
     _LOGGER.debug("async_setup_entry done")

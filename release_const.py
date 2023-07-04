@@ -1,2 +1,0 @@
-COMPONENT_VERSION = "0.0.6-rc"
-SERVICE_NAME = "oig_cloud"

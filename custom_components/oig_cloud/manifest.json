@@ -1,6 +1,6 @@
 {
   "domain": "oig_cloud",
-  "name": "OIG Cloud (CBB)",
+  "name": "OIG Cloud (Čez Battery Box)",
   "codeowners": [
     "@psimsa"
   ],
@@ -9,10 +9,11 @@
   "documentation": "https://github.com/psimsa/oig_cloud",
   "homekit": {},
   "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/psimsa/oig_cloud/issues",
   "requirements": [
     "opentelemetry-exporter-otlp-proto-grpc==1.18.0"
   ],
   "ssdp": [],
-  "version": "0.0.6-rc",
+  "version": "1.0.0-preview1",
   "zeroconf": []
 }

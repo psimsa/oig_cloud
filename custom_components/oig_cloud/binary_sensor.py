@@ -7,10 +7,10 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 from .const import (
+    DEFAULT_NAME,
     DOMAIN,
-    SENSOR_NAMES,
-    BINARY_SENSOR_TYPES,
 )
+from .binary_sensor_types import BINARY_SENSOR_TYPES
 from .api.oig_cloud_api import OigCloudApi
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,7 +29,9 @@ class OigCloudBinarySensor(CoordinatorEntity, BinarySensorEntity):
     def name(self):
         """Return the name of the sensor."""
         language = self.hass.config.language
-        return SENSOR_NAMES.get(language, SENSOR_NAMES["en"])[self._sensor_type]
+        if language == "cs":
+            return BINARY_SENSOR_TYPES[self._sensor_type]["name_cs"]
+        return BINARY_SENSOR_TYPES[self._sensor_type]["name"]
 
     @property
     def device_class(self):
@@ -63,11 +65,20 @@ class OigCloudBinarySensor(CoordinatorEntity, BinarySensorEntity):
 
     @property
     def device_info(self):
+        data = self.coordinator.data
+        vals = data.values()
+        pv_data = list(vals)[0]
+        is_queen =pv_data["queen"]
+        if is_queen:
+            model_name = f"{DEFAULT_NAME} Queen"
+        else:
+            model_name = f"{DEFAULT_NAME} Home"
+
         return {
             "identifiers": {(DOMAIN, self._box_id)},
-            "name": f"Battery Box {self._box_id}",
+            "name": f"{model_name} {self._box_id}",
             "manufacturer": "OIG",
-            "model": "Unknown",
+            "model": model_name,
         }
 
     async def async_added_to_hass(self):
