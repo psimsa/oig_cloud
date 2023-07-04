@@ -1,6 +1,8 @@
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.sensor import SensorStateClass, SensorDeviceClass
 from opentelemetry.sdk.resources import Resource
+
+from homeassistant.const import EntityCategory
 from .release_const import COMPONENT_VERSION, SERVICE_NAME
 
 DOMAIN = "oig_cloud"
@@ -9,7 +11,7 @@ CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
 CONF_NO_TELEMETRY = "no_telemetry"
 
-DEFAULT_NAME = "Battery Box"
+DEFAULT_NAME = "ČEZ Battery Box"
 
 SENSOR_TYPES = {
     "dc_in_fv_p1": {
@@ -281,6 +283,7 @@ SENSOR_TYPES = {
         "node_id": "box_prms",
         "node_key": "sw",
         "state_class": None,
+        "entity_category": EntityCategory.DIAGNOSTIC,
     },
     
 }

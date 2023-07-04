@@ -7,6 +7,7 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 from .const import (
+    DEFAULT_NAME,
     DOMAIN,
     SENSOR_TYPES,
 )
@@ -106,6 +107,10 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
     @property
     def unique_id(self):
         return f"oig_cloud_{self._sensor_type}"
+    
+    @property
+    def entity_category(self):
+      return SENSOR_TYPES[self._sensor_type].get("entity_category")
 
     @property
     def should_poll(self):
@@ -119,11 +124,20 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
+        data = self.coordinator.data
+        vals = data.values()
+        pv_data = list(vals)[0]
+        is_queen =pv_data["queen"]
+        if is_queen:
+            model_name = f"{DEFAULT_NAME} Queen"
+        else:
+            model_name = f"{DEFAULT_NAME} Home"
+
         return {
             "identifiers": {(DOMAIN, self._box_id)},
-            "name": f"Battery Box {self._box_id}",
+            "name": f"{model_name} {self._box_id}",
             "manufacturer": "OIG",
-            "model": "Unknown",
+            "model": model_name,
         }
 
     async def async_added_to_hass(self):
