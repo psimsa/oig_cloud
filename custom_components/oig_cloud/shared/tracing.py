@@ -8,9 +8,9 @@ from ..const import OT_ENDPOINT, OT_HEADERS, OT_INSECURE
 from .shared import get_resource
 
 def setup_tracing(email_hash:str, hass_id: str):
-    OT_RESOURCE = get_resource(email_hash, hass_id)
+    resource = get_resource(email_hash, hass_id)
 
-    trace_provider = TracerProvider(resource=OT_RESOURCE)
+    trace_provider = TracerProvider(resource=resource)
 
     trace_processor = BatchSpanProcessor(
         OTLPSpanExporter(

@@ -38,17 +38,7 @@ class OigCloudApi:
             
             self._last_update = datetime.datetime(1, 1, 1, 0, 0)
             self._username = username
-            self._password = password
-            
-            if not self._no_telemetry:
-                span.set_attributes(
-                    {
-                        "hass.language": hass.config.language,
-                        "hass.time_zone": hass.config.time_zone,
-                    }
-                )
-                span.add_event("log", {"level": logging.INFO, "msg": "Initializing"})
-                
+            self._password = password                
 
             self.last_state = None
             self._logger.debug("OigCloud initialized")
@@ -102,12 +92,11 @@ class OigCloudApi:
     async def get_stats(self) -> object:
         async with lock:
             current_time = datetime.datetime.now()
-            if (current_time - self._last_update).total_seconds() < 10:
+            if (current_time - self._last_update).total_seconds() < 30:
                 self._logger.debug("Using cached stats")
                 return self.last_state
             with tracer.start_as_current_span("get_stats") as span:
                 try:
-
                     to_return: object = None
                     try:
                         to_return = await self.get_stats_internal()

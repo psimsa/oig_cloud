@@ -2,7 +2,6 @@ import logging
 import hashlib
 
 from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
 
 from .api import oig_cloud_api
 
@@ -13,7 +12,6 @@ from .services import async_setup_entry_services
 from .shared.tracing import setup_tracing
 from .shared.logging import setup_otel_logging
 
-from opentelemetry._logs import set_logger_provider, get_logger_provider
 
 tracer = trace.get_tracer(__name__)
 

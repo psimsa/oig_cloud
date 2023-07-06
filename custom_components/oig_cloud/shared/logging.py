@@ -15,9 +15,9 @@ import logging
 
 def setup_otel_logging(email_hash:str, hass_id: str) -> LoggingHandler:
 
-    OT_RESOURCE = get_resource(email_hash, hass_id)
+    resource = get_resource(email_hash, hass_id)
 
-    logger_provider = LoggerProvider(resource=OT_RESOURCE)
+    logger_provider = LoggerProvider(resource=resource)
     set_logger_provider(logger_provider)
 
     exporter = OTLPLogExporter(
