@@ -18,6 +18,7 @@ OT_RESOURCE = Resource.create(
     }
 )
 OT_ENDPOINT = "https://otlp.eu01.nr-data.net"
+OT_INSECURE = False
 OT_HEADERS = [
     (
         "api-key",

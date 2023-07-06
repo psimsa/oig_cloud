@@ -43,7 +43,7 @@ class OigCloudApi:
             self._password = password
             self._email_hash = hashlib.md5(self._username.encode("utf-8")).hexdigest()
             self._initialize_span()
-
+            
             if not self._no_telemetry:
                 span.set_attributes(
                     {
