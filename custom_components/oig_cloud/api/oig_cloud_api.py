@@ -41,9 +41,10 @@ class OigCloudApi:
             self._last_update = datetime.datetime(1, 1, 1, 0, 0)
             self._username = username
             self._password = password
+            self._hass_id = hass.data["core.uuid"]
             self._email_hash = hashlib.md5(self._username.encode("utf-8")).hexdigest()
-            self._initialize_span()
             
+            self._initialize_span()
             if not self._no_telemetry:
                 span.set_attributes(
                     {
@@ -63,6 +64,7 @@ class OigCloudApi:
             span.set_attributes(
                 {
                     "email_hash": self._email_hash,
+                    "service.instance.id": self._hass_id
                 }
             )
 
