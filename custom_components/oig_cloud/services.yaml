@@ -21,13 +21,13 @@ set_box_mode:
               I acknowledge that calling the service will result in parameter modification of a live system.
               I take on full responsibility for the changes and any effect they may have, expected or otherwise.
               Beru na vědomí, že volání této služby povede ke změně parametrů živého systému. 
-              Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný.
+              Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
             selector:
               boolean:
 
 set_grid_delivery:
     name: Nastavení přetoků
-    description: Povolení nebo zakázání přetoků do distribuční sítě. Tato funkce momentálně funguje v režimu privátního testování.
+    description: Povolení nebo zakázání přetoků do distribuční sítě.
     fields:
         Mode:
             description: Režim přetoků
@@ -41,11 +41,12 @@ set_grid_delivery:
               I acknowledge that calling the service will result in parameter modification of a live system.
               I take on full responsibility for the changes and any effect they may have, expected or otherwise.
               Beru na vědomí, že volání této služby povede ke změně parametrů živého systému.
-              Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný.
+              Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
             selector:
               boolean:
         Upozornění:
             description: |
+              Před použitím této funkce se seznamte s omezeními dostupnými v aplikaci OIG Power / ČEZ Battery Box.
               AKTIVACÍ PŘETOKŮ NA ZAŘÍZENÍ BATTERY BOX BERETE NA VĚDOMÍ NÍŽE UVEDENÉ A PŘEBÍRÁTE NA SEBE
               PLNOU ZODPOVĚDNOST ZA PŘÍPADNÉ SANKCE PORUŠENÍ PPDS. JAKO VÝROBCE ZAŘÍZENÍ BATTERY BOX
               NEJSME ZODPOVĚDNI ZA TAKOVÉ JEDNÁNÍ Z VAŠÍ STRANY.

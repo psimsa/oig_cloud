@@ -1,8 +1,6 @@
 import logging
 from opentelemetry import trace
 
-from .sensor import OigCloudSensor
-from .binary_sensor import OigCloudBinarySensor
 from .api import oig_cloud_api
 
 from homeassistant import config_entries, core
@@ -39,7 +37,6 @@ async def async_setup_entry(
 
     oig_api = OigCloudApi(username, password, no_telemetry, hass)
 
-    # Run the authenticate() method to get the token
     await oig_api.authenticate()
 
     # Store the authenticated instance for other platforms to use

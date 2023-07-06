@@ -10,12 +10,12 @@
     },
     "step": {
       "user": {
-        "title": "Login to OIG Cloud",
-        "description": "Enter your username/email and password to login to OIG Cloud",
+        "title": "Přihlášení do OIG",
+        "description": "Zadejte své přihlašovací jméno/e-mail a heslo pro přihlášení do OIG",
         "data": {
-          "no_telemetry": "Disable telemetry",
-          "password": "Password",
-          "username": "Username"
+          "no_telemetry": "Zakázat sběr telemetrie (funkce v aktivním vývoji mohou být omezeny)",
+          "password": "Heslo",
+          "username": "Přihlašovací jméno nebo e-mail"
         }
       }
     }

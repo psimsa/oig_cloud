@@ -35,8 +35,8 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
 
     async def async_set_grid_delivery(call):
         client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
-        if client.box_id != "2205232120" and client.box_id != "2111232079":
-            raise vol.Invalid("Tato funkce není momentálně dostupná.")
+        # if client.box_id != "2205232120" and client.box_id != "2111232079":
+        #     raise vol.Invalid("Tato funkce není momentálně dostupná.")
 
         acknowledged = call.data.get("Acknowledgement")
         if not acknowledged:
