@@ -37,12 +37,13 @@ class OigCloudApi:
         with tracer.start_as_current_span("initialize") as span:
             self._no_telemetry = no_telemetry
             self._logger = logging.getLogger(__name__)
-
+            
             self._last_update = datetime.datetime(1, 1, 1, 0, 0)
             self._username = username
             self._password = password
-            self._hass_id = hass.data["core.uuid"]
+
             self._email_hash = hashlib.md5(self._username.encode("utf-8")).hexdigest()
+            self._hass_id = hass.data["core.uuid"]
             
             self._initialize_span()
             if not self._no_telemetry:
@@ -53,7 +54,8 @@ class OigCloudApi:
                     }
                 )
                 span.add_event("log", {"level": logging.INFO, "msg": "Initializing"})
-                self._logger.info(f"Telemetry hash is {self._email_hash}")
+                self._logger.info(f"Account hash is {self._email_hash}")
+                self._logger.info(f"Home Assistant ID is {self._hass_id}")
 
             self.last_state = None
             self._logger.debug("OigCloud initialized")
