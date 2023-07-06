@@ -1,4 +1,3 @@
-from opentelemetry.sdk.resources import Resource
 
 from .release_const import COMPONENT_VERSION, SERVICE_NAME
 
@@ -10,13 +9,7 @@ CONF_NO_TELEMETRY = "no_telemetry"
 
 DEFAULT_NAME = "ČEZ Battery Box"
 
-OT_RESOURCE = Resource.create(
-    {
-        "service.name": SERVICE_NAME,
-        "service.version": COMPONENT_VERSION,
-        "service.namespace": "oig_cloud",
-    }
-)
+
 OT_ENDPOINT = "https://otlp.eu01.nr-data.net"
 OT_INSECURE = False
 OT_HEADERS = [

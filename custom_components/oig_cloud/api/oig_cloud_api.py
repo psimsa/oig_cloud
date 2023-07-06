@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-import hashlib
 import json
 import logging
 import time
@@ -8,7 +7,6 @@ import time
 import aiohttp
 from opentelemetry import trace
 from opentelemetry.trace import SpanKind
-from ..shared.logging import LOGGING_HANDLER
 
 from homeassistant import core
 
@@ -41,11 +39,7 @@ class OigCloudApi:
             self._last_update = datetime.datetime(1, 1, 1, 0, 0)
             self._username = username
             self._password = password
-
-            self._email_hash = hashlib.md5(self._username.encode("utf-8")).hexdigest()
-            self._hass_id = hass.data["core.uuid"]
             
-            self._initialize_span()
             if not self._no_telemetry:
                 span.set_attributes(
                     {
@@ -54,26 +48,14 @@ class OigCloudApi:
                     }
                 )
                 span.add_event("log", {"level": logging.INFO, "msg": "Initializing"})
-                self._logger.info(f"Account hash is {self._email_hash}")
-                self._logger.info(f"Home Assistant ID is {self._hass_id}")
+                
 
             self.last_state = None
             self._logger.debug("OigCloud initialized")
 
-    def _initialize_span(self):
-        span = trace.get_current_span()
-        if span:
-            span.set_attributes(
-                {
-                    "email_hash": self._email_hash,
-                    "service.instance.id": self._hass_id
-                }
-            )
-
     async def authenticate(self) -> bool:
         with tracer.start_as_current_span("authenticate") as span:
             try:
-                self._initialize_span()
                 login_command = {"email": self._username, "password": self._password}
                 self._logger.debug("Authenticating")
 
@@ -125,7 +107,6 @@ class OigCloudApi:
                 return self.last_state
             with tracer.start_as_current_span("get_stats") as span:
                 try:
-                    self._initialize_span()
 
                     to_return: object = None
                     try:
@@ -147,7 +128,6 @@ class OigCloudApi:
 
     async def get_stats_internal(self, dependent: bool = False) -> object:
         with tracer.start_as_current_span("get_stats_internal"):
-            self._initialize_span()
             to_return: object = None
             self._logger.debug("Starting session")
             async with self.get_session() as session:
@@ -180,7 +160,6 @@ class OigCloudApi:
     async def set_box_mode(self, mode: str) -> bool:
         with tracer.start_as_current_span("set_mode") as span:
             try:
-                self._initialize_span()
                 self._logger.debug(f"Setting mode to {mode}")
                 async with self.get_session() as session:
                     data = json.dumps(
@@ -226,7 +205,6 @@ class OigCloudApi:
     async def set_grid_delivery(self, enabled: bool) -> bool:
         with tracer.start_as_current_span("set_grid_delivery") as span:
             try:
-                self._initialize_span()
                 if self._no_telemetry:
                     raise Exception(
                         "Tato funkce je ve vývoji a proto je momentálně dostupná pouze pro systémy s aktivní telemetrií."
