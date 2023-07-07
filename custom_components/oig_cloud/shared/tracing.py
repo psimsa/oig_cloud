@@ -4,17 +4,23 @@ from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExport
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-from ..const import OT_RESOURCE, OT_ENDPOINT, OT_HEADERS, OT_INSECURE
+from ..const import OT_ENDPOINT, OT_HEADERS, OT_INSECURE
+from .shared import get_resource
 
-trace_provider = TracerProvider(resource=OT_RESOURCE)
+def setup_tracing(email_hash:str, hass_id: str):
+    resource = get_resource(email_hash, hass_id)
 
-trace_processor = BatchSpanProcessor(
-    OTLPSpanExporter(
-        endpoint=OT_ENDPOINT,
-        insecure=OT_INSECURE,
-        headers=OT_HEADERS,
-        compression=Compression(2),
+    trace_provider = TracerProvider(resource=resource)
+
+    trace_processor = BatchSpanProcessor(
+        OTLPSpanExporter(
+            endpoint=OT_ENDPOINT,
+            insecure=OT_INSECURE,
+            headers=OT_HEADERS,
+            compression=Compression(2),
+        )
     )
-)
 
-trace.set_tracer_provider(trace_provider)
+    trace.set_tracer_provider(trace_provider)
+    trace_provider.add_span_processor(trace_processor)
+
