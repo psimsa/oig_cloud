@@ -58,6 +58,7 @@ jobs:
 
     - name: Create draft release
       uses: actions/create-release@v1
+      if: ${{ github.event.inputs.create-tag == 'true' }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
