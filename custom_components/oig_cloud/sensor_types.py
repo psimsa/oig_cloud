@@ -276,6 +276,15 @@ SENSOR_TYPES = {
         "state_class": None,
         "entity_category": EntityCategory.DIAGNOSTIC,
     },
+    "batt_batt_comp_p":{
+        "name": "Battery Power",
+        "name_cs": "Výkon baterie",
+        "device_class": SensorDeviceClass.POWER,
+        "unit_of_measurement": "W",
+        "node_id": None,
+        "node_key": None,
+        "state_class": SensorStateClass.MEASUREMENT,
+    }
     # these don't seem to work like this, disabling
     # "box_prms_fan1":{
     #     "name": "Fan 1",
