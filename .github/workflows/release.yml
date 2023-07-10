@@ -26,9 +26,14 @@ jobs:
 
     - name: Replace version and service in release_const.py
       working-directory: ./custom_components/oig_cloud
+      # if version=dev then service name will be oig_cloud_dev, otherwise oig_cloud
       run: |
         echo 'COMPONENT_VERSION = "${{ github.event.inputs.version }}"' > release_const.py
-        echo 'SERVICE_NAME = "oig_cloud"' >> release_const.py
+        if [ "${{ github.event.inputs.version }}" == "dev" ]; then
+          echo 'SERVICE_NAME = "oig_cloud_dev"' >> release_const.py
+        else
+          echo 'SERVICE_NAME = "oig_cloud"' >> release_const.py
+        fi
 
     - name: Update version property in manifest.json
       working-directory: ./custom_components/oig_cloud
