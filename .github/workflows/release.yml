@@ -6,6 +6,10 @@ on:
       version:
         description: 'Version'
         required: true
+      create-tag:
+        description: 'Create tag'
+        required: true
+        default: 'false'
 
 jobs:
   release:
@@ -37,7 +41,18 @@ jobs:
         git config --global user.name "Pavel Simsa"
         git config --global user.email "pavel@simsa.cz"
         git add release_const.py manifest.json
-        git commit -m "Creating release"
+        git commit -m "Setting release variables to ${{ github.event.inputs.version }}"
+
+    - name: Push changes
+      working-directory: ./custom_components/oig_cloud
+      if: ${{ github.event.inputs.create-tag != 'true' }}
+      run: |
+        git push
+    
+    - name: Create tag
+      if: ${{ github.event.inputs.create-tag == 'true' }}
+      working-directory: ./custom_components/oig_cloud
+      run: |
         git tag -a v${{ github.event.inputs.version }} -m "Version ${{ github.event.inputs.version }}"
         git push --tags
 
