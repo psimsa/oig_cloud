@@ -77,7 +77,7 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
             )
         
         if self._sensor_type == "batt_batt_comp_p":
-            return float(pv_data["batt"]["bat_i"] * pv_data["batt"]["bat_v"])
+            return float(pv_data["batt"]["bat_i"] * pv_data["batt"]["bat_v"] * -1)
 
         if self._sensor_type == "dc_in_fv_total":
             return float(pv_data["dc_in"]["fv_p1"] + pv_data["dc_in"]["fv_p2"])
