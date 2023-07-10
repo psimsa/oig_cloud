@@ -26,7 +26,6 @@ jobs:
 
     - name: Replace version and service in release_const.py
       working-directory: ./custom_components/oig_cloud
-      # if version=dev then service name will be oig_cloud_dev, otherwise oig_cloud
       run: |
         echo 'COMPONENT_VERSION = "${{ github.event.inputs.version }}"' > release_const.py
         if [ "${{ github.event.inputs.version }}" == "dev" ]; then
@@ -38,7 +37,12 @@ jobs:
     - name: Update version property in manifest.json
       working-directory: ./custom_components/oig_cloud
       run: |
-        jq --arg version ${{ github.event.inputs.version }} '.version = $version' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
+        if [ "${{ github.event.inputs.version }}" == "dev" ]; then
+          jq --arg version '0.0.0' '.version = $version' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
+        else
+          jq --arg version ${{ github.event.inputs.version }} '.version = $version' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
+        fi
+
 
     - name: Commit changes
       working-directory: ./custom_components/oig_cloud
