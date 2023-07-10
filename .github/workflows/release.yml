@@ -6,6 +6,10 @@ on:
       version:
         description: 'Version'
         required: true
+      create-tag:
+        description: 'Create tag'
+        required: true
+        default: 'false'
 
 jobs:
   release:
@@ -24,12 +28,21 @@ jobs:
       working-directory: ./custom_components/oig_cloud
       run: |
         echo 'COMPONENT_VERSION = "${{ github.event.inputs.version }}"' > release_const.py
-        echo 'SERVICE_NAME = "oig_cloud"' >> release_const.py
+        if [ "${{ github.event.inputs.version }}" == "dev" ]; then
+          echo 'SERVICE_NAME = "oig_cloud_dev"' >> release_const.py
+        else
+          echo 'SERVICE_NAME = "oig_cloud"' >> release_const.py
+        fi
 
     - name: Update version property in manifest.json
       working-directory: ./custom_components/oig_cloud
       run: |
-        jq --arg version ${{ github.event.inputs.version }} '.version = $version' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
+        if [ "${{ github.event.inputs.version }}" == "dev" ]; then
+          jq --arg version '0.0.0' '.version = $version' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
+        else
+          jq --arg version ${{ github.event.inputs.version }} '.version = $version' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
+        fi
+
 
     - name: Commit changes
       working-directory: ./custom_components/oig_cloud
@@ -37,12 +50,24 @@ jobs:
         git config --global user.name "Pavel Simsa"
         git config --global user.email "pavel@simsa.cz"
         git add release_const.py manifest.json
-        git commit -m "Creating release"
+        git commit -m "Setting release variables to ${{ github.event.inputs.version }}"
+
+    - name: Push changes
+      working-directory: ./custom_components/oig_cloud
+      if: ${{ github.event.inputs.create-tag != 'true' }}
+      run: |
+        git push
+    
+    - name: Create tag
+      if: ${{ github.event.inputs.create-tag == 'true' }}
+      working-directory: ./custom_components/oig_cloud
+      run: |
         git tag -a v${{ github.event.inputs.version }} -m "Version ${{ github.event.inputs.version }}"
         git push --tags
 
     - name: Create draft release
       uses: actions/create-release@v1
+      if: ${{ github.event.inputs.create-tag == 'true' }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
