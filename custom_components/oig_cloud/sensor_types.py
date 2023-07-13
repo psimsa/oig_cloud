@@ -293,32 +293,35 @@ SENSOR_TYPES = {
         "node_id": "boiler",
         "node_key": "w",
         "state_class": SensorStateClass.MEASUREMENT,
+        "requires": ["boiler"]
     },
     "boiler_current_cbb_w": {
-        "name": "Boiler - Current Energy(CBB)",
-        "name_cs": "Bojler - Aktuální výkon(CBB)",
+        "name": "Boiler - Current Energy (CBB)",
+        "name_cs": "Bojler - Aktuální výkon (CBB)",
         "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "boiler",
         "node_key": "p",
         "state_class": SensorStateClass.MEASUREMENT,
+        "requires": ["boiler"]
     },
     "boiler_current_w": {
-        "name": "Boiler - Current Energy(Computed)",
-        "name_cs": "Bojler - Aktuální výkon(Vypočítaná)",
+        "name": "Boiler - Current Energy (Computed)",
+        "name_cs": "Bojler - Aktuální výkon (Vypočítaná)",
         "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
-        "node_id": "",
-        "node_key": "",
+        "node_id": None,
+        "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,
+        "requires": ["boiler"]
     },
     "cbb_consumption_w": {
-        "name": "CBB - Consumption Energy(Computed)",
-        "name_cs": "CBB - Spotřeba(Vypočítaná)",
+        "name": "CBB - Consumption Energy (Computed)",
+        "name_cs": "CBB - Spotřeba (Vypočítaná)",
         "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
-        "node_id": "",
-        "node_key": "",
+        "node_id": None,
+        "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,
     }
     # these don't seem to work like this, disabling

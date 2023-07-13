@@ -75,53 +75,88 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
                 + pv_data["ac_in"]["aci_ws"]
                 + pv_data["ac_in"]["aci_wt"]
             )
-        
+
         if self._sensor_type == "batt_batt_comp_p":
             return float(pv_data["batt"]["bat_i"] * pv_data["batt"]["bat_v"] * -1)
 
         if self._sensor_type == "dc_in_fv_total":
             return float(pv_data["dc_in"]["fv_p1"] + pv_data["dc_in"]["fv_p2"])
 
-        # Spotreba bojleru
-        if self._sensor_type == "boiler_current_w" and pv_data["boiler"]["p"] > 0 and (pv_data["ac_in"]["aci_wr"] + pv_data["ac_in"]["aci_ws"] + pv_data["ac_in"]["aci_wt"]) < 0:
-            return float(pv_data["boiler"]["p"] + (pv_data["ac_in"]["aci_wr"] + pv_data["ac_in"]["aci_ws"] + pv_data["ac_in"]["aci_wt"]))
-        elif self._sensor_type == "boiler_current_w":
-            return float(pv_data["boiler"]["p"])
+        if self._node_id == "boiler" or self._sensor_type == "boiler_current_w":
+            if len(pv_data["boiler"]) > 0 and pv_data["boiler"]["p"] is not None:
+                # Spotreba bojleru
+                if (
+                    self._sensor_type == "boiler_current_w"
+                    and pv_data["boiler"]["p"] > 0
+                    and (
+                        pv_data["ac_in"]["aci_wr"]
+                        + pv_data["ac_in"]["aci_ws"]
+                        + pv_data["ac_in"]["aci_wt"]
+                    )
+                    < 0
+                ):
+                    return float(
+                        pv_data["boiler"]["p"]
+                        + (
+                            pv_data["ac_in"]["aci_wr"]
+                            + pv_data["ac_in"]["aci_ws"]
+                            + pv_data["ac_in"]["aci_wt"]
+                        )
+                    )
+                elif self._sensor_type == "boiler_current_w":
+                    return float(pv_data["boiler"]["p"])
+            else:
+                return None
 
         # Spotreba CBB
         if self._sensor_type == "cbb_consumption_w":
+            boiler_p = 0
+            if (
+                len(pv_data["boiler"]) > 0
+                and pv_data["boiler"]["p"] is not None
+                and pv_data["boiler"]["p"] > 0
+            ):
+                boiler_p = pv_data["boiler"]["p"]
             return float(
                 # Výkon FVE
-                (pv_data["dc_in"]["fv_p1"] + pv_data["dc_in"]["fv_p2"]) 
+                (pv_data["dc_in"]["fv_p1"] + pv_data["dc_in"]["fv_p2"])
                 -
                 # Spotřeba bojleru
-                pv_data["boiler"]["p"]
+                boiler_p
                 -
                 # Spotřeba zátěž
-                pv_data["ac_out"]["aco_p"] 
+                pv_data["ac_out"]["aco_p"]
                 +
                 # Odběr ze sítě
-                (pv_data["ac_in"]["aci_wr"] + pv_data["ac_in"]["aci_ws"] + pv_data["ac_in"]["aci_wt"])
-
-        node_value = pv_data[self._node_id][self._node_key]
-
-        # special cases
-        if self._sensor_type == "box_prms_mode":
-            if node_value == 0:
-                return "Home 1"
-            elif node_value == 1:
-                return "Home 2"
-            elif node_value == 2:
-                return "Home 3"
-            elif node_value == 3:
-                return "Home UPS"
-            return LANGS["unknown"][language]
+                (
+                    pv_data["ac_in"]["aci_wr"]
+                    + pv_data["ac_in"]["aci_ws"]
+                    + pv_data["ac_in"]["aci_wt"]
+                )
+            )
         
-        # return node_value
         try:
-            return float(node_value)
-        except ValueError:
-            return node_value
+            node_value = pv_data[self._node_id][self._node_key]
+
+            # special cases
+            if self._sensor_type == "box_prms_mode":
+                if node_value == 0:
+                    return "Home 1"
+                elif node_value == 1:
+                    return "Home 2"
+                elif node_value == 2:
+                    return "Home 3"
+                elif node_value == 3:
+                    return "Home UPS"
+                return LANGS["unknown"][language]
+
+            # return node_value
+            try:
+                return float(node_value)
+            except ValueError:
+                return node_value
+        except KeyError:
+            return None
 
     @property
     def unit_of_measurement(self):
@@ -200,8 +235,21 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
     _LOGGER.debug("First refresh done, will add entities")
 
+    # Add common entities
     async_add_entities(
-        OigCloudSensor(coordinator, sensor_type) for sensor_type in SENSOR_TYPES
+        OigCloudSensor(coordinator, sensor_type)
+        for sensor_type in SENSOR_TYPES
+        if not "requires" in SENSOR_TYPES[sensor_type].keys()
     )
+
+    box_id = list(oig_cloud.last_state.keys())[0]
+    # Add entities that require 'boiler'
+    if len(oig_cloud.last_state[box_id]["boiler"]) > 0:
+        async_add_entities(
+            OigCloudSensor(coordinator, sensor_type)
+            for sensor_type in SENSOR_TYPES
+            if "requires" in SENSOR_TYPES[sensor_type].keys()
+            and "boiler" in SENSOR_TYPES[sensor_type]["requires"]
+        )
 
     _LOGGER.debug("async_setup_entry done")
