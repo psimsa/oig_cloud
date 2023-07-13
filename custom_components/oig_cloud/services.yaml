@@ -65,3 +65,54 @@ set_grid_delivery:
               https://drive.google.com/viewerng/viewer?embedded=true&url=https://www.oigpower.cz/cez/pretoky-sankce.pdf
             selector:
               boolean:
+              
+set_battery_formating:
+  name: Nabíjení baterie ze síte
+  description: Začne nabíjet baterii ze sítě.
+  fields:
+    Mode:
+      description: Nabíjení baterie ze sítě
+      selector:
+        select:
+          options:
+            - Zapnuto / On
+            - Vypnuto / Off
+    Acknowledgement:
+      description: |
+        I acknowledge that calling the service will result in parameter modification of a live system.
+        I take on full responsibility for the changes and any effect they may have, expected or otherwise.
+        Beru na vědomí, že volání této služby povede ke změně parametrů živého systému.
+        Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
+      selector:
+        boolean:
+    Upozornění:
+      description: |
+        Nabíjíte z distribuční sítě
+      selector:
+        boolean:
+
+set_boiler_mode:
+  name: Nabíjení bojleru ze síte
+  description: Začne nabíjet bojler ze sítě.
+  fields:
+    Mode:
+      description: Nabíjení bojleru ze sítě
+      selector:
+        select:
+          options:
+            - Zapnuto / On
+            - Vypnuto / Off
+    Acknowledgement:
+      description: |
+        I acknowledge that calling the service will result in parameter modification of a live system.
+        I take on full responsibility for the changes and any effect they may have, expected or otherwise.
+        Beru na vědomí, že volání této služby povede ke změně parametrů živého systému.
+        Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
+      selector:
+        boolean:
+    Upozornění:
+      description: |
+        Nabíjíte z distribuční sítě
+      selector:
+        boolean:
+
