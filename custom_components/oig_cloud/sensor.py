@@ -82,6 +82,27 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
         if self._sensor_type == "dc_in_fv_total":
             return float(pv_data["dc_in"]["fv_p1"] + pv_data["dc_in"]["fv_p2"])
 
+        # Spotreba bojleru
+        if self._sensor_type == "boiler_current_w" and pv_data["boiler"]["p"] > 0 and (pv_data["ac_in"]["aci_wr"] + pv_data["ac_in"]["aci_ws"] + pv_data["ac_in"]["aci_wt"]) < 0:
+            return float(pv_data["boiler"]["p"] + (pv_data["ac_in"]["aci_wr"] + pv_data["ac_in"]["aci_ws"] + pv_data["ac_in"]["aci_wt"]))
+        elif self._sensor_type == "boiler_current_w":
+            return float(pv_data["boiler"]["p"])
+
+        # Spotreba CBB
+        if self._sensor_type == "cbb_consumption_w":
+            return float(
+                # Výkon FVE
+                (pv_data["dc_in"]["fv_p1"] + pv_data["dc_in"]["fv_p2"]) 
+                -
+                # Spotřeba bojleru
+                pv_data["boiler"]["p"]
+                -
+                # Spotřeba zátěž
+                pv_data["ac_out"]["aco_p"] 
+                +
+                # Odběr ze sítě
+                (pv_data["ac_in"]["aci_wr"] + pv_data["ac_in"]["aci_ws"] + pv_data["ac_in"]["aci_wt"])
+
         node_value = pv_data[self._node_id][self._node_key]
 
         # special cases
