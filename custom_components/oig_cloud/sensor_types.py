@@ -276,7 +276,7 @@ SENSOR_TYPES = {
         "state_class": None,
         "entity_category": EntityCategory.DIAGNOSTIC,
     },
-    "batt_batt_comp_p":{
+    "batt_batt_comp_p": {
         "name": "Battery Power",
         "name_cs": "Výkon baterie",
         "device_class": SensorDeviceClass.POWER,
@@ -284,9 +284,45 @@ SENSOR_TYPES = {
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "boiler_day_w": {
+        "name": "Boiler - Today Energy",
+        "name_cs": "Bojler - Dnešní uložení",
+        "device_class": SensorDeviceClass.POWER,
+        "unit_of_measurement": "W",
+        "node_id": "boiler",
+        "node_key": "w",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "boiler_current_cbb_w": {
+        "name": "Boiler - Current Energy(CBB)",
+        "name_cs": "Bojler - Aktuální výkon(CBB)",
+        "device_class": SensorDeviceClass.POWER,
+        "unit_of_measurement": "W",
+        "node_id": "boiler",
+        "node_key": "p",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "boiler_current_w": {
+        "name": "Boiler - Current Energy(Computed)",
+        "name_cs": "Bojler - Aktuální výkon(Vypočítaná)",
+        "device_class": SensorDeviceClass.POWER,
+        "unit_of_measurement": "W",
+        "node_id": "",
+        "node_key": "",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "cbb_consumption_w": {
+        "name": "CBB - Consumption Energy(Computed)",
+        "name_cs": "CBB - Spotřeba(Vypočítaná)",
+        "device_class": SensorDeviceClass.POWER,
+        "unit_of_measurement": "W",
+        "node_id": "",
+        "node_key": "",
+        "state_class": SensorStateClass.MEASUREMENT,
     }
     # these don't seem to work like this, disabling
-    # "box_prms_fan1":{
+    # "box_prms_fan1": {
     #     "name": "Fan 1",
     #     "name_cs": "Ventilátor 1",
     #     "device_class": SensorDeviceClass.SPEED,
@@ -295,8 +331,9 @@ SENSOR_TYPES = {
     #     "node_key": "fan1",
     #     "state_class": SensorStateClass.MEASUREMENT,
     #     "entity_category": EntityCategory.DIAGNOSTIC,
-    # },
-    # "box_prms_fan2":{
+    #
+    },
+    # "box_prms_fan2": {
     #     "name": "Fan 2",
     #     "name_cs": "Ventilátor 2",
     #     "device_class": SensorDeviceClass.SPEED,
@@ -305,5 +342,6 @@ SENSOR_TYPES = {
     #     "node_key": "fan2",
     #     "state_class": SensorStateClass.MEASUREMENT,
     #     "entity_category": EntityCategory.DIAGNOSTIC,
-    # },
+    #
+    },
 }
