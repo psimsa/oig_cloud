@@ -84,5 +84,35 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
                 "Acknowledgement": vol.Boolean(1),
                 "Upozornění": vol.Boolean(1),
             }
+        )
+            hass.services.async_register(
+        DOMAIN,
+        "set_boiler_mode",
+        async_set_boiler_mode,
+        schema=vol.Schema(
+            {
+                vol.Required("Mode"): vol.In(
+                    [
+                        "Zapnuto / On",
+                        "Vypnuto / Off",
+                    ]
+                )
+            }
         ),
+    ),
+        hass.services.async_register(
+        DOMAIN,
+        "set_battery_formatin",
+        async_set_battery_formatin,
+        schema=vol.Schema(
+            {
+                vol.Required("Mode"): vol.In(
+                    [
+                        "Zapnuto / On",
+                        "Vypnuto / Off",
+                    ]
+                )
+            }
+        ),
+    )  ,
     )
