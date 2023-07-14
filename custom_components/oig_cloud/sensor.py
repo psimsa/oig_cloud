@@ -133,6 +133,9 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
                     + pv_data["ac_in"]["aci_ws"]
                     + pv_data["ac_in"]["aci_wt"]
                 )
+                +
+                # Nabíjení/vybíjení baterie
+                (pv_data["batt"]["bat_i"] * pv_data["batt"]["bat_v"] * -1)
             )
         
         try:
