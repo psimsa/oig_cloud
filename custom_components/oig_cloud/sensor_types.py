@@ -302,7 +302,7 @@ SENSOR_TYPES = {
         "unit_of_measurement": "W",
         "node_id": "boiler",
         "node_key": "w",
-        "state_class": SensorStateClass.MEASUREMENT,
+        "state_class": SensorStateClass.TOTAL_INCREASING,
         "requires": ["boiler"]
     },
     "boiler_current_cbb_w": {
