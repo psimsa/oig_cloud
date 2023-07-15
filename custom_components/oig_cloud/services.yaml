@@ -34,8 +34,17 @@ set_grid_delivery:
             selector:
               select:
                 options:
-                - Zapnuto / On
                 - Vypnuto / Off
+                - Zapnuto / On
+                - S omezením / Limited
+        Limit:
+            description: Omezení přetoků
+            example: 1000
+            selector:
+              number:
+                min: 0
+                max: 10000
+                unit_of_measurement: W
         Acknowledgement:
             description: |
               I acknowledge that calling the service will result in parameter modification of a live system.

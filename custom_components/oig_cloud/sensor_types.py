@@ -285,6 +285,16 @@ SENSOR_TYPES = {
         "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,
     },
+    "invertor_prm1_p_max_feed_grid":{
+        "name": "Max Feed to Grid",
+        "name_cs": "Maximální přetoky",
+        "device_class": SensorDeviceClass.POWER,
+        "unit_of_measurement": "W",
+        "node_id": "invertor_prm1",
+        "node_key": "p_max_feed_grid",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
     "boiler_day_w": {
         "name": "Boiler - Today Energy",
         "name_cs": "Bojler - Dnešní uložení",
