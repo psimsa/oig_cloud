@@ -22,6 +22,8 @@ class OigCloudApi:
     _set_mode_url = "inc/php/scripts/Device.Set.Value.php"
     _set_grid_delivery_url = "inc/php/scripts/ToGrid.Toggle.php"
 #    _set_batt_formating_url = "inc/php/scripts/Battery.Format.Save.php"  
+    # https://www.oigpower.cz/cez/inc/php/scripts/Device.Set.Value.php?_nonce=1689412610516
+    # {"id_device":"2205232120","table":"invertor_prm1","column":"p_max_feed_grid","value":"2000"}
 
     _username: str = None
     _password: str = None
@@ -209,7 +211,7 @@ class OigCloudApi:
                     data = json.dumps(
                         {
                             "id_device": self.box_id,
-                            "value": 1 if enabled else 0,
+                            "value": 1 if enabled else 0, # or 2 for limiting
                         }
                     )
 
