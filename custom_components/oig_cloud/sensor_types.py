@@ -276,7 +276,7 @@ SENSOR_TYPES = {
         "state_class": None,
         "entity_category": EntityCategory.DIAGNOSTIC,
     },
-    "batt_batt_comp_p":{
+    "batt_batt_comp_p": {
         "name": "Battery Power",
         "name_cs": "Výkon baterie",
         "device_class": SensorDeviceClass.POWER,
@@ -285,7 +285,7 @@ SENSOR_TYPES = {
         "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,
     },
-    "invertor_prm1_p_max_feed_grid":{
+    "invertor_prm1_p_max_feed_grid": {
         "name": "Max Feed to Grid",
         "name_cs": "Maximální přetoky",
         "device_class": SensorDeviceClass.POWER,
@@ -295,6 +295,16 @@ SENSOR_TYPES = {
         "state_class": SensorStateClass.MEASUREMENT,
         "entity_category": EntityCategory.DIAGNOSTIC,
     },
+    "invertor_prms_to_grid": {
+        "name": "Grid Delivery",
+        "name_cs": "Přetoky do sítě",
+        "device_class": SensorDeviceClass.ENUM,
+        "unit_of_measurement": None,
+        "node_id": "invertor_prms",
+        "node_key": "to_grid",
+        "state_class": None,
+        "options": ["Vypnuto / Off", "Zapnuto / On", "S omezením / Limited"],
+    },
     "boiler_day_w": {
         "name": "Boiler - Today Energy",
         "name_cs": "Bojler - Dnešní uložení",
@@ -303,7 +313,7 @@ SENSOR_TYPES = {
         "node_id": "boiler",
         "node_key": "w",
         "state_class": SensorStateClass.TOTAL_INCREASING,
-        "requires": ["boiler"]
+        "requires": ["boiler"],
     },
     "boiler_current_cbb_w": {
         "name": "Boiler - Current Energy (CBB)",
@@ -313,7 +323,7 @@ SENSOR_TYPES = {
         "node_id": "boiler",
         "node_key": "p",
         "state_class": SensorStateClass.MEASUREMENT,
-        "requires": ["boiler"]
+        "requires": ["boiler"],
     },
     "boiler_current_w": {
         "name": "Boiler - Current Energy (Computed)",
@@ -323,7 +333,7 @@ SENSOR_TYPES = {
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,
-        "requires": ["boiler"]
+        "requires": ["boiler"],
     },
     "cbb_consumption_w": {
         "name": "CBB - Consumption Energy (Computed)",

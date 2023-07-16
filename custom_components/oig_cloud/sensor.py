@@ -6,6 +6,8 @@ from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
 )
+
+from .shared.shared import GridMode
 from .const import (
     DEFAULT_NAME,
     DOMAIN,
@@ -153,6 +155,15 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
                     return "Home UPS"
                 return LANGS["unknown"][language]
 
+            if self._sensor_type == "invertor_prms_to_grid":
+                if node_value == 0:
+                    return GridMode.OFF.value
+                elif node_value == 1:
+                    return GridMode.ON.value
+                elif node_value == 2:
+                    return GridMode.LIMITED.value
+                return LANGS["unknown"][language]
+
             # return node_value
             try:
                 return float(node_value)
@@ -182,6 +193,10 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
     def state_class(self):
         """Return the state class of the sensor."""
         return SENSOR_TYPES[self._sensor_type]["state_class"]
+    
+    @property
+    def options(self) -> list[str] | None:
+        return SENSOR_TYPES[self._sensor_type].get("options")
 
     @property
     def device_info(self):

@@ -42,19 +42,20 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
 
         grid_mode = call.data.get("Mode")
         limit = call.data.get("Limit")
-        mode = GRID_DELIVERY.get(grid_mode)
 
-        if mode == 2 and limit is None:
-            raise vol.Invalid("Limit je třeba zadat")
+        if grid_mode is None and limit is None:
+            raise vol.Invalid("Musí být nastaven alespoň jeden parametr (Režim nebo Limit)")
 
         with tracer.start_as_current_span("async_set_grid_delivery"):
             client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
-            if mode == 2:
-                limit = int(limit)
-                success = await client.set_grid_delivery_limit(limit)
+            if grid_mode is not None:
+                mode = GRID_DELIVERY.get(grid_mode)
+                await client.set_grid_delivery(mode)
+
+            if limit is not None:
+                success = await client.set_grid_delivery_limit(int(limit))
                 if not success:
-                    raise vol.Invalid("Limit se nepodařilo nastavit")
-            await client.set_grid_delivery(mode)
+                    raise vol.Invalid("Limit se nepodařilo nastavit.")
 
     hass.services.async_register(
         DOMAIN,
@@ -81,7 +82,7 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
         async_set_grid_delivery,
         schema=vol.Schema(
             {
-                vol.Required("Mode"): vol.In(
+                "Mode": vol.In(
                     [
                         "Vypnuto / Off",
                         "Zapnuto / On",
