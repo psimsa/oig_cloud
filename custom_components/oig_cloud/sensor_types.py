@@ -2,6 +2,42 @@ from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import EntityCategory
 
 SENSOR_TYPES = {
+    "dc_in_fv_i1": {
+        "name": "Panels Current String 1",
+        "name_cs": "Proud panelů string 1",
+        "device_class": SensorDeviceClass.CURRENT,
+        "unit_of_measurement": "A",
+        "node_id": "dc_in",
+        "node_key": "fv_i1",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "dc_in_fv_i2": {
+        "name": "Panels Current String 2",
+        "name_cs": "Proud panelů string 2",
+        "device_class": SensorDeviceClass.CURRENT,
+        "unit_of_measurement": "A",
+        "node_id": "dc_in",
+        "node_key": "fv_i2",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "dc_in_fv_v1": {
+        "name": "Panels Voltage String 1",
+        "name_cs": "Napětí panelů string 1",
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "unit_of_measurement": "V",
+        "node_id": "dc_in",
+        "node_key": "fv_v1",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
+    "dc_in_fv_v2": {
+        "name": "Panels Voltage String 2",
+        "name_cs": "Napětí panelů string 2",
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "unit_of_measurement": "V",
+        "node_id": "dc_in",
+        "node_key": "fv_v2",
+        "state_class": SensorStateClass.MEASUREMENT,
+    },
     "dc_in_fv_p1": {
         "name": "Panels Output String 1",
         "name_cs": "Výkon panelů string 1",
