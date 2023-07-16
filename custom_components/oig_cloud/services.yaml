@@ -30,12 +30,13 @@ set_grid_delivery:
     description: |
       Povolení nebo zakázání přetoků do distribuční sítě. Přetoky je možné zcela vypnout, zapnout, nebo zapnout s limitem. 
       K použití této funkce musí být nainstalován odpovídající firmware a může trvat delší dobu, než se nastavení projeví.
-      V případě nastavení limitu dochází ke dvěma změnám - nastavení boxu do režimu omezení přetoků a následně nastavení
-      limitu přetoků a není garantováno, že při současném volání obě operace proběhnou očekávaným způsobem (často se stává,
-      že je box nastaven do režimu omezení přetoků s maximalní hodnotou). Doporučuje se proto nastavení ve dvou krocích: 
-      Nejprve nastavit režim přetoků na "S omezením," poté skrze automatizaci počkat na změnu režimu (viz. příslušný senzor)
-      a následně opakovaným voláním služby nastavit limit přetoků. Berte prosím v úvahu, že v mezičase může dojít k nadměrnému 
-      exportu do sítě.
+      V případě nastavení limitu je třeba provést 2 změny - nastavení boxu do režimu omezení přetoků a následně nastavení
+      limitu přetoků. V aktuální verzi (omezení oig) je třeba, aby proběhly postupně. Musí proběhnout ve výše uvedeném 
+      pořadí a před nastavením limitu přetoků je třeba, aby byla již akceptována změna režimu přetoků. Nastavení je tedy
+      třeba provést ve dvou krocích: Nejprve nastavit režim přetoků na "S omezením," poté skrze automatizaci počkat na změnu 
+      režimu přetoků (viz. příslušný senzor) a následně opakovaným voláním služby nastavit limit přetoků. 
+      Berte prosím v úvahu, že v mezičase může dojít k nadměrnému exportu do sítě. Příklad nastavení lze nalézt na 
+      https://raw.githubusercontent.com/psimsa/oig_cloud/main/docs/grid_delivery_script_sample.yaml
     fields:
         Mode:
             description: Režim přetoků
