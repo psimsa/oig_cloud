@@ -50,8 +50,8 @@ set_grid_delivery:
             example: 1000
             selector:
               number:
-                min: 0
-                max: 10000
+                min: 1
+                max: 9999
                 unit_of_measurement: W
         Acknowledgement:
             description: |
