@@ -43,9 +43,9 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
         grid_mode = call.data.get("Mode")
         limit = call.data.get("Limit")
 
-        if grid_mode is None and limit is None:
+        if (grid_mode is None and limit is None) or (grid_mode is not None and limit is not None):
             raise vol.Invalid(
-                "Musí být nastaven alespoň jeden parametr (Režim nebo Limit)"
+                "Musí být nastaven právě jeden parametr (Režim nebo Limit)"
             )
 
         if limit is not None and (limit > 9999 or limit < 1):
