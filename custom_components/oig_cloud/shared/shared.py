@@ -1,10 +1,11 @@
+from enum import StrEnum
 from opentelemetry.sdk.resources import Resource
 
 
 from ..release_const import COMPONENT_VERSION, SERVICE_NAME
 
-def get_resource(email_hash:str, hass_id: str) -> Resource:
 
+def get_resource(email_hash: str, hass_id: str) -> Resource:
     resource = Resource.create(
         {
             "service.name": SERVICE_NAME,
@@ -16,3 +17,9 @@ def get_resource(email_hash:str, hass_id: str) -> Resource:
     )
 
     return resource
+
+
+class GridMode(StrEnum):
+    OFF = "Vypnuto / Off"
+    ON = "Zapnuto / On"
+    LIMITED = "S omezením / Limited"
