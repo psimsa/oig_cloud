@@ -21,7 +21,8 @@ class OigCloudApi:
     _get_stats_url = "json.php"
     _set_mode_url = "inc/php/scripts/Device.Set.Value.php"
     _set_grid_delivery_url = "inc/php/scripts/ToGrid.Toggle.php"
-    _set_batt_formating_url = "inc/php/scripts/Battery.Format.Save.php"
+#    _set_batt_formating_url = "inc/php/scripts/Battery.Format.Save.php"  
+    # {"id_device":"2205232120","table":"invertor_prm1","column":"p_max_feed_grid","value":"2000"}
 
     _username: str = None
     _password: str = None
@@ -155,48 +156,61 @@ class OigCloudApi:
         with tracer.start_as_current_span("set_mode") as span:
             try:
                 self._logger.debug(f"Setting mode to {mode}")
-                async with self.get_session() as session:
-                    data = json.dumps(
-                        {
-                            "id_device": self.box_id,
-                            "table": "box_prms",
-                            "column": "mode",
-                            "value": mode,
-                        }
-                    )
-
-                    _nonce = int(time.time() * 1000)
-                    target_url = f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
-
-                    self._logger.debug(
-                        f"Sending mode request to {target_url} with {data.replace(self.box_id, 'xxxxxx')}"
-                    )
-                    with tracer.start_as_current_span(
-                        "set_mode.post",
-                        kind=SpanKind.SERVER,
-                        attributes={"http.url": target_url, "http.method": "POST"},
-                    ):
-                        async with session.post(
-                            target_url,
-                            data=data,
-                            headers={"Content-Type": "application/json"},
-                        ) as response:
-                            responsecontent = await response.text()
-                            if response.status == 200:
-                                response_json = json.loads(responsecontent)
-                                message = response_json[0][2]
-                                self._logger.info(f"Response: {message}")
-                                return True
-                            else:
-                                raise Exception(
-                                    f"Error setting mode: {response.status}",
-                                    responsecontent,
-                                )
+                return await self.set_box_params_internal("box_prms", "mode", mode)
             except Exception as e:
                 self._logger.error(f"Error: {e}", stack_info=True)
                 raise e
+            
+    async def set_grid_delivery_limit(self, limit: int)-> bool:
+        with tracer.start_as_current_span("set_grid_delivery_limit") as span:
+            try:
+                self._logger.debug(f"Setting grid delivery limit to {limit}")
+                return await self.set_box_params_internal("invertor_prm1", "p_max_feed_grid", limit)
+            except Exception as e:
+                self._logger.error(f"Error: {e}", stack_info=True)
+                raise e
+            
+    async def set_box_params_internal(self, table: str, column: str, value: str) -> bool:
+       with tracer.start_as_current_span("set_box_params_internal") as span:
 
-    async def set_grid_delivery(self, enabled: bool) -> bool:
+        async with self.get_session() as session:
+            data = json.dumps(
+                {
+                    "id_device": self.box_id,
+                    "table": table,
+                    "column": column,
+                    "value": value,
+                }
+            )
+            _nonce = int(time.time() * 1000)
+            target_url = f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
+
+            self._logger.debug(
+                f"Sending mode request to {target_url} with {data.replace(self.box_id, 'xxxxxx')}"
+            )
+            with tracer.start_as_current_span(
+                "set_box_params_internal.post",
+                kind=SpanKind.SERVER,
+                attributes={"http.url": target_url, "http.method": "POST"},
+            ):
+                async with session.post(
+                    target_url,
+                    data=data,
+                    headers={"Content-Type": "application/json"},
+                ) as response:
+                    responsecontent = await response.text()
+                    if response.status == 200:
+                        response_json = json.loads(responsecontent)
+                        message = response_json[0][2]
+                        self._logger.info(f"Response: {message}")
+                        return True
+                    else:
+                        raise Exception(
+                            f"Error setting mode: {response.status}",
+                            responsecontent,
+                        )
+
+    async def set_grid_delivery(self, mode: int) -> bool:
         with tracer.start_as_current_span("set_grid_delivery") as span:
             try:
                 if self._no_telemetry:
@@ -204,12 +218,12 @@ class OigCloudApi:
                         "Tato funkce je ve vývoji a proto je momentálně dostupná pouze pro systémy s aktivní telemetrií."
                     )
 
-                self._logger.debug(f"Setting grid delivery to {enabled}")
+                self._logger.debug(f"Setting grid delivery to {mode}")
                 async with self.get_session() as session:
                     data = json.dumps(
                         {
                             "id_device": self.box_id,
-                            "value": 1 if enabled else 0,
+                            "value": mode, 
                         }
                     )
 
