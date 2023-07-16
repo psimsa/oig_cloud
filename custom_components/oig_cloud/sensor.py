@@ -30,6 +30,10 @@ LANGS = {
         "en": "Unknown",
         "cs": "Neznámý",
     },
+    "changing": {
+        "en": "Changing in progress",
+        "cs": "Probíhá změna",
+    },
 }
 
 
@@ -156,15 +160,31 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
                 return LANGS["unknown"][language]
 
             if self._sensor_type == "invertor_prms_to_grid":
-                if node_value == 0:
-                    return GridMode.OFF.value
-                elif node_value == 1:
-                    return GridMode.ON.value
-                elif node_value == 2:
-                    return GridMode.LIMITED.value
-                return LANGS["unknown"][language]
+                grid_enabled = int(pv_data["box_prms"]["crcte"])
+                to_grid = int(node_value)
+                max_grid_feed = int(pv_data["invertor_prm1"]["p_max_feed_grid"])
 
-            # return node_value
+                vypnuto = False
+                zapnuto = False
+                limited=False
+                
+                if bool(pv_data["queen"]):
+                    vypnuto = 0 == to_grid and 0 == max_grid_feed
+                    zapnuto = 1 == to_grid
+                    limited = 0 == to_grid and 0 < max_grid_feed
+                else:
+                    vypnuto = 0 == grid_enabled and 0 == to_grid                
+                    zapnuto = 1 == grid_enabled and 1 == to_grid and 10000 == max_grid_feed
+                    limited = 1 == grid_enabled and 1 == to_grid and 9999 >= max_grid_feed
+                
+
+                if vypnuto:
+                    return GridMode.OFF.value
+                elif limited:
+                    return GridMode.LIMITED.value
+                elif zapnuto:
+                    return GridMode.ON.value
+                return LANGS["changing"][language]
             try:
                 return float(node_value)
             except ValueError:
