@@ -54,7 +54,7 @@ jobs:
 
       - name: Push changes
         working-directory: ./custom_components/oig_cloud
-        if: ${{ github.event.inputs.create-tag != 'true' }}
+        if: ${{ github.event.inputs.create-tag != 'true' || github.ref != 'refs/heads/main'}}
         run: |
           git push
 
