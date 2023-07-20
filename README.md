@@ -3,6 +3,7 @@
 ![GitHub Release Date - Published_At](https://img.shields.io/github/release-date/psimsa/oig_cloud)
 [![Validate with hassfest](https://github.com/psimsa/oig_cloud/actions/workflows/hassfest.yml/badge.svg)](https://github.com/psimsa/oig_cloud/actions/workflows/hassfest.yml)
 [![HACS Action](https://github.com/psimsa/oig_cloud/actions/workflows/hacs.yml/badge.svg)](https://github.com/psimsa/oig_cloud/actions/workflows/hacs.yml)
+[![CodeFactor](https://www.codefactor.io/repository/github/psimsa/oig_cloud/badge)](https://www.codefactor.io/repository/github/psimsa/oig_cloud)
 
 ---
 # OIG Cloud Integrace pro Home Assistant
