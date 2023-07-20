@@ -40,6 +40,34 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     _LOGGER.debug("First refresh done, will add entities")
 
     # Add common entities
+    _register_common_entities(async_add_entities, coordinator)
+
+    box_id = list(oig_cloud.last_state.keys())[0]
+    # Add entities that require 'boiler'
+    if len(oig_cloud.last_state[box_id]["boiler"]) > 0:
+        _register_boiler_entities(async_add_entities, coordinator)
+
+    _LOGGER.debug("async_setup_entry done")
+
+
+def _register_boiler_entities(async_add_entities, coordinator):
+    async_add_entities(
+        OigCloudDataSensor(coordinator, sensor_type)
+        for sensor_type in SENSOR_TYPES
+        if "requires" in SENSOR_TYPES[sensor_type].keys()
+        and "boiler" in SENSOR_TYPES[sensor_type]["requires"]
+        and SENSOR_TYPES[sensor_type]["node_id"] is not None
+    )
+    async_add_entities(
+        OigCloudComputedSensor(coordinator, sensor_type)
+        for sensor_type in SENSOR_TYPES
+        if "requires" in SENSOR_TYPES[sensor_type].keys()
+        and "boiler" in SENSOR_TYPES[sensor_type]["requires"]
+        and SENSOR_TYPES[sensor_type]["node_id"] is None
+    )
+
+
+def _register_common_entities(async_add_entities, coordinator):
     async_add_entities(
         OigCloudDataSensor(coordinator, sensor_type)
         for sensor_type in SENSOR_TYPES
@@ -52,25 +80,3 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         if not "requires" in SENSOR_TYPES[sensor_type].keys()
         and SENSOR_TYPES[sensor_type]["node_id"] is None
     )
-
-    box_id = list(oig_cloud.last_state.keys())[0]
-    # Add entities that require 'boiler'
-    if len(oig_cloud.last_state[box_id]["boiler"]) > 0:
-        async_add_entities(
-            OigCloudDataSensor(coordinator, sensor_type)
-            for sensor_type in SENSOR_TYPES
-            if "requires" in SENSOR_TYPES[sensor_type].keys()
-            and "boiler" in SENSOR_TYPES[sensor_type]["requires"]
-            and SENSOR_TYPES[sensor_type]["node_id"] is not None
-
-        )
-        async_add_entities(
-            OigCloudComputedSensor(coordinator, sensor_type)
-            for sensor_type in SENSOR_TYPES
-            if "requires" in SENSOR_TYPES[sensor_type].keys()
-            and "boiler" in SENSOR_TYPES[sensor_type]["requires"]
-            and SENSOR_TYPES[sensor_type]["node_id"] is None
-
-        )
-
-    _LOGGER.debug("async_setup_entry done")
