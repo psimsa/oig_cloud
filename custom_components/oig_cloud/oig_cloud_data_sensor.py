@@ -43,40 +43,60 @@ class OigCloudDataSensor(OigCloudSensor):
 
             # special cases
             if self._sensor_type == "box_prms_mode":
-                if node_value == 0:
-                    return "Home 1"
-                elif node_value == 1:
-                    return "Home 2"
-                elif node_value == 2:
-                    return "Home 3"
-                elif node_value == 3:
-                    return "Home UPS"
-                return _LANGS["unknown"][language]
+                return self._get_mode_name(node_value, language)
 
             if self._sensor_type == "invertor_prms_to_grid":
-                grid_enabled = int(pv_data["box_prms"]["crcte"])
-                to_grid = int(node_value)
-                max_grid_feed = int(pv_data["invertor_prm1"]["p_max_feed_grid"])
+                return self._grid_mode(pv_data, node_value, language)
 
-                if bool(pv_data["queen"]):
-                    vypnuto = 0 == to_grid and 0 == max_grid_feed
-                    zapnuto = 1 == to_grid
-                    limited = 0 == to_grid and 0 < max_grid_feed
-                else:
-                    vypnuto = 0 == grid_enabled and 0 == to_grid
-                    zapnuto = 1 == grid_enabled and 1 == to_grid and 10000 == max_grid_feed
-                    limited = 1 == grid_enabled and 1 == to_grid and 9999 >= max_grid_feed
-
-                if vypnuto:
-                    return GridMode.OFF.value
-                elif limited:
-                    return GridMode.LIMITED.value
-                elif zapnuto:
-                    return GridMode.ON.value
-                return _LANGS["changing"][language]
             try:
                 return float(node_value)
             except ValueError:
                 return node_value
         except KeyError:
             return None
+        
+    def _get_mode_name(node_value, language):
+        if node_value == 0:
+            return "Home 1"
+        elif node_value == 1:
+            return "Home 2"
+        elif node_value == 2:
+            return "Home 3"
+        elif node_value == 3:
+            return "Home UPS"
+        return _LANGS["unknown"][language]
+    
+    def _grid_mode(self, pv_data, node_value, language):
+        grid_enabled = int(pv_data["box_prms"]["crcte"])
+        to_grid = int(node_value)
+        max_grid_feed = int(pv_data["invertor_prm1"]["p_max_feed_grid"])
+
+        if bool(pv_data["queen"]):
+            return self._grid_mode_queen(grid_enabled, to_grid, max_grid_feed, language)
+        return self._grid_mode_king(grid_enabled, to_grid, max_grid_feed, language)
+
+    def _grid_mode_queen(grid_enabled, to_grid, max_grid_feed, language):
+        vypnuto = 0 == to_grid and 0 == max_grid_feed
+        zapnuto = 1 == to_grid
+        limited = 0 == to_grid and 0 < max_grid_feed
+
+        if vypnuto:
+            return GridMode.OFF.value
+        elif limited:
+            return GridMode.LIMITED.value
+        elif zapnuto:
+            return GridMode.ON.value
+        return _LANGS["changing"][language]
+
+    def _grid_mode_king(grid_enabled, to_grid, max_grid_feed, language):
+        vypnuto = 0 == grid_enabled and 0 == to_grid
+        zapnuto = 1 == grid_enabled and 1 == to_grid and 10000 == max_grid_feed
+        limited = 1 == grid_enabled and 1 == to_grid and 9999 >= max_grid_feed
+
+        if vypnuto:
+            return GridMode.OFF.value
+        elif limited:
+            return GridMode.LIMITED.value
+        elif zapnuto:
+            return GridMode.ON.value
+        return _LANGS["changing"][language]
