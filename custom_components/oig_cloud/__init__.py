@@ -35,8 +35,8 @@ async def async_setup_entry(
             no_telemetry = entry.data[CONF_NO_TELEMETRY]
 
         if no_telemetry is False:
-            email_hash = hashlib.md5(username.encode("utf-8")).hexdigest()
-            hass_id = hashlib.md5(hass.data["core.uuid"].encode("utf-8")).hexdigest()
+            email_hash = hashlib.sha256(username.encode("utf-8")).hexdigest()
+            hass_id = hashlib.sha256(hass.data["core.uuid"].encode("utf-8")).hexdigest()
 
             setup_tracing(email_hash, hass_id)
             api_logger = logging.getLogger(oig_cloud_api.__name__)
