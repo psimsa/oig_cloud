@@ -8,14 +8,14 @@ set_box_mode:
   fields:
     Mode:
       description: The mode to set
-      example: "Home 1"
+      example: 'Home 1'
       selector:
         select:
           options:
-            - "Home 1"
-            - "Home 2"
-            - "Home 3"
-            - "Home UPS"
+            - 'Home 1'
+            - 'Home 2'
+            - 'Home 3'
+            - 'Home UPS'
     Acknowledgement:
       description: |
         I acknowledge that calling the service will result in parameter modification of a live system.
@@ -70,7 +70,7 @@ set_grid_delivery:
         NEJSME ZODPOVĚDNI ZA TAKOVÉ JEDNÁNÍ Z VAŠÍ STRANY.
         Povolením přetoků BATTERY BOX umožňuje posílat přebytky z výroby do distribuční sítě (DS). Nadvýroba vzniká
         v případě, kdy elektrárna vyrábí, v objektu již došlo k uspokojení veškeré zátěže a BATTERY BOX má nabité
-        baterie. Dle Pravidel provozování distribučních soustav (dále PPDS) je možné posílat do DS přebytky energie 
+        baterie. Dle Pravidel provozování distribučních soustav (dále PPDS) je možné posílat do DS přebytky energie
         pouze pokud **máte dle Smlouvy o připojení (SoP) tento stav schválen provozovatelem DS** odpovídající skutečnému
         výkonu FVE, již došlo k **Prvnímu paralelnímu připojení** (dále jen PPP) a obdrželi jste Protokol o PPP.
         Jako majitel zařízení BATTERY BOX máte možnost sám aktivovat nebo deaktivovat povolení přetoků. Pokud
