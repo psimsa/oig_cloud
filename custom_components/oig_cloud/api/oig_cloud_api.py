@@ -28,15 +28,21 @@ class OigCloudAuthError(OigCloudApiError):
 
 
 class OigCloudApi:
-    """API client for OIG Cloud."""
-    
-    # API endpoints
-    _base_url: str = "https://www.oigpower.cz/cez/"
-    _login_url: str = "inc/php/scripts/Login.php"
-    _get_stats_url: str = "json.php"
-    _set_mode_url: str = "inc/php/scripts/Device.Set.Value.php"
-    _set_grid_delivery_url: str = "inc/php/scripts/ToGrid.Toggle.php"
-    _set_batt_formating_url: str = "inc/php/scripts/Battery.Format.Save.php"
+    _base_url = "https://www.oigpower.cz/cez/"
+    _login_url = "inc/php/scripts/Login.php"
+    _get_stats_url = "json.php"
+    _set_mode_url = "inc/php/scripts/Device.Set.Value.php"
+    _set_grid_delivery_url = "inc/php/scripts/ToGrid.Toggle.php"
+    _set_batt_formating_url = "inc/php/scripts/Battery.Format.Save.php"  
+    # {"id_device":"2205232120","table":"invertor_prm1","column":"p_max_feed_grid","value":"2000"}
+
+    _username: str = None
+    _password: str = None
+
+    _phpsessid: str = None
+
+    box_id: str = None
+
 
     def __init__(
         self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
@@ -336,90 +342,107 @@ class OigCloudApi:
             except OigCloudApiError:
                 raise
             except Exception as e:
-                self._logger.error(f"Error setting grid delivery: {e}", stack_info=True)
-                raise OigCloudApiError(f"Failed to set grid delivery: {e}") from e
-
-    async def set_formating_mode(self, mode: str) -> bool:
-        """Set battery formatting mode."""
-        with tracer.start_as_current_span("set_formating_battery") as span:
-            try:
-                self._logger.debug(f"Setting battery formatting mode to {mode}")
+                self._logger.error(f"Error: {e}", stack_info=True)
+                raise e
                 
-                async with self.get_session() as session:
-                    data: str = json.dumps(
-                        {
-                           "bat_ac": mode,
-                        }
-                    )
+    # Funkce na nastavení nabíjení baterie z gridu    
+     async def set_battery_formating(self, mode: str, limit: int) -> bool:
+         with tracer.start_as_current_span("set_batt_formating") as span:
+             try:
+                 self._logger.debug(f"Setting formating battery to {limit} percent")
+                 async with self.get_session() as session:
+                     data = json.dumps(
+                         {
+                             "id_device": self.box_id,
+                             "column": "bat_ac",
+                             "value": limit,
+                         }
+                     )
 
-                    _nonce: int = int(time.time() * 1000)
-                    target_url: str = f"{self._base_url}{self._set_batt_formating_url}?_nonce={_nonce}"
-                    
-                    # Log with redacted box_id for security
-                    self._logger.info(
-                        f"Sending battery formatting request to {target_url}"
-                    )
-                    
-                    with tracer.start_as_current_span(
-                        "set_formating_battery.post",
-                        kind=SpanKind.SERVER,
-                        attributes={"http.url": target_url, "http.method": "POST"},
-                    ):
-                        async with session.post(
-                            target_url,
-                            data=data,
-                            headers={"Content-Type": "application/json"},
-                        ) as response:
-                            response_content: str = await response.text()
-                            
-                            if response.status == 200:
-                                response_json = json.loads(response_content)
-                                self._logger.debug(f"API response: {response_json}")
-                                return True
-                            else:
-                                raise OigCloudApiError(
-                                    f"Error setting battery formatting mode: {response.status} - {response_content}"
-                                )
-            except OigCloudApiError:
-                raise
-            except Exception as e:
-                self._logger.error(f"Error setting battery formatting mode: {e}", stack_info=True)
-                raise OigCloudApiError(f"Failed to set battery formatting mode: {e}") from e
+                     _nonce = int(time.time() * 1000)
+                     target_url = f"{self._base_url}{self._set_batt_formating_url}?_nonce={_nonce}"
 
-    async def get_data(self) -> Dict[str, Any]:
-        """Get the latest data as a Dictionary.
-        
-        This is the preferred method for getting data from the API.
-        It returns the raw dictionary for compatibility with existing code.
-        """
-        with tracer.start_as_current_span("get_data") as span:
+                     self._logger.debug(
+                         f"Sending formating battery request to {target_url} with {data.replace(self.box_id, 'xxxxxx')}"
+                     )
+                     with tracer.start_as_current_span(
+                         "set_mode.post",
+                         kind=SpanKind.SERVER,
+                         attributes={"http.url": target_url, "http.method": "POST"},
+                     ):
+                         async with session.post(
+                             target_url,
+                             data=data,
+                             headers={"Content-Type": "application/json"},
+                         ) as response:
+                             responsecontent = await response.text()
+                             if response.status == 200:
+                                 response_json = json.loads(responsecontent)
+                                 message = response_json[0][2]
+                                 self._logger.info(f"Response: {message}")
+                                 return True
+                             else:
+                                 raise Exception(
+                                     f"Error setting mode: {response.status}",
+                                     responsecontent,
+                                 )
+             except Exception as e:
+                 self._logger.error(f"Error: {e}", stack_info=True)
+                 raise e
+             
+      # Funkce na nastavení kolik dodat kWh v době NT do bojleru              
+    async def set_boiler_delivery_limit(self, limit: int)-> bool:
+        with tracer.start_as_current_span("set_bojler_delivery_limit") as span:
             try:
-                # Get the raw data
-                data = await self.get_stats()
-                if not data:
-                    self._logger.warning("No data received from API")
-                    return {}
-                
-                return data
+                self._logger.debug(f"Setting bojler delivery limit to {limit}")
+                return await self.set_box_params_internal("boiler_prms", "wd", limit)
             except Exception as e:
-                self._logger.error(f"Failed to get data: {e}")
-                raise
+                self._logger.error(f"Error: {e}", stack_info=True)
+                raise e
 
-    async def get_typed_data(self) -> Optional[OigCloudData]:
-        """Get the latest data as a typed OigCloudData object.
-        
-        This returns the structured data model version of the API response.
-        """
-        with tracer.start_as_current_span("get_typed_data") as span:
-            try:
-                # Get the raw data
-                data = await self.get_stats()
-                if not data:
-                    self._logger.warning("No data received from API")
-                    return None
-                
-                # Convert to typed model
-                return OigCloudData.from_dict(data)
-            except Exception as e:
-                self._logger.error(f"Failed to get typed data: {e}")
-                raise
+
+    # Funkce zapnutí maual modu
+     async def set_boiler_mode(self, mode: str) -> bool:
+         with tracer.start_as_current_span("set_boiler_mode") as span:
+             try:
+                 self._logger.debug(f"Setting boiler  energy to {mode} w")
+                 async with self.get_session() as session:
+                     data = json.dumps(
+                         {
+                             "id_device": self.box_id,
+                             "table": "boiler_prms",
+                             "column": "manual",
+                             "value": mode,
+                         }
+                     )
+
+                     _nonce = int(time.time() * 1000)
+                     target_url = f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
+
+                     self._logger.debug(
+                         f"Sending boiler energy request to {target_url} with {data.replace(self.box_id, 'xxxxxx')}"
+                     )
+                     with tracer.start_as_current_span(
+                         "set_mode.post",
+                         kind=SpanKind.SERVER,
+                         attributes={"http.url": target_url, "http.method": "POST"},
+                     ):
+                         async with session.post(
+                             target_url,
+                             data=data,
+                             headers={"Content-Type": "application/json"},
+                         ) as response:
+                             responsecontent = await response.text()
+                             if response.status == 200:
+                                 response_json = json.loads(responsecontent)
+                                 message = response_json[0][2]
+                                 self._logger.info(f"Response: {message}")
+                                 return True
+                             else:
+                                 raise Exception(
+                                     f"Error setting bojler energy: {response.status}",
+                                     responsecontent,
+                                 )
+             except Exception as e:
+                 self._logger.error(f"Error: {e}", stack_info=True)
+                 raise e
