@@ -28,7 +28,7 @@ _LANGS = {
 }
 
 
-class OigCloudSensor(CoordinatorEntity, SensorEntity):
+class OigCloudComputedSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator, sensor_type):
         if not isinstance(sensor_type, str):
             raise TypeError("sensor_type must be a string")
@@ -65,49 +65,78 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
         vals = data.values()
         pv_data = list(vals)[0]
 
+        # computed values
+        if self._sensor_type == "ac_in_aci_wtotal":
+            return float(
+                pv_data["ac_in"]["aci_wr"]
+                + pv_data["ac_in"]["aci_ws"]
+                + pv_data["ac_in"]["aci_wt"]
+            )
+
+        if self._sensor_type == "batt_batt_comp_p":
+            return float(pv_data["batt"]["bat_i"] * pv_data["batt"]["bat_v"] * -1)
+
+        if self._sensor_type == "dc_in_fv_total":
+            return float(pv_data["dc_in"]["fv_p1"] + pv_data["dc_in"]["fv_p2"])
+
+        if self._node_id == "boiler" or self._sensor_type == "boiler_current_w":
+            if len(pv_data["boiler"]) > 0 and pv_data["boiler"]["p"] is not None:
+                # Spotreba bojleru
+                if (
+                        self._sensor_type == "boiler_current_w"
+                        and pv_data["boiler"]["p"] > 0
+                        and (
+                        pv_data["ac_in"]["aci_wr"]
+                        + pv_data["ac_in"]["aci_ws"]
+                        + pv_data["ac_in"]["aci_wt"]
+                )
+                        < 0
+                ):
+                    return float(
+                        pv_data["boiler"]["p"]
+                        + (
+                                pv_data["ac_in"]["aci_wr"]
+                                + pv_data["ac_in"]["aci_ws"]
+                                + pv_data["ac_in"]["aci_wt"]
+                        )
+                    )
+                elif self._sensor_type == "boiler_current_w":
+                    return float(pv_data["boiler"]["p"])
+            else:
+                return None
+
+        # Spotreba CBB
+        if self._sensor_type == "cbb_consumption_w":
+            boiler_p = 0
+            if (
+                    len(pv_data["boiler"]) > 0
+                    and pv_data["boiler"]["p"] is not None
+                    and pv_data["boiler"]["p"] > 0
+            ):
+                boiler_p = pv_data["boiler"]["p"]
+            return float(
+                # Výkon FVE
+                (pv_data["dc_in"]["fv_p1"] + pv_data["dc_in"]["fv_p2"])
+                -
+                # Spotřeba bojleru
+                boiler_p
+                -
+                # Spotřeba zátěž
+                pv_data["ac_out"]["aco_p"]
+                +
+                # Odběr ze sítě
+                (
+                        pv_data["ac_in"]["aci_wr"]
+                        + pv_data["ac_in"]["aci_ws"]
+                        + pv_data["ac_in"]["aci_wt"]
+                )
+                +
+                # Nabíjení/vybíjení baterie
+                (pv_data["batt"]["bat_i"] * pv_data["batt"]["bat_v"] * -1)
+            )
+
         
-        try:
-            node_value = pv_data[self._node_id][self._node_key]
-
-            # special cases
-            if self._sensor_type == "box_prms_mode":
-                if node_value == 0:
-                    return "Home 1"
-                elif node_value == 1:
-                    return "Home 2"
-                elif node_value == 2:
-                    return "Home 3"
-                elif node_value == 3:
-                    return "Home UPS"
-                return _LANGS["unknown"][language]
-
-            if self._sensor_type == "invertor_prms_to_grid":
-                grid_enabled = int(pv_data["box_prms"]["crcte"])
-                to_grid = int(node_value)
-                max_grid_feed = int(pv_data["invertor_prm1"]["p_max_feed_grid"])
-
-                if bool(pv_data["queen"]):
-                    vypnuto = 0 == to_grid and 0 == max_grid_feed
-                    zapnuto = 1 == to_grid
-                    limited = 0 == to_grid and 0 < max_grid_feed
-                else:
-                    vypnuto = 0 == grid_enabled and 0 == to_grid
-                    zapnuto = 1 == grid_enabled and 1 == to_grid and 10000 == max_grid_feed
-                    limited = 1 == grid_enabled and 1 == to_grid and 9999 >= max_grid_feed
-
-                if vypnuto:
-                    return GridMode.OFF.value
-                elif limited:
-                    return GridMode.LIMITED.value
-                elif zapnuto:
-                    return GridMode.ON.value
-                return _LANGS["changing"][language]
-            try:
-                return float(node_value)
-            except ValueError:
-                return node_value
-        except KeyError:
-            return None
+        return None
 
     @property
     def unit_of_measurement(self):

@@ -5,6 +5,7 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 
+from .oig_cloud_computed_sensor import OigCloudComputedSensor
 from .oig_cloud_sensor import OigCloudSensor
 from .const import (
     DOMAIN,
@@ -43,6 +44,13 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         OigCloudSensor(coordinator, sensor_type)
         for sensor_type in SENSOR_TYPES
         if not "requires" in SENSOR_TYPES[sensor_type].keys()
+        and SENSOR_TYPES[sensor_type]["node_id"] is not None
+    )
+    async_add_entities(
+        OigCloudComputedSensor(coordinator, sensor_type)
+        for sensor_type in SENSOR_TYPES
+        if not "requires" in SENSOR_TYPES[sensor_type].keys()
+        and SENSOR_TYPES[sensor_type]["node_id"] is None
     )
 
     box_id = list(oig_cloud.last_state.keys())[0]
@@ -53,6 +61,16 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             for sensor_type in SENSOR_TYPES
             if "requires" in SENSOR_TYPES[sensor_type].keys()
             and "boiler" in SENSOR_TYPES[sensor_type]["requires"]
+            and SENSOR_TYPES[sensor_type]["node_id"] is not None
+
+        )
+        async_add_entities(
+            OigCloudComputedSensor(coordinator, sensor_type)
+            for sensor_type in SENSOR_TYPES
+            if "requires" in SENSOR_TYPES[sensor_type].keys()
+            and "boiler" in SENSOR_TYPES[sensor_type]["requires"]
+            and SENSOR_TYPES[sensor_type]["node_id"] is None
+
         )
 
     _LOGGER.debug("async_setup_entry done")
