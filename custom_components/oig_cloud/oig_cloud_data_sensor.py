@@ -55,7 +55,7 @@ class OigCloudDataSensor(OigCloudSensor):
         except KeyError:
             return None
         
-    def _get_mode_name(node_value, language):
+    def _get_mode_name(self, node_value, language):
         if node_value == 0:
             return "Home 1"
         elif node_value == 1:
@@ -75,7 +75,7 @@ class OigCloudDataSensor(OigCloudSensor):
             return self._grid_mode_queen(grid_enabled, to_grid, max_grid_feed, language)
         return self._grid_mode_king(grid_enabled, to_grid, max_grid_feed, language)
 
-    def _grid_mode_queen(grid_enabled, to_grid, max_grid_feed, language):
+    def _grid_mode_queen(self, grid_enabled, to_grid, max_grid_feed, language):
         vypnuto = 0 == to_grid and 0 == max_grid_feed
         zapnuto = 1 == to_grid
         limited = 0 == to_grid and 0 < max_grid_feed
@@ -88,7 +88,7 @@ class OigCloudDataSensor(OigCloudSensor):
             return GridMode.ON.value
         return _LANGS["changing"][language]
 
-    def _grid_mode_king(grid_enabled, to_grid, max_grid_feed, language):
+    def _grid_mode_king(self, grid_enabled, to_grid, max_grid_feed, language):
         vypnuto = 0 == grid_enabled and 0 == to_grid
         zapnuto = 1 == grid_enabled and 1 == to_grid and 10000 == max_grid_feed
         limited = 1 == grid_enabled and 1 == to_grid and 9999 >= max_grid_feed
