@@ -36,7 +36,6 @@ LANGS = {
     },
 }
 
-
 class OigCloudSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator, sensor_type):
         if not isinstance(sensor_type, str):
