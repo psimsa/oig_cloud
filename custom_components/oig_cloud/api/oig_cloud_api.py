@@ -21,7 +21,7 @@ class OigCloudApi:
     _get_stats_url = "json.php"
     _set_mode_url = "inc/php/scripts/Device.Set.Value.php"
     _set_grid_delivery_url = "inc/php/scripts/ToGrid.Toggle.php"
-#    _set_batt_formating_url = "inc/php/scripts/Battery.Format.Save.php"  
+    _set_batt_formating_url = "inc/php/scripts/Battery.Format.Save.php"  
     # {"id_device":"2205232120","table":"invertor_prm1","column":"p_max_feed_grid","value":"2000"}
 
     _username: str = None
@@ -30,10 +30,7 @@ class OigCloudApi:
     _phpsessid: str = None
 
     box_id: str = None
-    # Dodávka energie do bojleru v NT(W)
-#    _boiler_wh: str = "10000"
-    # Nabití baterie v % 
-#    _batt_prc: str = "95"
+
 
     def __init__(
         self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
@@ -259,92 +256,103 @@ class OigCloudApi:
                 raise e
                 
     # Funkce na nastavení nabíjení baterie z gridu    
-#     async def set_battery_formating(self, mode: str) -> bool:
-#         with tracer.start_as_current_span("set_batt_formating") as span:
-#             try:
-#                 self._logger.debug(f"Setting formating battery to {mode}")
-#                 async with self.get_session() as session:
-#                     data = json.dumps(
-#                         {
-#                             "id_device": self.box_id,
-#                             "column": "bat_ac",
-#                             "value": self.batt_prc,
-#                         }
-#                     )
+     async def set_battery_formating(self, mode: str, limit: int) -> bool:
+         with tracer.start_as_current_span("set_batt_formating") as span:
+             try:
+                 self._logger.debug(f"Setting formating battery to {limit} percent")
+                 async with self.get_session() as session:
+                     data = json.dumps(
+                         {
+                             "id_device": self.box_id,
+                             "column": "bat_ac",
+                             "value": limit,
+                         }
+                     )
 
-#                     _nonce = int(time.time() * 1000)
-#                     target_url = f"{self._base_url}{self._set_batt_formating_url}?_nonce={_nonce}"
+                     _nonce = int(time.time() * 1000)
+                     target_url = f"{self._base_url}{self._set_batt_formating_url}?_nonce={_nonce}"
 
-#                     self._logger.debug(
-#                         f"Sending formating battery request to {target_url} with {data.replace(self.box_id, 'xxxxxx')}"
-#                     )
-#                     with tracer.start_as_current_span(
-#                         "set_mode.post",
-#                         kind=SpanKind.SERVER,
-#                         attributes={"http.url": target_url, "http.method": "POST"},
-#                     ):
-#                         async with session.post(
-#                             target_url,
-#                             data=data,
-#                             headers={"Content-Type": "application/json"},
-#                         ) as response:
-#                             responsecontent = await response.text()
-#                             if response.status == 200:
-#                                 response_json = json.loads(responsecontent)
-#                                 message = response_json[0][2]
-#                                 self._logger.info(f"Response: {message}")
-#                                 return True
-#                             else:
-#                                 raise Exception(
-#                                     f"Error setting mode: {response.status}",
-#                                     responsecontent,
-#                                 )
-#             except Exception as e:
-#                 self._logger.error(f"Error: {e}", stack_info=True)
-#                 raise e
+                     self._logger.debug(
+                         f"Sending formating battery request to {target_url} with {data.replace(self.box_id, 'xxxxxx')}"
+                     )
+                     with tracer.start_as_current_span(
+                         "set_mode.post",
+                         kind=SpanKind.SERVER,
+                         attributes={"http.url": target_url, "http.method": "POST"},
+                     ):
+                         async with session.post(
+                             target_url,
+                             data=data,
+                             headers={"Content-Type": "application/json"},
+                         ) as response:
+                             responsecontent = await response.text()
+                             if response.status == 200:
+                                 response_json = json.loads(responsecontent)
+                                 message = response_json[0][2]
+                                 self._logger.info(f"Response: {message}")
+                                 return True
+                             else:
+                                 raise Exception(
+                                     f"Error setting mode: {response.status}",
+                                     responsecontent,
+                                 )
+             except Exception as e:
+                 self._logger.error(f"Error: {e}", stack_info=True)
+                 raise e
+             
+      # Funkce na nastavení kolik dodat kWh v době NT do bojleru              
+    async def set_boiler_delivery_limit(self, limit: int)-> bool:
+        with tracer.start_as_current_span("set_bojler_delivery_limit") as span:
+            try:
+                self._logger.debug(f"Setting bojler delivery limit to {limit}")
+                return await self.set_box_params_internal("boiler_prms", "wd", limit)
+            except Exception as e:
+                self._logger.error(f"Error: {e}", stack_info=True)
+                raise e
 
-# # Funkce na nastavení kolik dodat kWh v době NT do bojleru    
-#     async def set_boiler_mode(self, mode: str) -> bool:
-#         with tracer.start_as_current_span("set_boiler_mode") as span:
-#             try:
-#                 self._logger.debug(f"Setting boiler energy to {mode}")
-#                 async with self.get_session() as session:
-#                     data = json.dumps(
-#                         {
-#                             "id_device": self.box_id,
-#                             "table": "boiler_prms",
-#                             "column": "wd",
-#                             "value": self.boiler_wh,
-#                         }
-#                     )
 
-#                     _nonce = int(time.time() * 1000)
-#                     target_url = f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
+    # Funkce zapnutí maual modu
+     async def set_boiler_mode(self, mode: str) -> bool:
+         with tracer.start_as_current_span("set_boiler_mode") as span:
+             try:
+                 self._logger.debug(f"Setting boiler  energy to {mode} w")
+                 async with self.get_session() as session:
+                     data = json.dumps(
+                         {
+                             "id_device": self.box_id,
+                             "table": "boiler_prms",
+                             "column": "manual",
+                             "value": mode,
+                         }
+                     )
 
-#                     self._logger.debug(
-#                         f"Sending boiler energy request to {target_url} with {data.replace(self.box_id, 'xxxxxx')}"
-#                     )
-#                     with tracer.start_as_current_span(
-#                         "set_mode.post",
-#                         kind=SpanKind.SERVER,
-#                         attributes={"http.url": target_url, "http.method": "POST"},
-#                     ):
-#                         async with session.post(
-#                             target_url,
-#                             data=data,
-#                             headers={"Content-Type": "application/json"},
-#                         ) as response:
-#                             responsecontent = await response.text()
-#                             if response.status == 200:
-#                                 response_json = json.loads(responsecontent)
-#                                 message = response_json[0][2]
-#                                 self._logger.info(f"Response: {message}")
-#                                 return True
-#                             else:
-#                                 raise Exception(
-#                                     f"Error setting bojler energy: {response.status}",
-#                                     responsecontent,
-#                                 )
-#             except Exception as e:
-#                 self._logger.error(f"Error: {e}", stack_info=True)
-#                 raise e
+                     _nonce = int(time.time() * 1000)
+                     target_url = f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
+
+                     self._logger.debug(
+                         f"Sending boiler energy request to {target_url} with {data.replace(self.box_id, 'xxxxxx')}"
+                     )
+                     with tracer.start_as_current_span(
+                         "set_mode.post",
+                         kind=SpanKind.SERVER,
+                         attributes={"http.url": target_url, "http.method": "POST"},
+                     ):
+                         async with session.post(
+                             target_url,
+                             data=data,
+                             headers={"Content-Type": "application/json"},
+                         ) as response:
+                             responsecontent = await response.text()
+                             if response.status == 200:
+                                 response_json = json.loads(responsecontent)
+                                 message = response_json[0][2]
+                                 self._logger.info(f"Response: {message}")
+                                 return True
+                             else:
+                                 raise Exception(
+                                     f"Error setting bojler energy: {response.status}",
+                                     responsecontent,
+                                 )
+             except Exception as e:
+                 self._logger.error(f"Error: {e}", stack_info=True)
+                 raise e

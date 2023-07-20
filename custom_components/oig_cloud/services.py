@@ -43,7 +43,9 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
         grid_mode = call.data.get("Mode")
         limit = call.data.get("Limit")
 
-        if (grid_mode is None and limit is None) or (grid_mode is not None and limit is not None):
+        if (grid_mode is None and limit is None) or (
+            grid_mode is not None and limit is not None
+        ):
             raise vol.Invalid(
                 "Musí být nastaven právě jeden parametr (Režim nebo Limit)"
             )
@@ -61,6 +63,43 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
                 success = await client.set_grid_delivery_limit(int(limit))
                 if not success:
                     raise vol.Invalid("Limit se nepodařilo nastavit.")
+
+    async def async_set_boiler_mode(call):
+        acknowledged = call.data.get("Acknowledgement")
+        limit = call.data.get("Limit")
+
+        if not acknowledged:
+            raise vol.Invalid("Acknowledgement is required")
+
+        if limit is not None and (limit > 200000 or limit < 1):
+            raise vol.Invalid("Limit musí být v rozmezí 1-200000")
+
+        if limit is not None:
+            success = await client.set_boiler_delivery_limit(int(limit))
+            if not success:
+                raise vol.Invalid("Limit se nepodařilo nastavit.")
+
+        with tracer.start_as_current_span("async_set_boiler_mode"):
+            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
+            mode = call.data.get("Mode")
+            mode_value = MODES.get(mode)
+            success = await client.async_set_boiler_mode(mode_value, int(limit))
+
+    async def async_set_battery_formating(call):
+        acknowledged = call.data.get("Acknowledgement")
+        limit = call.data.get("Limit")
+
+        if not acknowledged:
+            raise vol.Invalid("Acknowledgement is required")
+
+        if limit is not None and (limit > 100 or limit < 20):
+            raise vol.Invalid("Limit musí být v rozmezí 20-100")
+
+        with tracer.start_as_current_span("async_set_battery_formating"):
+            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
+            mode = call.data.get("Mode")
+            mode_value = MODES.get(mode)
+            success = await client.async_set_battery_formating(mode_value, int(limit))
 
     hass.services.async_register(
         DOMAIN,
@@ -97,6 +136,42 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
                 "Limit": vol.Any(None, vol.Coerce(int)),
                 "Acknowledgement": vol.Boolean(1),
                 "Upozornění": vol.Boolean(1),
+            }
+        ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "set_boiler_mode",
+        async_set_boiler_mode,
+        schema=vol.Schema(
+            {
+                "Mode": vol.In(
+                    [
+                        "Vypnuto / Off",
+                        "Zapnuto / On",
+                    ]
+                ),
+                "Acknowledgement": vol.Boolean(1),
+                "Limit": vol.Any(None, vol.Coerce(int)),
+            }
+        ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "set_battery_formating",
+        async_set_battery_formating,
+        schema=vol.Schema(
+            {
+                "Mode": vol.In(
+                    [
+                        "Vypnuto / Off",
+                        "Zapnuto / On",
+                    ]
+                ),
+                "Acknowledgement": vol.Boolean(1),
+                "Limit": vol.Any(None, vol.Coerce(int)),
             }
         ),
     )
