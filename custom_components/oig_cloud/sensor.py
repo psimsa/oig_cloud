@@ -6,7 +6,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .oig_cloud_computed_sensor import OigCloudComputedSensor
-from .oig_cloud_sensor import OigCloudSensor
+from .oig_cloud_data_sensor import OigCloudDataSensor
 from .const import (
     DOMAIN,
 )
@@ -41,7 +41,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
     # Add common entities
     async_add_entities(
-        OigCloudSensor(coordinator, sensor_type)
+        OigCloudDataSensor(coordinator, sensor_type)
         for sensor_type in SENSOR_TYPES
         if not "requires" in SENSOR_TYPES[sensor_type].keys()
         and SENSOR_TYPES[sensor_type]["node_id"] is not None
@@ -57,7 +57,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     # Add entities that require 'boiler'
     if len(oig_cloud.last_state[box_id]["boiler"]) > 0:
         async_add_entities(
-            OigCloudSensor(coordinator, sensor_type)
+            OigCloudDataSensor(coordinator, sensor_type)
             for sensor_type in SENSOR_TYPES
             if "requires" in SENSOR_TYPES[sensor_type].keys()
             and "boiler" in SENSOR_TYPES[sensor_type]["requires"]
