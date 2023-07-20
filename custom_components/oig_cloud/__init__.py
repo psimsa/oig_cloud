@@ -14,7 +14,6 @@ from .services import async_setup_entry_services
 from .shared.tracing import setup_tracing
 from .shared.logging import setup_otel_logging
 
-
 tracer = trace.get_tracer(__name__)
 
 
@@ -24,7 +23,7 @@ async def async_setup(hass: core.HomeAssistant, config: dict):
 
 
 async def async_setup_entry(
-    hass: core.HomeAssistant, entry: config_entries.ConfigEntry
+        hass: core.HomeAssistant, entry: config_entries.ConfigEntry
 ):
     try:
         username = entry.data[CONF_USERNAME]
