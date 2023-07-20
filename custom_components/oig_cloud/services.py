@@ -126,8 +126,18 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
         if not accepted:
             raise HomeAssistantError("Upozornění je třeba odsouhlasit")
 
-        grid_mode: Optional[str] = call.data.get("Mode")
-        limit: Optional[int] = call.data.get("Limit")
+        grid_mode = call.data.get("Mode")
+        limit = call.data.get("Limit")
+
+        if (grid_mode is None and limit is None) or (
+            grid_mode is not None and limit is not None
+        ):
+            raise vol.Invalid(
+                "Musí být nastaven právě jeden parametr (Režim nebo Limit)"
+            )
+
+        if limit is not None and (limit > 9999 or limit < 1):
+            raise vol.Invalid("Limit musí být v rozmezí 1-9999")
 
         with tracer.start_as_current_span("async_set_grid_delivery"):
             try:
@@ -143,80 +153,48 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
                     else:
                         raise HomeAssistantError(f"Failed to set grid delivery mode to {grid_mode}")
 
-                if limit is not None:
-                    _LOGGER.info(f"Setting grid delivery limit to {limit}W")
-                    success: bool = await client.set_grid_delivery_limit(int(limit))
-                    if success:
-                        _LOGGER.info(f"Successfully set grid delivery limit to {limit}W")
-                    else:
-                        raise HomeAssistantError("Failed to set grid delivery limit")
-                
-                # Refresh coordinator data
-                await entry_data["coordinator"].async_refresh()
-                
-            except OigCloudApiError as err:
-                raise HomeAssistantError(f"API error: {err}") from err
-            except Exception as err:
-                raise HomeAssistantError(f"Unexpected error: {err}") from err
+            if limit is not None:
+                success = await client.set_grid_delivery_limit(int(limit))
+                if not success:
+                    raise vol.Invalid("Limit se nepodařilo nastavit.")
 
-    async def async_set_boiler_mode(call: ServiceCall) -> None:
-        """Set OIG Cloud boiler mode."""
-        acknowledged: bool = call.data.get("Acknowledgement", False)
+    async def async_set_boiler_mode(call):
+        acknowledged = call.data.get("Acknowledgement")
+        limit = call.data.get("Limit")
+
         if not acknowledged:
-            raise HomeAssistantError("Acknowledgement is required")
+            raise vol.Invalid("Acknowledgement is required")
+
+        if limit is not None and (limit > 200000 or limit < 1):
+            raise vol.Invalid("Limit musí být v rozmezí 1-200000")
+
+        if limit is not None:
+            success = await client.set_boiler_delivery_limit(int(limit))
+            if not success:
+                raise vol.Invalid("Limit se nepodařilo nastavit.")
 
         with tracer.start_as_current_span("async_set_boiler_mode"):
-            try:
-                entry_data = hass.data[DOMAIN][entry.entry_id]
-                client: OigCloudApi = entry_data["api"]
-                mode: str = call.data.get("Mode")
-                mode_value: int = BOILER_MODE.get(mode)
-                
-                _LOGGER.info(f"Setting boiler mode to {mode} (value: {mode_value})")
-                success: bool = await client.set_boiler_mode(mode_value)
-                
-                if success:
-                    _LOGGER.info(f"Successfully set boiler mode to {mode}")
-                    # Refresh coordinator data
-                    await entry_data["coordinator"].async_refresh()
-                else:
-                    raise HomeAssistantError(f"Failed to set boiler mode to {mode}")
-            except OigCloudApiError as err:
-                raise HomeAssistantError(f"API error: {err}") from err
-            except Exception as err:
-                raise HomeAssistantError(f"Unexpected error: {err}") from err
+            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
+            mode = call.data.get("Mode")
+            mode_value = MODES.get(mode)
+            success = await client.async_set_boiler_mode(mode_value, int(limit))
 
-    async def async_set_formating_mode(call: ServiceCall) -> None:
-        """Set OIG Cloud battery formatting mode."""
-        acknowledged: bool = call.data.get("Acknowledgement", False)
+    async def async_set_battery_formating(call):
+        acknowledged = call.data.get("Acknowledgement")
+        limit = call.data.get("Limit")
+
         if not acknowledged:
-            raise HomeAssistantError("Acknowledgement is required")
+            raise vol.Invalid("Acknowledgement is required")
 
-        with tracer.start_as_current_span("async_set_formating_mode"):
-            try:
-                entry_data = hass.data[DOMAIN][entry.entry_id]
-                client: OigCloudApi = entry_data["api"]
-                mode: str = call.data.get("Mode")
-                limit: Optional[int] = call.data.get("Limit")
-                mode_value: int = FORMAT_BATTERY.get(mode)
-                
-                _LOGGER.info(f"Setting battery formatting mode to {mode} (value: {mode_value}) with limit {limit}")
-                success: bool = await client.set_formating_mode(limit if limit is not None else mode_value)
-                
-                if success:
-                    _LOGGER.info(f"Successfully set battery formatting mode to {mode}")
-                    # Refresh coordinator data
-                    await entry_data["coordinator"].async_refresh()
-                else:
-                    raise HomeAssistantError(f"Failed to set battery formatting mode to {mode}")
-            except OigCloudApiError as err:
-                raise HomeAssistantError(f"API error: {err}") from err
-            except Exception as err:
-                raise HomeAssistantError(f"Unexpected error: {err}") from err
+        if limit is not None and (limit > 100 or limit < 20):
+            raise vol.Invalid("Limit musí být v rozmezí 20-100")
 
-    # Register services
-    _LOGGER.debug("Registering OIG Cloud services")
-    
+        with tracer.start_as_current_span("async_set_battery_formating"):
+            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
+            mode = call.data.get("Mode")
+            mode_value = MODES.get(mode)
+            success = await client.async_set_battery_formating(mode_value, int(limit))
+
     hass.services.async_register(
         DOMAIN,
         "set_box_mode",
@@ -228,21 +206,54 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
         DOMAIN,
         "set_grid_delivery",
         async_set_grid_delivery,
-        schema=SCHEMA_GRID_DELIVERY,
+        schema=vol.Schema(
+            {
+                "Mode": vol.In(
+                    [
+                        "Vypnuto / Off",
+                        "Zapnuto / On",
+                        "S omezením / Limited",
+                    ]
+                ),
+                "Limit": vol.Any(None, vol.Coerce(int)),
+                "Acknowledgement": vol.Boolean(1),
+                "Upozornění": vol.Boolean(1),
+            }
+        ),
     )
 
     hass.services.async_register(
         DOMAIN,
         "set_boiler_mode",
         async_set_boiler_mode,
-        schema=SCHEMA_BOILER_MODE,
+        schema=vol.Schema(
+            {
+                "Mode": vol.In(
+                    [
+                        "Vypnuto / Off",
+                        "Zapnuto / On",
+                    ]
+                ),
+                "Acknowledgement": vol.Boolean(1),
+                "Limit": vol.Any(None, vol.Coerce(int)),
+            }
+        ),
     )
 
     hass.services.async_register(
         DOMAIN,
-        "set_formating_mode",
-        async_set_formating_mode,
-        schema=SCHEMA_FORMATTING_MODE,
+        "set_battery_formating",
+        async_set_battery_formating,
+        schema=vol.Schema(
+            {
+                "Mode": vol.In(
+                    [
+                        "Vypnuto / Off",
+                        "Zapnuto / On",
+                    ]
+                ),
+                "Acknowledgement": vol.Boolean(1),
+                "Limit": vol.Any(None, vol.Coerce(int)),
+            }
+        ),
     )
-    
-    _LOGGER.info("OIG Cloud services registered")
