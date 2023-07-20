@@ -61,8 +61,8 @@ SENSOR_TYPES = {
         "name_cs": "Výkon panelů celkem",
         "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
-        "node_id": "",
-        "node_key": "",
+        "node_id": None,
+        "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,
     },
     "dc_in_fv_proc": {
@@ -205,8 +205,8 @@ SENSOR_TYPES = {
         "name_cs": "Síť - Zátěž celkem",
         "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
-        "node_id": "",
-        "node_key": "",
+        "node_id": None,
+        "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,
     },
     "dc_in_fv_ad": {

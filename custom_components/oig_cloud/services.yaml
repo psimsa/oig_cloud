@@ -1,89 +1,89 @@
 set_box_mode:
-    name: Set BatteryBox Mode
-    description: |
-      Set the mode of the device.
-      Please note upon successfully calling the service, it usually takes up to 10 minutes for the changes to be reflected 
-      in the BBox and the UI, but occasionally may take up to an hour.
-      You can check whether the call was successful in the OIG web or mobile app in the Notifications section.
-    fields:
-        Mode:
-            description: The mode to set
-            example: "Home 1"
-            selector:
-              select:
-                options:
-                  - "Home 1"
-                  - "Home 2"
-                  - "Home 3"
-                  - "Home UPS"
-        Acknowledgement:
-            description: |
-              I acknowledge that calling the service will result in parameter modification of a live system.
-              I take on full responsibility for the changes and any effect they may have, expected or otherwise.
-              Beru na vědomí, že volání této služby povede ke změně parametrů živého systému. 
-              Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
-            selector:
-              boolean:
+  name: Set BatteryBox Mode
+  description: |
+    Set the mode of the device.
+    Please note upon successfully calling the service, it usually takes up to 10 minutes for the changes to be reflected 
+    in the BBox and the UI, but occasionally may take up to an hour.
+    You can check whether the call was successful in the OIG web or mobile app in the Notifications section.
+  fields:
+    Mode:
+      description: The mode to set
+      example: 'Home 1'
+      selector:
+        select:
+          options:
+            - 'Home 1'
+            - 'Home 2'
+            - 'Home 3'
+            - 'Home UPS'
+    Acknowledgement:
+      description: |
+        I acknowledge that calling the service will result in parameter modification of a live system.
+        I take on full responsibility for the changes and any effect they may have, expected or otherwise.
+        Beru na vědomí, že volání této služby povede ke změně parametrů živého systému. 
+        Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
+      selector:
+        boolean:
 
 set_grid_delivery:
-    name: Nastavení přetoků
-    description: |
-      Povolení nebo zakázání přetoků do distribuční sítě. Přetoky je možné zcela vypnout, zapnout, nebo zapnout s limitem. 
-      K použití této funkce musí být nainstalován odpovídající firmware a může trvat delší dobu, než se nastavení projeví.
-      V případě nastavení limitu je třeba provést 2 změny - nastavení boxu do režimu omezení přetoků a následně nastavení
-      limitu přetoků. V aktuální verzi (omezení oig) je třeba, aby proběhly postupně. Musí proběhnout ve výše uvedeném 
-      pořadí a před nastavením limitu přetoků je třeba, aby byla již akceptována změna režimu přetoků. Nastavení je tedy
-      třeba provést ve dvou krocích: Nejprve nastavit režim přetoků na "S omezením," poté skrze automatizaci počkat na změnu 
-      režimu přetoků (viz. příslušný senzor) a následně opakovaným voláním služby nastavit limit přetoků. 
-      Berte prosím v úvahu, že v mezičase může dojít k nadměrnému exportu do sítě. Příklad nastavení lze nalézt na 
-      https://raw.githubusercontent.com/psimsa/oig_cloud/main/docs/grid_delivery_script_sample.yaml
-    fields:
-        Mode:
-            description: Režim přetoků
-            selector:
-              select:
-                options:
-                - Vypnuto / Off
-                - Zapnuto / On
-                - S omezením / Limited
-        Limit:
-            description: Omezení přetoků
-            example: 1000
-            selector:
-              number:
-                min: 1
-                max: 9999
-                unit_of_measurement: W
-        Acknowledgement:
-            description: |
-              I acknowledge that calling the service will result in parameter modification of a live system.
-              I take on full responsibility for the changes and any effect they may have, expected or otherwise.
-              Beru na vědomí, že volání této služby povede ke změně parametrů živého systému.
-              Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
-            selector:
-              boolean:
-        Upozornění:
-            description: |
-              Před použitím této funkce se seznamte s omezeními dostupnými v aplikaci OIG Power / ČEZ Battery Box.
-              AKTIVACÍ PŘETOKŮ NA ZAŘÍZENÍ BATTERY BOX BERETE NA VĚDOMÍ NÍŽE UVEDENÉ A PŘEBÍRÁTE NA SEBE
-              PLNOU ZODPOVĚDNOST ZA PŘÍPADNÉ SANKCE PORUŠENÍ PPDS. JAKO VÝROBCE ZAŘÍZENÍ BATTERY BOX
-              NEJSME ZODPOVĚDNI ZA TAKOVÉ JEDNÁNÍ Z VAŠÍ STRANY.
-              Povolením přetoků BATTERY BOX umožňuje posílat přebytky z výroby do distribuční sítě (DS). Nadvýroba vzniká
-              v případě, kdy elektrárna vyrábí, v objektu již došlo k uspokojení veškeré zátěže a BATTERY BOX má nabité
-              baterie. Dle Pravidel provozování distribučních soustav (dále PPDS) je možné posílat do DS přebytky energie 
-              pouze pokud **máte dle Smlouvy o připojení (SoP) tento stav schválen provozovatelem DS** odpovídající skutečnému
-              výkonu FVE, již došlo k **Prvnímu paralelnímu připojení** (dále jen PPP) a obdrželi jste Protokol o PPP.
-              Jako majitel zařízení BATTERY BOX máte možnost sám aktivovat nebo deaktivovat povolení přetoků. Pokud
-              byste provedli povolení přetoků dříve, než povolují PPDS, hrozí Vám ze strany provozovatele DS udělení pokuty
-              dle platného ceníku. Data o aktivaci přetoků zařízení samo automaticky archivuje, je proto možné vždy doložit,
-              kdy byl na zařízení takový příkaz zadán. V případě, že již máte platné povolení pro dodávky přetoků do DS 
-              a rozhodli jste se navýšit dodatečně výkon Vaší FVE, jste povinni zajistit si od provozovatele DS nové SoP 
-              a PPP, odpovídající navýšenému výkonu. Do té doby nejste oprávněni posílat přebytek z navýšeného výkonu do DS 
-              s rizikem pokuty od provozovatele DS. Plné znění tohoto upozornění naleznete na 
-              https://drive.google.com/viewerng/viewer?embedded=true&url=https://www.oigpower.cz/cez/pretoky-sankce.pdf
-            selector:
-              boolean:
-              
+  name: Nastavení přetoků
+  description: |
+    Povolení nebo zakázání přetoků do distribuční sítě. Přetoky je možné zcela vypnout, zapnout, nebo zapnout s limitem. 
+    K použití této funkce musí být nainstalován odpovídající firmware a může trvat delší dobu, než se nastavení projeví.
+    V případě nastavení limitu je třeba provést 2 změny - nastavení boxu do režimu omezení přetoků a následně nastavení
+    limitu přetoků. V aktuální verzi (omezení oig) je třeba, aby proběhly postupně. Musí proběhnout ve výše uvedeném 
+    pořadí a před nastavením limitu přetoků je třeba, aby byla již akceptována změna režimu přetoků. Nastavení je tedy
+    třeba provést ve dvou krocích: Nejprve nastavit režim přetoků na "S omezením," poté skrze automatizaci počkat na změnu 
+    režimu přetoků (viz. příslušný senzor) a následně opakovaným voláním služby nastavit limit přetoků. 
+    Berte prosím v úvahu, že v mezičase může dojít k nadměrnému exportu do sítě. Příklad nastavení lze nalézt na 
+    https://raw.githubusercontent.com/psimsa/oig_cloud/main/docs/grid_delivery_script_sample.yaml
+  fields:
+    Mode:
+      description: Režim přetoků
+      selector:
+        select:
+          options:
+            - Vypnuto / Off
+            - Zapnuto / On
+            - S omezením / Limited
+    Limit:
+      description: Omezení přetoků
+      example: 1000
+      selector:
+        number:
+          min: 1
+          max: 9999
+          unit_of_measurement: W
+    Acknowledgement:
+      description: |
+        I acknowledge that calling the service will result in parameter modification of a live system.
+        I take on full responsibility for the changes and any effect they may have, expected or otherwise.
+        Beru na vědomí, že volání této služby povede ke změně parametrů živého systému.
+        Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
+      selector:
+        boolean:
+    Upozornění:
+      description: |
+        Před použitím této funkce se seznamte s omezeními dostupnými v aplikaci OIG Power / ČEZ Battery Box.
+        AKTIVACÍ PŘETOKŮ NA ZAŘÍZENÍ BATTERY BOX BERETE NA VĚDOMÍ NÍŽE UVEDENÉ A PŘEBÍRÁTE NA SEBE
+        PLNOU ZODPOVĚDNOST ZA PŘÍPADNÉ SANKCE PORUŠENÍ PPDS. JAKO VÝROBCE ZAŘÍZENÍ BATTERY BOX
+        NEJSME ZODPOVĚDNI ZA TAKOVÉ JEDNÁNÍ Z VAŠÍ STRANY.
+        Povolením přetoků BATTERY BOX umožňuje posílat přebytky z výroby do distribuční sítě (DS). Nadvýroba vzniká
+        v případě, kdy elektrárna vyrábí, v objektu již došlo k uspokojení veškeré zátěže a BATTERY BOX má nabité
+        baterie. Dle Pravidel provozování distribučních soustav (dále PPDS) je možné posílat do DS přebytky energie
+        pouze pokud **máte dle Smlouvy o připojení (SoP) tento stav schválen provozovatelem DS** odpovídající skutečnému
+        výkonu FVE, již došlo k **Prvnímu paralelnímu připojení** (dále jen PPP) a obdrželi jste Protokol o PPP.
+        Jako majitel zařízení BATTERY BOX máte možnost sám aktivovat nebo deaktivovat povolení přetoků. Pokud
+        byste provedli povolení přetoků dříve, než povolují PPDS, hrozí Vám ze strany provozovatele DS udělení pokuty
+        dle platného ceníku. Data o aktivaci přetoků zařízení samo automaticky archivuje, je proto možné vždy doložit,
+        kdy byl na zařízení takový příkaz zadán. V případě, že již máte platné povolení pro dodávky přetoků do DS 
+        a rozhodli jste se navýšit dodatečně výkon Vaší FVE, jste povinni zajistit si od provozovatele DS nové SoP 
+        a PPP, odpovídající navýšenému výkonu. Do té doby nejste oprávněni posílat přebytek z navýšeného výkonu do DS 
+        s rizikem pokuty od provozovatele DS. Plné znění tohoto upozornění naleznete na 
+        https://drive.google.com/viewerng/viewer?embedded=true&url=https://www.oigpower.cz/cez/pretoky-sankce.pdf
+      selector:
+        boolean:              
+
 set_battery_formating:
   name: Nabíjení baterie ze síte
   description: Začne nabíjet baterii ze sítě.

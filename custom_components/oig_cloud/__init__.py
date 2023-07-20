@@ -14,7 +14,6 @@ from .services import async_setup_entry_services
 from .shared.tracing import setup_tracing
 from .shared.logging import setup_otel_logging
 
-
 tracer = trace.get_tracer(__name__)
 
 
@@ -24,7 +23,7 @@ async def async_setup(hass: core.HomeAssistant, config: dict):
 
 
 async def async_setup_entry(
-    hass: core.HomeAssistant, entry: config_entries.ConfigEntry
+        hass: core.HomeAssistant, entry: config_entries.ConfigEntry
 ):
     try:
         username = entry.data[CONF_USERNAME]
@@ -36,8 +35,8 @@ async def async_setup_entry(
             no_telemetry = entry.data[CONF_NO_TELEMETRY]
 
         if no_telemetry is False:
-            email_hash = hashlib.md5(username.encode("utf-8")).hexdigest()
-            hass_id = hashlib.md5(hass.data["core.uuid"].encode("utf-8")).hexdigest()
+            email_hash = hashlib.sha256(username.encode("utf-8")).hexdigest()
+            hass_id = hashlib.sha256(hass.data["core.uuid"].encode("utf-8")).hexdigest()
 
             setup_tracing(email_hash, hass_id)
             api_logger = logging.getLogger(oig_cloud_api.__name__)

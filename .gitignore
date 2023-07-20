@@ -175,3 +175,5 @@ scenes.yaml
 scripts.yaml
 secrets.yaml
 blueprints/
+/.vs
+/wslvenv
