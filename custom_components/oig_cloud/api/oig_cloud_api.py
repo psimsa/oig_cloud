@@ -88,9 +88,9 @@ class OigCloudApi:
                                     )
                                     return True
                             raise Exception("Authentication failed")
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
+            except Exception as exception:
+                self._logger.error(f"Error: {exception}", stack_info=True)
+                raise exception
 
     def get_session(self) -> aiohttp.ClientSession:
         return aiohttp.ClientSession(headers={"Cookie": f"PHPSESSID={self._phpsessid}"})
@@ -157,18 +157,18 @@ class OigCloudApi:
             try:
                 self._logger.debug(f"Setting mode to {mode}")
                 return await self.set_box_params_internal("box_prms", "mode", mode)
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
+            except Exception as exception:
+                self._logger.error(f"Error: {exception}", stack_info=True)
+                raise exception
 
     async def set_grid_delivery_limit(self, limit: int) -> bool:
         with tracer.start_as_current_span("set_grid_delivery_limit"):
             try:
                 self._logger.debug(f"Setting grid delivery limit to {limit}")
                 return await self.set_box_params_internal("invertor_prm1", "p_max_feed_grid", limit)
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
+            except Exception as exception:
+                self._logger.error(f"Error: {exception}", stack_info=True)
+                raise exception
 
     async def set_box_params_internal(self, table: str, column: str, value: str) -> bool:
         with tracer.start_as_current_span("set_box_params_internal"):
@@ -254,9 +254,9 @@ class OigCloudApi:
                                 raise Exception(
                                     "Error setting grid delivery", responsecontent
                                 )
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
+            except Exception as exception:
+                self._logger.error(f"Error: {exception}", stack_info=True)
+                raise exception
 
     # Funkce na nastavení nabíjení baterie z gridu
     async def set_battery_formating(self, mode: str) -> bool:
@@ -299,9 +299,9 @@ class OigCloudApi:
                                     f"Error setting mode: {response.status}",
                                     responsecontent,
                                 )
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
+            except Exception as exception:
+                self._logger.error(f"Error: {exception}", stack_info=True)
+                raise exception
 
     # Funkce na nastavení kolik dodat kWh v době NT do bojleru
     async def set_boiler_mode(self, mode: str) -> bool:
@@ -345,6 +345,6 @@ class OigCloudApi:
                                     f"Error setting bojler energy: {response.status}",
                                     responsecontent,
                                 )
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
+            except Exception as exception:
+                self._logger.error(f"Error: {exception}", stack_info=True)
+                raise exception
