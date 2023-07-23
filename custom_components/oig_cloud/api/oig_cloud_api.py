@@ -186,7 +186,9 @@ class OigCloudApi:
                 target_url = f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
 
                 self._logger.debug(
-                    f"Sending mode request to {target_url} with {data.replace(self.box_id, 'xxxxxx')}"
+                    "Sending mode request to %s with %s",
+                    target_url,
+                    data.replace(self.box_id, "xxxxxx"),
                 )
                 with tracer.start_as_current_span(
                         "set_box_params_internal.post",

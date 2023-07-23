@@ -438,7 +438,7 @@ disable=raw-checker-failed,
 enable=c-extension-no-member
 
 # Custom ignores
-ignore=E402
+ignore=E402,W0718,W0719
 
 
 [METHOD_ARGS]
