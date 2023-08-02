@@ -76,7 +76,7 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
         with tracer.start_as_current_span("async_set_boiler_mode"):
             client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
             mode = call.data.get("Mode")
-            mode_value = MODES.get(mode)
+            mode_value = BOILER_MODE.get(mode)
             success = await client.set_boiler_mode(mode_value)
 
     async def async_set_formating_mode(call):
@@ -85,11 +85,14 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
         if not acknowledged:
             raise vol.Invalid("Acknowledgement is required")
 
+        if limit is not None and (limit > 100 or limit < 20):
+            raise vol.Invalid("Limit musí být v rozmezí 20-100")
+
         with tracer.start_as_current_span("async_set_formating_mode"):
             client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
             mode = call.data.get("Mode")
-            mode_value = MODES.get(mode)
-            success = await client.set_formating_mode(mode_value)
+            mode_value = FORMAT_BATTERY.get(mode)
+            success = await client.set_formating_mode(limit)
 
     hass.services.async_register(
         DOMAIN,
