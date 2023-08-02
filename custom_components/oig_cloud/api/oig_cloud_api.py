@@ -273,8 +273,7 @@ class OigCloudApi:
                 async with self.get_session() as session:
                     data = json.dumps(
                         {
-                            "id_device": self.box_id,
-                            "value": mode,
+                           "bat_ac": mode,
                         }
                     )
 
