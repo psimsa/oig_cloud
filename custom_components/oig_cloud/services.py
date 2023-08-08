@@ -43,7 +43,9 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
         grid_mode = call.data.get("Mode")
         limit = call.data.get("Limit")
 
-        if (grid_mode is None and limit is None) or (grid_mode is not None and limit is not None):
+        if (grid_mode is None and limit is None) or (
+            grid_mode is not None and limit is not None
+        ):
             raise vol.Invalid(
                 "Musí být nastaven právě jeden parametr (Režim nebo Limit)"
             )
@@ -99,34 +101,4 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
                 "Upozornění": vol.Boolean(1),
             }
         )
-            hass.services.async_register(
-        DOMAIN,
-        "set_boiler_mode",
-        async_set_boiler_mode,
-        schema=vol.Schema(
-            {
-                vol.Required("Mode"): vol.In(
-                    [
-                        "Zapnuto / On",
-                        "Vypnuto / Off",
-                    ]
-                )
-            }
-        ),
-    ),
-        hass.services.async_register(
-        DOMAIN,
-        "set_battery_formatin",
-        async_set_battery_formatin,
-        schema=vol.Schema(
-            {
-                vol.Required("Mode"): vol.In(
-                    [
-                        "Zapnuto / On",
-                        "Vypnuto / Off",
-                    ]
-                )
-            }
-        ),
-    )  ,
     )
