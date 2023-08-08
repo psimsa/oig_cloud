@@ -130,7 +130,7 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
                 "Acknowledgement": vol.Boolean(1),
                 "Upozornění": vol.Boolean(1),
             }
-        ),
+        )
     )
 
     hass.services.async_register(
