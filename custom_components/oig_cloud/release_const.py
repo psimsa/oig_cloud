@@ -1,2 +1,2 @@
-COMPONENT_VERSION = "1.0.2"
-SERVICE_NAME = "oig_cloud"
+COMPONENT_VERSION = "1.0.3"
+SERVICE_NAME = "oig_cloud_dev"

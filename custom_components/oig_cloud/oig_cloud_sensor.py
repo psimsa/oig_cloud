@@ -2,8 +2,8 @@ import logging
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DEFAULT_NAME, DOMAIN
-from .sensor_types import SENSOR_TYPES
+from custom_components.oig_cloud.const import DEFAULT_NAME, DOMAIN
+from custom_components.oig_cloud.sensor_types import SENSOR_TYPES
 
 _LOGGER = logging.getLogger(__name__)
 

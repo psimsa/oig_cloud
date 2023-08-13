@@ -4,8 +4,8 @@ from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExport
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-from ..const import OT_ENDPOINT, OT_HEADERS, OT_INSECURE
-from .shared import get_resource
+from custom_components.oig_cloud.const import OT_ENDPOINT, OT_HEADERS, OT_INSECURE
+from custom_components.oig_cloud.shared.shared import get_resource
 
 def setup_tracing(email_hash:str, hass_id: str):
     resource = get_resource(email_hash, hass_id)

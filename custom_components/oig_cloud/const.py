@@ -1,5 +1,5 @@
 
-from .release_const import COMPONENT_VERSION, SERVICE_NAME
+from custom_components.oig_cloud.release_const import COMPONENT_VERSION, SERVICE_NAME
 
 DOMAIN = "oig_cloud"
 

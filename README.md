@@ -9,6 +9,9 @@
 # OIG Cloud Integrace pro Home Assistant
 Tato integrace umožňuje propojení Čez Battery Box s Home Assistantem skrze OIG Cloud. Poskytuje základní informace o stavu baterie, výroby, spotřeby a historických dat. Obsahuje také potřebné entity pro použití stránky Energie a umožňuje také nastavit pracovní režim boxu a regulovat přetoky do distribuční sítě.
 
+# FB Skupina
+Pokud máte zájem o další informace, přidejte se do [FB skupiny ČEZ Battery Box](https://www.facebook.com/groups/1726585704450979/).
+
 ## Instalace
 Nejjednodušší způsob instalace je přes [HACS](https://hacs.xyz/). V nastavení HACS zvolte "Integrations" a vyhledejte "OIG Cloud". Po instalaci je nutné restartovat Home Assistant.
 

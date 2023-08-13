@@ -1,7 +1,7 @@
 import logging
 
-from .oig_cloud_sensor import OigCloudSensor
-from .shared.shared import GridMode
+from custom_components.oig_cloud.oig_cloud_sensor import OigCloudSensor
+from custom_components.oig_cloud.shared.shared import GridMode
 
 _LOGGER = logging.getLogger(__name__)
 

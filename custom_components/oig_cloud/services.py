@@ -4,8 +4,8 @@ from opentelemetry import trace
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from .const import DOMAIN
-from .api.oig_cloud_api import OigCloudApi
+from custom_components.oig_cloud.const import DOMAIN
+from custom_components.oig_cloud.api.oig_cloud_api import OigCloudApi
 
 MODES = {
     "Home 1": "0",

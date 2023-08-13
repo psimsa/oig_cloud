@@ -3,16 +3,18 @@ import hashlib
 
 from opentelemetry import trace
 
-from .api import oig_cloud_api
 
 from homeassistant import config_entries, core
 from homeassistant.exceptions import ConfigEntryNotReady
 
-from .api.oig_cloud_api import OigCloudApi
-from .const import CONF_NO_TELEMETRY, DOMAIN, CONF_USERNAME, CONF_PASSWORD
-from .services import async_setup_entry_services
-from .shared.tracing import setup_tracing
-from .shared.logging import setup_otel_logging
+from custom_components.oig_cloud.api.oig_cloud_api import OigCloudApi
+from custom_components.oig_cloud.const import CONF_NO_TELEMETRY, DOMAIN, CONF_USERNAME, CONF_PASSWORD
+from custom_components.oig_cloud.services import async_setup_entry_services
+from custom_components.oig_cloud.shared.tracing import setup_tracing
+from custom_components.oig_cloud.shared.logging import setup_otel_logging
+
+from .api import oig_cloud_api
+
 
 tracer = trace.get_tracer(__name__)
 

@@ -9,6 +9,10 @@ from opentelemetry import trace
 from opentelemetry.trace import SpanKind
 
 from homeassistant import core
+from homeassistant.core import callback
+
+from custom_components.oig_cloud.exceptions import OigApiCallError
+
 
 tracer = trace.get_tracer(__name__)
 
@@ -22,7 +26,6 @@ class OigCloudApi:
     _set_mode_url = "inc/php/scripts/Device.Set.Value.php"
     _set_grid_delivery_url = "inc/php/scripts/ToGrid.Toggle.php"
     _set_batt_formating_url = "inc/php/scripts/Battery.Format.Save.php"
-    # {"id_device":"2205232120","table":"invertor_prm1","column":"p_max_feed_grid","value":"2000"}
 
     _username: str = None
     _password: str = None
@@ -31,8 +34,10 @@ class OigCloudApi:
 
     box_id: str = None
 
+    call_in_progress: bool = False
+
     def __init__(
-            self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
+        self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
     ) -> None:
         with tracer.start_as_current_span("initialize"):
             self._no_telemetry = no_telemetry
@@ -56,14 +61,14 @@ class OigCloudApi:
                     data = json.dumps(login_command)
                     headers = {"Content-Type": "application/json"}
                     with tracer.start_as_current_span(
-                            "authenticate.post",
-                            kind=SpanKind.SERVER,
-                            attributes={"http.url": url, "http.method": "POST"},
+                        "authenticate.post",
+                        kind=SpanKind.SERVER,
+                        attributes={"http.url": url, "http.method": "POST"},
                     ):
                         async with session.post(
-                                url,
-                                data=data,
-                                headers=headers,
+                            url,
+                            data=data,
+                            headers=headers,
                         ) as response:
                             responsecontent = await response.text()
                             span.add_event(
@@ -125,9 +130,9 @@ class OigCloudApi:
                 url = self._base_url + self._get_stats_url
                 self._logger.debug(f"Getting stats from {url}")
                 with tracer.start_as_current_span(
-                        "get_stats_internal.get",
-                        kind=SpanKind.SERVER,
-                        attributes={"http.url": url, "http.method": "GET"},
+                    "get_stats_internal.get",
+                    kind=SpanKind.SERVER,
+                    attributes={"http.url": url, "http.method": "GET"},
                 ):
                     async with session.get(url) as response:
                         if response.status == 200:
@@ -149,17 +154,34 @@ class OigCloudApi:
                     return to_return
 
     async def set_box_mode(self, mode: str) -> bool:
+        """
+        Sets the mode of the box.
+
+        Args:
+            mode (str): The mode to set the box to.
+
+        Returns:
+            bool: True if the mode was set successfully, False otherwise.
+        """
         with tracer.start_as_current_span("set_mode"):
             try:
-                self._logger.debug(f"Setting mode to {mode}")
+                if self.call_in_progress:
+                    self._logger.warning("Another call in progress, aborting...")
+                    return False
+                self._logger.debug("Setting mode to %s", mode)
                 return await self.set_box_params_internal("box_prms", "mode", mode)
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
+            except Exception as error:
+                self._logger.error("Error: %s", error, stack_info=True)
+                raise error
+            finally:
+                self.call_in_progress = False
 
     async def set_grid_delivery_limit(self, limit: int) -> bool:
         with tracer.start_as_current_span("set_grid_delivery_limit") as span:
             try:
+                if self.call_in_progress:
+                    self._logger.warning("Another call in progress, aborting...")
+                    return False
                 self._logger.debug(f"Setting grid delivery limit to {limit}")
                 return await self.set_box_params_internal(
                     "invertor_prm1", "p_max_feed_grid", limit
@@ -167,15 +189,22 @@ class OigCloudApi:
             except Exception as e:
                 self._logger.error(f"Error: {e}", stack_info=True)
                 raise e
+            finally:
+                self.call_in_progress = False
 
     async def set_boiler_mode(self, mode: str) -> bool:
-        with tracer.start_as_current_span("set_boiler_mode") as span:
+        with tracer.start_as_current_span("set_boiler_mode"):
             try:
-                self._logger.debug(f"Setting boiler mode to {mode}")
+                if self.call_in_progress:
+                    self._logger.warning("Another call in progress, aborting...")
+                    return False
+                self._logger.debug("Setting boiler mode to %s", mode)
                 return await self.set_box_params_internal("boiler_prms", "manual", mode)
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
+            except Exception as error:
+                self._logger.error("Error: %s", error, stack_info=True)
+                raise error
+            finally:
+                self.call_in_progress = False
 
     async def set_box_params_internal(
         self, table: str, column: str, value: str
@@ -205,7 +234,6 @@ class OigCloudApi:
                         target_url,
                         data=data,
                         headers={"Content-Type": "application/json"},
-
                     ) as response:
                         responsecontent = await response.text()
                         if response.status == 200:
@@ -226,7 +254,9 @@ class OigCloudApi:
                     raise Exception(
                         "Tato funkce je ve vývoji a proto je momentálně dostupná pouze pro systémy s aktivní telemetrií"
                     )
-
+                if self.call_in_progress:
+                    self._logger.warning("Another call in progress, aborting...")
+                    return False
                 self._logger.debug(f"Setting grid delivery to {mode}")
                 async with self.get_session() as session:
                     data = json.dumps(
@@ -244,14 +274,14 @@ class OigCloudApi:
                         f"Sending grid delivery request to {target_url} for {data.replace(self.box_id, 'xxxxxx')}"
                     )
                     with tracer.start_as_current_span(
-                            "set_grid_delivery.post",
-                            kind=SpanKind.SERVER,
-                            attributes={"http.url": target_url, "http.method": "POST"},
+                        "set_grid_delivery.post",
+                        kind=SpanKind.SERVER,
+                        attributes={"http.url": target_url, "http.method": "POST"},
                     ):
                         async with session.post(
-                                target_url,
-                                data=data,
-                                headers={"Content-Type": "application/json"},
+                            target_url,
+                            data=data,
+                            headers={"Content-Type": "application/json"},
                         ) as response:
                             responsecontent = await response.text()
                             if response.status == 200:
@@ -260,28 +290,37 @@ class OigCloudApi:
 
                                 return True
                             else:
-                                raise Exception(
-                                    "Error setting grid delivery", responsecontent
+                                raise OigApiCallError(
+                                    "Error setting grid delivery",
+                                    response.status,
+                                    responsecontent,
                                 )
             except Exception as e:
                 self._logger.error(f"Error: {e}", stack_info=True)
                 raise e
+            finally:
+                self.call_in_progress = False
 
     async def set_formating_mode(self, mode: str) -> bool:
         with tracer.start_as_current_span("set_formating_battery") as span:
             try:
-                self._logger.debug(f"Setting grid delivery to battery {mode}")
+                if self.call_in_progress:
+                    self._logger.warning("Another call in progress, aborting...")
+                    return False
+                self._logger.debug("Setting grid delivery to battery %s", mode)
                 async with self.get_session() as session:
                     data = json.dumps(
                         {
-                           "bat_ac": mode,
+                            "bat_ac": mode,
                         }
                     )
 
                     _nonce = int(time.time() * 1000)
                     target_url = f"{self._base_url}{self._set_batt_formating_url}?_nonce={_nonce}"
                     self._logger.info(
-                        f"Sending grid battery delivery request to {target_url} for {data.replace(self.box_id, 'xxxxxx')}"
+                        "Sending grid battery delivery request to %s for %s",
+                        target_url,
+                        data.replace(self.box_id, "xxxxxx"),
                     )
                     with tracer.start_as_current_span(
                         "set_formating_battery.post",
@@ -292,7 +331,6 @@ class OigCloudApi:
                             target_url,
                             data=data,
                             headers={"Content-Type": "application/json"},
-
                         ) as response:
                             responsecontent = await response.text()
                             if response.status == 200:
@@ -308,4 +346,5 @@ class OigCloudApi:
             except Exception as e:
                 self._logger.error(f"Error: {e}", stack_info=True)
                 raise e
-
+            finally:
+                self.call_in_progress = False
