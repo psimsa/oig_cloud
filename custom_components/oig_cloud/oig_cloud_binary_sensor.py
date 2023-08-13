@@ -1,22 +1,44 @@
 import logging
 
-from custom_components.oig_cloud.binary_sensor_types import BINARY_SENSOR_TYPES
-from custom_components.oig_cloud.const import DEFAULT_NAME, DOMAIN
+from .binary_sensor_types import BINARY_SENSOR_TYPES
+from .const import DEFAULT_NAME, DOMAIN
 
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from custom_components.oig_cloud.const import (
+from .const import (
     DOMAIN,
 )
-from custom_components.oig_cloud.binary_sensor_types import BINARY_SENSOR_TYPES
-from custom_components.oig_cloud.api.oig_cloud_api import OigCloudApi
+from .binary_sensor_types import BINARY_SENSOR_TYPES
+from .api.oig_cloud_api import OigCloudApi
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class OigCloudBinarySensor(CoordinatorEntity, BinarySensorEntity):
+    """Representation of a binary sensor entity for OIG Cloud.
+
+    This class handles the state and attributes of a binary sensor entity for OIG Cloud.
+    It uses a CoordinatorEntity to manage the data updates and a BinarySensorEntity to
+    represent the entity in Home Assistant.
+
+    Args:
+        coordinator (DataUpdateCoordinator): The coordinator that manages the data updates.
+        sensor_type (str): The type of the binary sensor.
+
+    Attributes:
+        entity_id (str): The entity ID of the binary sensor.
+        name (str): The name of the binary sensor.
+        device_class (str): The device class of the binary sensor.
+        state (bool): The state of the binary sensor.
+        unique_id (str): The unique ID of the binary sensor.
+        should_poll (bool): Whether the binary sensor should be polled.
+        entity_category (str): The entity category of the binary sensor.
+        device_info (dict): The device information of the binary sensor.
+
+    """
+
     def __init__(self, coordinator, sensor_type):
         self.coordinator = coordinator
         self._sensor_type = sensor_type
@@ -73,7 +95,7 @@ class OigCloudBinarySensor(CoordinatorEntity, BinarySensorEntity):
         data = self.coordinator.data
         vals = data.values()
         pv_data = list(vals)[0]
-        is_queen =pv_data["queen"]
+        is_queen = pv_data["queen"]
         if is_queen:
             model_name = f"{DEFAULT_NAME} Queen"
         else:

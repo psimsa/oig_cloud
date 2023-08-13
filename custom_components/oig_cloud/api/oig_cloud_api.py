@@ -11,23 +11,29 @@ from opentelemetry.trace import SpanKind
 from homeassistant import core
 from homeassistant.core import callback
 from custom_components.oig_cloud.api.oig_cloud_config import OIGCloudConfig
-from custom_components.oig_cloud.api.oig_cloud_authenticator import OigClassAuthenticator
+from custom_components.oig_cloud.api.oig_cloud_authenticator import (
+    OigClassAuthenticator,
+)
+from custom_components.oig_cloud.const import OIG_BASE_URL, OIG_GET_STATS_URL, OIG_SET_BATT_FORMATTING_URL, OIG_SET_GRID_DELIVERY_URL, OIG_SET_MODE_URL
 
-from custom_components.oig_cloud.exceptions import OigApiCallError
+from custom_components.oig_cloud.exceptions import (
+    OigApiCallError,
+    OigNoTelemetryException,
+)
 
 
 tracer = trace.get_tracer(__name__)
 
 lock = asyncio.Lock()
 
+
 class OigCloudApi:
-    # constants
-    _BASE_URL = "https://www.oigpower.cz/cez/"
-    _LOGIN_URL = "inc/php/scripts/Login.php"
-    _GET_STATS_URL = "json.php"
-    _SET_MODE_URL = "inc/php/scripts/Device.Set.Value.php"
-    _SET_GRID_DELIVERY_URL = "inc/php/scripts/ToGrid.Toggle.php"
-    _SET_BATT_FORMATTING_URL = "inc/php/scripts/Battery.Format.Save.php"
+    # OIG_BASE_URL = "https://www.oigpower.cz/cez/"
+    # OIG_LOGIN_URL = "inc/php/scripts/Login.php"
+    # OIG_GET_STATS_URL = "json.php"
+    # OIG_SET_MODE_URL = "inc/php/scripts/Device.Set.Value.php"
+    # OIG_SET_GRID_DELIVERY_URL = "inc/php/scripts/ToGrid.Toggle.php"
+    # OIG_SET_BATT_FORMATTING_URL = "inc/php/scripts/Battery.Format.Save.php"
 
     call_in_progress: bool = False
     box_id: str = None
@@ -40,16 +46,19 @@ class OigCloudApi:
             self._logger = logging.getLogger(__name__)
 
             self._last_update = datetime.datetime(1, 1, 1, 0, 0)
-            
+
             config: OIGCloudConfig = OIGCloudConfig(username, password)
             self.authenticator = OigClassAuthenticator(config, self._logger)
 
             self.last_state = None
+            self.expected_state = {}
+
             self._logger.debug("OigCloud initialized")
 
-
     def get_session(self) -> aiohttp.ClientSession:
-        return aiohttp.ClientSession(headers={"Cookie": f"PHPSESSID={self.authenticator.config.phpsessid}"})
+        return aiohttp.ClientSession(
+            headers={"Cookie": f"PHPSESSID={self.authenticator.config.phpsessid}"}
+        )
 
     async def get_stats(self) -> object:
         async with lock:
@@ -61,11 +70,11 @@ class OigCloudApi:
                 try:
                     to_return: object = None
                     try:
-                        to_return = await self.get_stats_internal()
+                        to_return = await self._get_stats_internal()
                     except Exception:
                         self._logger.debug("Retrying authentication")
                         if await self.authenticator.authenticate():
-                            to_return = await self.get_stats_internal()
+                            to_return = await self._get_stats_internal()
                     self._logger.debug("Retrieved stats")
                     if self.box_id is None:
                         self.box_id = list(to_return.keys())[0]
@@ -77,12 +86,12 @@ class OigCloudApi:
                     self._logger.error(f"Error: {exception}", stack_info=True)
                     raise exception
 
-    async def get_stats_internal(self, dependent: bool = False) -> object:
+    async def _get_stats_internal(self, dependent: bool = False) -> object:
         with tracer.start_as_current_span("get_stats_internal"):
             to_return: object = None
             self._logger.debug("Starting session")
             async with self.get_session() as session:
-                url = self._BASE_URL + self._GET_STATS_URL
+                url = OIG_BASE_URL + OIG_GET_STATS_URL
                 self._logger.debug(f"Getting stats from {url}")
                 with tracer.start_as_current_span(
                     "get_stats_internal.get",
@@ -96,7 +105,7 @@ class OigCloudApi:
                             if not isinstance(to_return, dict) and not dependent:
                                 self._logger.info("Retrying authentication")
                                 if await self.authenticator.authenticate():
-                                    second_try = await self.get_stats_internal(True)
+                                    second_try = await self._get_stats_internal(True)
                                     if not isinstance(second_try, dict):
                                         self._logger.warning(f"Error: {second_try}")
                                         return None
@@ -124,7 +133,7 @@ class OigCloudApi:
                     self._logger.warning("Another call in progress, aborting...")
                     return False
                 self._logger.debug("Setting mode to %s", mode)
-                return await self.set_box_params_internal("box_prms", "mode", mode)
+                return await self._set_box_params_internal("box_prms", "mode", mode)
             except Exception as error:
                 self._logger.error("Error: %s", error, stack_info=True)
                 raise error
@@ -138,7 +147,7 @@ class OigCloudApi:
                     self._logger.warning("Another call in progress, aborting...")
                     return False
                 self._logger.debug("Setting grid delivery limit to %s", limit)
-                return await self.set_box_params_internal(
+                return await self._set_box_params_internal(
                     "invertor_prm1", "p_max_feed_grid", limit
                 )
             except Exception as error:
@@ -154,17 +163,19 @@ class OigCloudApi:
                     self._logger.warning("Another call in progress, aborting...")
                     return False
                 self._logger.debug("Setting boiler mode to %s", mode)
-                return await self.set_box_params_internal("boiler_prms", "manual", mode)
+                return await self._set_box_params_internal(
+                    "boiler_prms", "manual", mode
+                )
             except Exception as error:
                 self._logger.error("Error: %s", error, stack_info=True)
                 raise error
             finally:
                 self.call_in_progress = False
 
-    async def set_box_params_internal(
+    async def _set_box_params_internal(
         self, table: str, column: str, value: str
     ) -> bool:
-        with tracer.start_as_current_span("set_box_params_internal") as span:
+        with tracer.start_as_current_span("set_box_params_internal"):
             async with self.get_session() as session:
                 data = json.dumps(
                     {
@@ -175,11 +186,14 @@ class OigCloudApi:
                     }
                 )
                 _nonce = int(time.time() * 1000)
-                target_url = f"{self._BASE_URL}{self._SET_MODE_URL}?_nonce={_nonce}"
+                target_url = f"{OIG_BASE_URL}{OIG_SET_MODE_URL}?_nonce={_nonce}"
 
                 self._logger.debug(
-                    f"Sending mode request to {target_url} with {data.replace(self.box_id, 'xxxxxx')}"
+                    "Sending mode request to %s with %s",
+                    target_url,
+                    data.replace(self.box_id, "xxxxxx"),
                 )
+                    
                 with tracer.start_as_current_span(
                     "set_box_params_internal.post",
                     kind=SpanKind.SERVER,
@@ -196,19 +210,15 @@ class OigCloudApi:
                             message = response_json[0][2]
                             self._logger.info(f"Response: {message}")
                             return True
-                        else:
-                            raise Exception(
-                                f"Error setting mode: {response.status}",
-                                responsecontent,
-                            )
+                        raise Exception(
+                            f"Error setting mode: {response.status}",
+                            responsecontent,
+                        )
 
     async def set_grid_delivery(self, mode: int) -> bool:
         with tracer.start_as_current_span("set_grid_delivery"):
             try:
-                if self._no_telemetry:
-                    raise Exception(
-                        "Tato funkce je ve vývoji a proto je momentálně dostupná pouze pro systémy s aktivní telemetrií"
-                    )
+                self._check_telemetry_or_throw()
                 if self.call_in_progress:
                     self._logger.warning("Another call in progress, aborting...")
                     return False
@@ -223,7 +233,7 @@ class OigCloudApi:
 
                     _nonce = int(time.time() * 1000)
                     target_url = (
-                        f"{self._BASE_URL}{self._SET_GRID_DELIVERY_URL}?_nonce={_nonce}"
+                        f"{OIG_BASE_URL}{OIG_SET_GRID_DELIVERY_URL}?_nonce={_nonce}"
                     )
                     self._logger.info(
                         f"Sending grid delivery request to {target_url} for {data.replace(self.box_id, 'xxxxxx')}"
@@ -242,22 +252,21 @@ class OigCloudApi:
                             if response.status == 200:
                                 response_json = json.loads(responsecontent)
                                 self._logger.debug(f"Response: {response_json}")
-
                                 return True
-                            else:
-                                raise OigApiCallError(
-                                    "Error setting grid delivery",
-                                    response.status,
-                                    responsecontent,
-                                )
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
+
+                            raise OigApiCallError(
+                                "Error setting grid delivery",
+                                response.status,
+                                responsecontent,
+                            )
+            except Exception as error:
+                self._logger.error(f"Error: {error}", stack_info=True)
+                raise error
             finally:
                 self.call_in_progress = False
 
     async def set_formating_mode(self, mode: str) -> bool:
-        with tracer.start_as_current_span("set_formating_battery") as span:
+        with tracer.start_as_current_span("set_formating_battery"):
             try:
                 if self.call_in_progress:
                     self._logger.warning("Another call in progress, aborting...")
@@ -271,7 +280,7 @@ class OigCloudApi:
                     )
 
                     _nonce = int(time.time() * 1000)
-                    target_url = f"{self._BASE_URL}{self._SET_BATT_FORMATTING_URL}?_nonce={_nonce}"
+                    target_url = f"{OIG_BASE_URL}{OIG_SET_BATT_FORMATTING_URL}?_nonce={_nonce}"
                     self._logger.info(
                         "Sending grid battery delivery request to %s for %s",
                         target_url,
@@ -293,13 +302,18 @@ class OigCloudApi:
                                 self._logger.debug(f"Response: {response_json}")
 
                                 return True
-                            else:
-                                raise Exception(
-                                    "Error setting set_formating_battery",
-                                    responsecontent,
-                                )
+                            raise Exception(
+                                "Error setting set_formating_battery",
+                                responsecontent,
+                            )
             except Exception as e:
                 self._logger.error(f"Error: {e}", stack_info=True)
                 raise e
             finally:
                 self.call_in_progress = False
+
+    def _check_telemetry_or_throw(self):
+        if self._no_telemetry:
+            raise OigNoTelemetryException(
+                "Tato funkce je ve vývoji a proto je momentálně dostupná pouze pro systémy s aktivní telemetrií"
+            )

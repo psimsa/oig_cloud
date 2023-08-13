@@ -4,14 +4,11 @@ from opentelemetry import trace
 from opentelemetry.trace import SpanKind
 
 from custom_components.oig_cloud.api.oig_cloud_config import OIGCloudConfig
+from custom_components.oig_cloud.const import OIG_BASE_URL, OIG_LOGIN_URL
 
 class OigClassAuthenticator:
     
-    _BASE_URL = "https://www.oigpower.cz/cez/"
-    _LOGIN_URL = "inc/php/scripts/Login.php"
-
     config : OIGCloudConfig = None
-
 
     def __init__(self, config, logger):
         self.config = config
@@ -25,7 +22,7 @@ class OigClassAuthenticator:
                 self.logger.debug("Authenticating")
 
                 async with (aiohttp.ClientSession()) as session:
-                    url = self._BASE_URL + self._LOGIN_URL
+                    url = OIG_BASE_URL + OIG_LOGIN_URL
                     data = json.dumps(login_command)
                     headers = {"Content-Type": "application/json"}
                     with self.tracer.start_as_current_span(
@@ -50,7 +47,7 @@ class OigClassAuthenticator:
                                 if responsecontent == '[[2,"",false]]':
                                     self.config.phpsessid = (
                                         session.cookie_jar.filter_cookies(
-                                            self._BASE_URL
+                                            OIG_BASE_URL
                                         )
                                         .get("PHPSESSID")
                                         .value
