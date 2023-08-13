@@ -8,7 +8,12 @@ from homeassistant import config_entries, core
 from homeassistant.exceptions import ConfigEntryNotReady
 
 from custom_components.oig_cloud.api.oig_cloud_api import OigCloudApi
-from custom_components.oig_cloud.const import CONF_NO_TELEMETRY, DOMAIN, CONF_USERNAME, CONF_PASSWORD
+from custom_components.oig_cloud.const import (
+    CONF_NO_TELEMETRY,
+    DOMAIN,
+    CONF_USERNAME,
+    CONF_PASSWORD,
+)
 from custom_components.oig_cloud.services import async_setup_entry_services
 from custom_components.oig_cloud.shared.tracing import setup_tracing
 from custom_components.oig_cloud.shared.logging import setup_otel_logging
@@ -25,8 +30,21 @@ async def async_setup(hass: core.HomeAssistant, config: dict):
 
 
 async def async_setup_entry(
-        hass: core.HomeAssistant, entry: config_entries.ConfigEntry
+    hass: core.HomeAssistant, entry: config_entries.ConfigEntry
 ):
+    """
+    Set up the OIG Cloud component for a config entry.
+
+    Args:
+        hass: The Home Assistant instance.
+        entry: The config entry representing the OIG Cloud account.
+
+    Returns:
+        True if the setup was successful, else False.
+
+    Raises:
+        ConfigEntryNotReady: If an error occurred while setting up the component.
+    """
     try:
         username = entry.data[CONF_USERNAME]
         password = entry.data[CONF_PASSWORD]
@@ -68,7 +86,9 @@ async def async_setup_entry(
         hass.async_create_task(async_setup_entry_services(hass, entry))
 
         return True
-    except Exception as e:
+    except Exception as exception:
         logger = logging.getLogger(__name__)
-        logger.error(f"Error initializing OIG Cloud: {e}")
-        raise ConfigEntryNotReady(f"Error initializing OIG Cloud. Will retry.") from e
+        logger.error("Error initializing OIG Cloud: %s", exception)
+        raise ConfigEntryNotReady(
+            "Error initializing OIG Cloud. Will retry."
+        ) from exception
