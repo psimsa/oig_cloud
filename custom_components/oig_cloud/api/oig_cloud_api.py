@@ -20,12 +20,13 @@ lock = asyncio.Lock()
 
 
 class OigCloudApi:
-    _base_url = "https://www.oigpower.cz/cez/"
-    _login_url = "inc/php/scripts/Login.php"
-    _get_stats_url = "json.php"
-    _set_mode_url = "inc/php/scripts/Device.Set.Value.php"
-    _set_grid_delivery_url = "inc/php/scripts/ToGrid.Toggle.php"
-    _set_batt_formating_url = "inc/php/scripts/Battery.Format.Save.php"
+    # constants
+    _BASE_URL = "https://www.oigpower.cz/cez/"
+    _LOGIN_URL = "inc/php/scripts/Login.php"
+    _GET_STATS_URL = "json.php"
+    _SET_MODE_URL = "inc/php/scripts/Device.Set.Value.php"
+    _SET_GRID_DELIVERY_URL = "inc/php/scripts/ToGrid.Toggle.php"
+    _SET_BATT_FORMATTING_URL = "inc/php/scripts/Battery.Format.Save.php"
 
     _username: str = None
     _password: str = None
@@ -57,7 +58,7 @@ class OigCloudApi:
                 self._logger.debug("Authenticating")
 
                 async with (aiohttp.ClientSession()) as session:
-                    url = self._base_url + self._login_url
+                    url = self._BASE_URL + self._LOGIN_URL
                     data = json.dumps(login_command)
                     headers = {"Content-Type": "application/json"}
                     with tracer.start_as_current_span(
@@ -82,7 +83,7 @@ class OigCloudApi:
                                 if responsecontent == '[[2,"",false]]':
                                     self._phpsessid = (
                                         session.cookie_jar.filter_cookies(
-                                            self._base_url
+                                            self._BASE_URL
                                         )
                                         .get("PHPSESSID")
                                         .value
@@ -127,7 +128,7 @@ class OigCloudApi:
             to_return: object = None
             self._logger.debug("Starting session")
             async with self.get_session() as session:
-                url = self._base_url + self._get_stats_url
+                url = self._BASE_URL + self._GET_STATS_URL
                 self._logger.debug(f"Getting stats from {url}")
                 with tracer.start_as_current_span(
                     "get_stats_internal.get",
@@ -220,7 +221,7 @@ class OigCloudApi:
                     }
                 )
                 _nonce = int(time.time() * 1000)
-                target_url = f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
+                target_url = f"{self._BASE_URL}{self._SET_MODE_URL}?_nonce={_nonce}"
 
                 self._logger.debug(
                     f"Sending mode request to {target_url} with {data.replace(self.box_id, 'xxxxxx')}"
@@ -268,7 +269,7 @@ class OigCloudApi:
 
                     _nonce = int(time.time() * 1000)
                     target_url = (
-                        f"{self._base_url}{self._set_grid_delivery_url}?_nonce={_nonce}"
+                        f"{self._BASE_URL}{self._SET_GRID_DELIVERY_URL}?_nonce={_nonce}"
                     )
                     self._logger.info(
                         f"Sending grid delivery request to {target_url} for {data.replace(self.box_id, 'xxxxxx')}"
@@ -316,7 +317,7 @@ class OigCloudApi:
                     )
 
                     _nonce = int(time.time() * 1000)
-                    target_url = f"{self._base_url}{self._set_batt_formating_url}?_nonce={_nonce}"
+                    target_url = f"{self._BASE_URL}{self._SET_BATT_FORMATTING_URL}?_nonce={_nonce}"
                     self._logger.info(
                         "Sending grid battery delivery request to %s for %s",
                         target_url,
