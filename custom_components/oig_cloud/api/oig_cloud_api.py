@@ -14,7 +14,13 @@ from custom_components.oig_cloud.api.oig_cloud_config import OIGCloudConfig
 from custom_components.oig_cloud.api.oig_cloud_authenticator import (
     OigClassAuthenticator,
 )
-from custom_components.oig_cloud.const import OIG_BASE_URL, OIG_GET_STATS_URL, OIG_SET_BATT_FORMATTING_URL, OIG_SET_GRID_DELIVERY_URL, OIG_SET_MODE_URL
+from custom_components.oig_cloud.const import (
+    OIG_BASE_URL,
+    OIG_GET_STATS_URL,
+    OIG_SET_BATT_FORMATTING_URL,
+    OIG_SET_GRID_DELIVERY_URL,
+    OIG_SET_MODE_URL,
+)
 
 from custom_components.oig_cloud.exceptions import (
     OigApiCallError,
@@ -193,7 +199,7 @@ class OigCloudApi:
                     target_url,
                     data.replace(self.box_id, "xxxxxx"),
                 )
-                    
+
                 with tracer.start_as_current_span(
                     "set_box_params_internal.post",
                     kind=SpanKind.SERVER,
@@ -280,7 +286,9 @@ class OigCloudApi:
                     )
 
                     _nonce = int(time.time() * 1000)
-                    target_url = f"{OIG_BASE_URL}{OIG_SET_BATT_FORMATTING_URL}?_nonce={_nonce}"
+                    target_url = (
+                        f"{OIG_BASE_URL}{OIG_SET_BATT_FORMATTING_URL}?_nonce={_nonce}"
+                    )
                     self._logger.info(
                         "Sending grid battery delivery request to %s for %s",
                         target_url,
@@ -306,9 +314,9 @@ class OigCloudApi:
                                 "Error setting set_formating_battery",
                                 responsecontent,
                             )
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
+            except Exception as error:
+                self._logger.error(f"Error: {error}", stack_info=True)
+                raise error
             finally:
                 self.call_in_progress = False
 
