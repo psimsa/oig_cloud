@@ -71,7 +71,7 @@ async def async_setup_entry(
 
         oig_api = OigCloudApi(username, password, no_telemetry, hass)
 
-        await oig_api.authenticate()
+        await oig_api.authenticator.authenticate()
 
         hass.data[DOMAIN][entry.entry_id] = oig_api
 

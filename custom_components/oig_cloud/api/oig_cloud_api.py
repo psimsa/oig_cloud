@@ -10,6 +10,8 @@ from opentelemetry.trace import SpanKind
 
 from homeassistant import core
 from homeassistant.core import callback
+from custom_components.oig_cloud.api.oig_cloud_config import OIGCloudConfig
+from custom_components.oig_cloud.api.oig_cloud_authenticator import OigClassAuthenticator
 
 from custom_components.oig_cloud.exceptions import OigApiCallError
 
@@ -17,7 +19,6 @@ from custom_components.oig_cloud.exceptions import OigApiCallError
 tracer = trace.get_tracer(__name__)
 
 lock = asyncio.Lock()
-
 
 class OigCloudApi:
     # constants
@@ -28,74 +29,27 @@ class OigCloudApi:
     _SET_GRID_DELIVERY_URL = "inc/php/scripts/ToGrid.Toggle.php"
     _SET_BATT_FORMATTING_URL = "inc/php/scripts/Battery.Format.Save.php"
 
-    _username: str = None
-    _password: str = None
-
-    _phpsessid: str = None
-
+    call_in_progress: bool = False
     box_id: str = None
 
-    call_in_progress: bool = False
-
     def __init__(
-        self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
+        self, username: str, password: str, no_telemetry: bool, _: core.HomeAssistant
     ) -> None:
         with tracer.start_as_current_span("initialize"):
             self._no_telemetry = no_telemetry
             self._logger = logging.getLogger(__name__)
 
             self._last_update = datetime.datetime(1, 1, 1, 0, 0)
-            self._username = username
-            self._password = password
+            
+            config: OIGCloudConfig = OIGCloudConfig(username, password)
+            self.authenticator = OigClassAuthenticator(config, self._logger)
 
             self.last_state = None
             self._logger.debug("OigCloud initialized")
 
-    async def authenticate(self) -> bool:
-        with tracer.start_as_current_span("authenticate") as span:
-            try:
-                login_command = {"email": self._username, "password": self._password}
-                self._logger.debug("Authenticating")
-
-                async with (aiohttp.ClientSession()) as session:
-                    url = self._BASE_URL + self._LOGIN_URL
-                    data = json.dumps(login_command)
-                    headers = {"Content-Type": "application/json"}
-                    with tracer.start_as_current_span(
-                        "authenticate.post",
-                        kind=SpanKind.SERVER,
-                        attributes={"http.url": url, "http.method": "POST"},
-                    ):
-                        async with session.post(
-                            url,
-                            data=data,
-                            headers=headers,
-                        ) as response:
-                            responsecontent = await response.text()
-                            span.add_event(
-                                "Received auth response",
-                                {
-                                    "response": responsecontent,
-                                    "status": response.status,
-                                },
-                            )
-                            if response.status == 200:
-                                if responsecontent == '[[2,"",false]]':
-                                    self._phpsessid = (
-                                        session.cookie_jar.filter_cookies(
-                                            self._BASE_URL
-                                        )
-                                        .get("PHPSESSID")
-                                        .value
-                                    )
-                                    return True
-                            raise Exception("Authentication failed")
-            except Exception as exception:
-                self._logger.error(f"Error: {exception}", stack_info=True)
-                raise exception
 
     def get_session(self) -> aiohttp.ClientSession:
-        return aiohttp.ClientSession(headers={"Cookie": f"PHPSESSID={self._phpsessid}"})
+        return aiohttp.ClientSession(headers={"Cookie": f"PHPSESSID={self.authenticator.config.phpsessid}"})
 
     async def get_stats(self) -> object:
         async with lock:
@@ -110,7 +64,7 @@ class OigCloudApi:
                         to_return = await self.get_stats_internal()
                     except Exception:
                         self._logger.debug("Retrying authentication")
-                        if await self.authenticate():
+                        if await self.authenticator.authenticate():
                             to_return = await self.get_stats_internal()
                     self._logger.debug("Retrieved stats")
                     if self.box_id is None:
@@ -141,7 +95,7 @@ class OigCloudApi:
                             # the response should be a json dictionary, otherwise it's an error
                             if not isinstance(to_return, dict) and not dependent:
                                 self._logger.info("Retrying authentication")
-                                if await self.authenticate():
+                                if await self.authenticator.authenticate():
                                     second_try = await self.get_stats_internal(True)
                                     if not isinstance(second_try, dict):
                                         self._logger.warning(f"Error: {second_try}")

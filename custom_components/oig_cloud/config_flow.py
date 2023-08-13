@@ -10,7 +10,7 @@ class OigCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             oig = OigCloudApi(user_input[CONF_USERNAME], user_input[CONF_PASSWORD], user_input[CONF_NO_TELEMETRY],
                            self.hass)
-            valid = await oig.authenticate()
+            valid = await oig.authenticator.authenticate()
             if valid:
                 state = await oig.get_stats()
                 box_id = list(state.keys())[0]
