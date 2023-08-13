@@ -132,18 +132,18 @@ class OigCloudApi:
                 self.call_in_progress = False
 
     async def set_grid_delivery_limit(self, limit: int) -> bool:
-        with tracer.start_as_current_span("set_grid_delivery_limit") as span:
+        with tracer.start_as_current_span("set_grid_delivery_limit"):
             try:
                 if self.call_in_progress:
                     self._logger.warning("Another call in progress, aborting...")
                     return False
-                self._logger.debug(f"Setting grid delivery limit to {limit}")
+                self._logger.debug("Setting grid delivery limit to %s", limit)
                 return await self.set_box_params_internal(
                     "invertor_prm1", "p_max_feed_grid", limit
                 )
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
+            except Exception as error:
+                self._logger.error("Error: %s", error, stack_info=True)
+                raise error
             finally:
                 self.call_in_progress = False
 
