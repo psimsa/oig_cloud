@@ -6,7 +6,7 @@ from opentelemetry.trace import SpanKind
 from custom_components.oig_cloud.api.oig_cloud_config import OIGCloudConfig
 from custom_components.oig_cloud.const import OIG_BASE_URL, OIG_LOGIN_URL
 
-class OigClassAuthenticator:
+class OigCloudAuthenticator:
     
     config : OIGCloudConfig = None
 

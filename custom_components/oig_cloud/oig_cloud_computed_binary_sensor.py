@@ -22,6 +22,14 @@ class OigCloudComputedBinarySensor(OigCloudBinarySensor):
         entity_id (str): The entity ID for the binary sensor.
         name (str): The name of the binary sensor.
     """
+
+    def __init__(self, coordinator, sensor_type):
+        super().__init__(coordinator, sensor_type)
+        if self._sensor_type == "oig_cloud_call_pending":
+            oig_api: OigCloudApi = self.hass.data[DOMAIN][self.coordinator.config_entry.entry_id]
+            oig_api.add_service_in_progress_callback(self._update_callback)        
+
+
     @property
     def state(self):
         _LOGGER.debug("Getting state for %s", self.entity_id)

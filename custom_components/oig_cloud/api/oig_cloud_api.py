@@ -9,10 +9,10 @@ from opentelemetry import trace
 from opentelemetry.trace import SpanKind
 
 from homeassistant import core
-from homeassistant.core import callback
+
 from custom_components.oig_cloud.api.oig_cloud_config import OIGCloudConfig
 from custom_components.oig_cloud.api.oig_cloud_authenticator import (
-    OigClassAuthenticator,
+    OigCloudAuthenticator,
 )
 from custom_components.oig_cloud.const import (
     OIG_BASE_URL,
@@ -34,18 +34,13 @@ lock = asyncio.Lock()
 
 
 class OigCloudApi:
-    # OIG_BASE_URL = "https://www.oigpower.cz/cez/"
-    # OIG_LOGIN_URL = "inc/php/scripts/Login.php"
-    # OIG_GET_STATS_URL = "json.php"
-    # OIG_SET_MODE_URL = "inc/php/scripts/Device.Set.Value.php"
-    # OIG_SET_GRID_DELIVERY_URL = "inc/php/scripts/ToGrid.Toggle.php"
-    # OIG_SET_BATT_FORMATTING_URL = "inc/php/scripts/Battery.Format.Save.php"
-
     call_in_progress: bool = False
+    call_in_progress_state_variable: str = None
+
     box_id: str = None
 
     def __init__(
-        self, username: str, password: str, no_telemetry: bool, _: core.HomeAssistant
+        self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
     ) -> None:
         with tracer.start_as_current_span("initialize"):
             self._no_telemetry = no_telemetry
@@ -54,7 +49,7 @@ class OigCloudApi:
             self._last_update = datetime.datetime(1, 1, 1, 0, 0)
 
             config: OIGCloudConfig = OIGCloudConfig(username, password)
-            self.authenticator = OigClassAuthenticator(config, self._logger)
+            self.authenticator = OigCloudAuthenticator(config, self._logger)
 
             self.last_state = None
             self.expected_state = {}
@@ -87,6 +82,9 @@ class OigCloudApi:
 
                     self._last_update = datetime.datetime.now()
                     self._logger.debug(f"Last update: {self._last_update}")
+                    self.call_in_progress = self._validate_and_reset_expected_state(
+                        to_return
+                    )
                     return to_return
                 except Exception as exception:
                     self._logger.error(f"Error: {exception}", stack_info=True)
@@ -139,7 +137,11 @@ class OigCloudApi:
                     self._logger.warning("Another call in progress, aborting...")
                     return False
                 self._logger.debug("Setting mode to %s", mode)
-                return await self._set_box_params_internal("box_prms", "mode", mode)
+                is_success = await self._set_box_params_internal(
+                    "box_prms", "mode", mode
+                )
+                if is_success:
+                    self._set_expected_state("box_prms", "mode", mode)
             except Exception as error:
                 self._logger.error("Error: %s", error, stack_info=True)
                 raise error
@@ -214,11 +216,10 @@ class OigCloudApi:
                         if response.status == 200:
                             response_json = json.loads(responsecontent)
                             message = response_json[0][2]
-                            self._logger.info(f"Response: {message}")
+                            self._logger.info("Response: %s", message)
                             return True
-                        raise Exception(
-                            f"Error setting mode: {response.status}",
-                            responsecontent,
+                        raise OigApiCallError(
+                            "Error setting mode", response.status, responsecontent
                         )
 
     async def set_grid_delivery(self, mode: int) -> bool:
@@ -228,7 +229,7 @@ class OigCloudApi:
                 if self.call_in_progress:
                     self._logger.warning("Another call in progress, aborting...")
                     return False
-                self._logger.debug(f"Setting grid delivery to {mode}")
+                self._logger.debug("Setting grid delivery to %s", mode)
                 async with self.get_session() as session:
                     data = json.dumps(
                         {
@@ -308,7 +309,6 @@ class OigCloudApi:
                             if response.status == 200:
                                 response_json = json.loads(responsecontent)
                                 self._logger.debug(f"Response: {response_json}")
-
                                 return True
                             raise Exception(
                                 "Error setting set_formating_battery",
@@ -325,3 +325,36 @@ class OigCloudApi:
             raise OigNoTelemetryException(
                 "Tato funkce je ve vývoji a proto je momentálně dostupná pouze pro systémy s aktivní telemetrií"
             )
+
+    def _set_expected_state(self, node: str, item: str, value):
+        self.expected_state = {
+            "node": node,
+            "item": item,
+            "value": value,
+            "expected_since": datetime.datetime.utcnow(),
+        }
+        self.call_in_progress = True
+
+    def _validate_and_reset_expected_state(self, json_tree) -> bool:
+        if not self.expected_state:
+            return False
+        try:
+            current_value = json_tree[self.box_id][self.expected_state["node"]][
+                self.expected_state["item"]
+            ]
+            expected_state_age = (
+                datetime.datetime.utcnow() - self.expected_state["expected_since"]
+            ).total_seconds()
+            if expected_state_age > 600:
+                self._logger.warning(
+                    "Expected state is too old (%s s), ignoring", expected_state_age
+                )
+                self.expected_state = {}
+                return False
+            if current_value == self.expected_state["value"]:
+                self.expected_state = {}
+                return False
+            return True
+        except KeyError:
+            self.expected_state = {}
+            return False
