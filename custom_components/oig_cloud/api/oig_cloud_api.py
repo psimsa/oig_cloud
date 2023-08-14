@@ -10,90 +10,56 @@ from opentelemetry.trace import SpanKind
 
 from homeassistant import core
 
+from custom_components.oig_cloud.api.oig_cloud_config import OIGCloudConfig
+from custom_components.oig_cloud.api.oig_cloud_authenticator import (
+    OigCloudAuthenticator,
+)
+from custom_components.oig_cloud.const import (
+    OIG_BASE_URL,
+    OIG_GET_STATS_URL,
+    OIG_SET_BATT_FORMATTING_URL,
+    OIG_SET_GRID_DELIVERY_URL,
+    OIG_SET_MODE_URL,
+)
+
+from custom_components.oig_cloud.exceptions import (
+    OigApiCallError,
+    OigNoTelemetryException,
+)
+
+
 tracer = trace.get_tracer(__name__)
 
 lock = asyncio.Lock()
 
 
 class OigCloudApi:
-    _base_url = "https://www.oigpower.cz/cez/"
-    _login_url = "inc/php/scripts/Login.php"
-    _get_stats_url = "json.php"
-    _set_mode_url = "inc/php/scripts/Device.Set.Value.php"
-    _set_grid_delivery_url = "inc/php/scripts/ToGrid.Toggle.php"
-#    _set_batt_formating_url = "inc/php/scripts/Battery.Format.Save.php"  
-    # {"id_device":"2205232120","table":"invertor_prm1","column":"p_max_feed_grid","value":"2000"}
-
-    _username: str = None
-    _password: str = None
-
-    _phpsessid: str = None
+    call_in_progress: bool = False
+    call_in_progress_state_variable: str = None
 
     box_id: str = None
-    # Dodávka energie do bojleru v NT(W)
-#    _boiler_wh: str = "10000"
-    # Nabití baterie v % 
-#    _batt_prc: str = "95"
 
     def __init__(
         self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
     ) -> None:
-        with tracer.start_as_current_span("initialize") as span:
+        with tracer.start_as_current_span("initialize"):
             self._no_telemetry = no_telemetry
             self._logger = logging.getLogger(__name__)
-            
+
             self._last_update = datetime.datetime(1, 1, 1, 0, 0)
-            self._username = username
-            self._password = password                
+
+            config: OIGCloudConfig = OIGCloudConfig(username, password)
+            self.authenticator = OigCloudAuthenticator(config, self._logger)
 
             self.last_state = None
+            self.expected_state = {}
+
             self._logger.debug("OigCloud initialized")
 
-    async def authenticate(self) -> bool:
-        with tracer.start_as_current_span("authenticate") as span:
-            try:
-                login_command = {"email": self._username, "password": self._password}
-                self._logger.debug("Authenticating")
-
-                async with (aiohttp.ClientSession()) as session:
-                    url = self._base_url + self._login_url
-                    data = json.dumps(login_command)
-                    headers = {"Content-Type": "application/json"}
-                    with tracer.start_as_current_span(
-                        "authenticate.post",
-                        kind=SpanKind.SERVER,
-                        attributes={"http.url": url, "http.method": "POST"},
-                    ):
-                        async with session.post(
-                            url,
-                            data=data,
-                            headers=headers,
-                        ) as response:
-                            responsecontent = await response.text()
-                            span.add_event(
-                                "Received auth response",
-                                {
-                                    "response": responsecontent,
-                                    "status": response.status,
-                                },
-                            )
-                            if response.status == 200:
-                                if responsecontent == '[[2,"",false]]':
-                                    self._phpsessid = (
-                                        session.cookie_jar.filter_cookies(
-                                            self._base_url
-                                        )
-                                        .get("PHPSESSID")
-                                        .value
-                                    )
-                                    return True
-                            raise Exception("Authentication failed")
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
-
     def get_session(self) -> aiohttp.ClientSession:
-        return aiohttp.ClientSession(headers={"Cookie": f"PHPSESSID={self._phpsessid}"})
+        return aiohttp.ClientSession(
+            headers={"Cookie": f"PHPSESSID={self.authenticator.config.phpsessid}"}
+        )
 
     async def get_stats(self) -> object:
         async with lock:
@@ -101,32 +67,35 @@ class OigCloudApi:
             if (current_time - self._last_update).total_seconds() < 30:
                 self._logger.debug("Using cached stats")
                 return self.last_state
-            with tracer.start_as_current_span("get_stats") as span:
+            with tracer.start_as_current_span("get_stats"):
                 try:
                     to_return: object = None
                     try:
-                        to_return = await self.get_stats_internal()
-                    except:
+                        to_return = await self._get_stats_internal()
+                    except Exception:
                         self._logger.debug("Retrying authentication")
-                        if await self.authenticate():
-                            to_return = await self.get_stats_internal()
+                        if await self.authenticator.authenticate():
+                            to_return = await self._get_stats_internal()
                     self._logger.debug("Retrieved stats")
                     if self.box_id is None:
                         self.box_id = list(to_return.keys())[0]
 
                     self._last_update = datetime.datetime.now()
                     self._logger.debug(f"Last update: {self._last_update}")
+                    self.call_in_progress = self._validate_and_reset_expected_state(
+                        to_return
+                    )
                     return to_return
-                except Exception as e:
-                    self._logger.error(f"Error: {e}", stack_info=True)
-                    raise e
+                except Exception as exception:
+                    self._logger.error(f"Error: {exception}", stack_info=True)
+                    raise exception
 
-    async def get_stats_internal(self, dependent: bool = False) -> object:
+    async def _get_stats_internal(self, dependent: bool = False) -> object:
         with tracer.start_as_current_span("get_stats_internal"):
             to_return: object = None
             self._logger.debug("Starting session")
             async with self.get_session() as session:
-                url = self._base_url + self._get_stats_url
+                url = OIG_BASE_URL + OIG_GET_STATS_URL
                 self._logger.debug(f"Getting stats from {url}")
                 with tracer.start_as_current_span(
                     "get_stats_internal.get",
@@ -139,10 +108,10 @@ class OigCloudApi:
                             # the response should be a json dictionary, otherwise it's an error
                             if not isinstance(to_return, dict) and not dependent:
                                 self._logger.info("Retrying authentication")
-                                if await self.authenticate():
-                                    second_try = await self.get_stats_internal(True)
+                                if await self.authenticator.authenticate():
+                                    second_try = await self._get_stats_internal(True)
                                     if not isinstance(second_try, dict):
-                                        self._logger.warn(f"Error: {second_try}")
+                                        self._logger.warning(f"Error: {second_try}")
                                         return None
                                     else:
                                         to_return = second_try
@@ -153,83 +122,125 @@ class OigCloudApi:
                     return to_return
 
     async def set_box_mode(self, mode: str) -> bool:
-        with tracer.start_as_current_span("set_mode") as span:
-            try:
-                self._logger.debug(f"Setting mode to {mode}")
-                return await self.set_box_params_internal("box_prms", "mode", mode)
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
-            
-    async def set_grid_delivery_limit(self, limit: int)-> bool:
-        with tracer.start_as_current_span("set_grid_delivery_limit") as span:
-            try:
-                self._logger.debug(f"Setting grid delivery limit to {limit}")
-                return await self.set_box_params_internal("invertor_prm1", "p_max_feed_grid", limit)
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
-            
-    async def set_box_params_internal(self, table: str, column: str, value: str) -> bool:
-       with tracer.start_as_current_span("set_box_params_internal") as span:
+        """
+        Sets the mode of the box.
 
-        async with self.get_session() as session:
-            data = json.dumps(
-                {
-                    "id_device": self.box_id,
-                    "table": table,
-                    "column": column,
-                    "value": value,
-                }
-            )
-            _nonce = int(time.time() * 1000)
-            target_url = f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
+        Args:
+            mode (str): The mode to set the box to.
 
-            self._logger.debug(
-                f"Sending mode request to {target_url} with {data.replace(self.box_id, 'xxxxxx')}"
-            )
-            with tracer.start_as_current_span(
-                "set_box_params_internal.post",
-                kind=SpanKind.SERVER,
-                attributes={"http.url": target_url, "http.method": "POST"},
-            ):
-                async with session.post(
+        Returns:
+            bool: True if the mode was set successfully, False otherwise.
+        """
+        with tracer.start_as_current_span("set_mode"):
+            try:
+                if self.call_in_progress:
+                    self._logger.warning("Another call in progress, aborting...")
+                    return False
+                self._logger.debug("Setting mode to %s", mode)
+                is_success = await self._set_box_params_internal(
+                    "box_prms", "mode", mode
+                )
+                if is_success:
+                    self._set_expected_state("box_prms", "mode", mode)
+            except Exception as error:
+                self._logger.error("Error: %s", error, stack_info=True)
+                raise error
+            finally:
+                self.call_in_progress = False
+
+    async def set_grid_delivery_limit(self, limit: int) -> bool:
+        with tracer.start_as_current_span("set_grid_delivery_limit"):
+            try:
+                if self.call_in_progress:
+                    self._logger.warning("Another call in progress, aborting...")
+                    return False
+                self._logger.debug("Setting grid delivery limit to %s", limit)
+                return await self._set_box_params_internal(
+                    "invertor_prm1", "p_max_feed_grid", limit
+                )
+            except Exception as error:
+                self._logger.error("Error: %s", error, stack_info=True)
+                raise error
+            finally:
+                self.call_in_progress = False
+
+    async def set_boiler_mode(self, mode: str) -> bool:
+        with tracer.start_as_current_span("set_boiler_mode"):
+            try:
+                if self.call_in_progress:
+                    self._logger.warning("Another call in progress, aborting...")
+                    return False
+                self._logger.debug("Setting boiler mode to %s", mode)
+                return await self._set_box_params_internal(
+                    "boiler_prms", "manual", mode
+                )
+            except Exception as error:
+                self._logger.error("Error: %s", error, stack_info=True)
+                raise error
+            finally:
+                self.call_in_progress = False
+
+    async def _set_box_params_internal(
+        self, table: str, column: str, value: str
+    ) -> bool:
+        with tracer.start_as_current_span("set_box_params_internal"):
+            async with self.get_session() as session:
+                data = json.dumps(
+                    {
+                        "id_device": self.box_id,
+                        "table": table,
+                        "column": column,
+                        "value": value,
+                    }
+                )
+                _nonce = int(time.time() * 1000)
+                target_url = f"{OIG_BASE_URL}{OIG_SET_MODE_URL}?_nonce={_nonce}"
+
+                self._logger.debug(
+                    "Sending mode request to %s with %s",
                     target_url,
-                    data=data,
-                    headers={"Content-Type": "application/json"},
-                ) as response:
-                    responsecontent = await response.text()
-                    if response.status == 200:
-                        response_json = json.loads(responsecontent)
-                        message = response_json[0][2]
-                        self._logger.info(f"Response: {message}")
-                        return True
-                    else:
-                        raise Exception(
-                            f"Error setting mode: {response.status}",
-                            responsecontent,
+                    data.replace(self.box_id, "xxxxxx"),
+                )
+
+                with tracer.start_as_current_span(
+                    "set_box_params_internal.post",
+                    kind=SpanKind.SERVER,
+                    attributes={"http.url": target_url, "http.method": "POST"},
+                ):
+                    async with session.post(
+                        target_url,
+                        data=data,
+                        headers={"Content-Type": "application/json"},
+                    ) as response:
+                        responsecontent = await response.text()
+                        if response.status == 200:
+                            response_json = json.loads(responsecontent)
+                            message = response_json[0][2]
+                            self._logger.info("Response: %s", message)
+                            return True
+                        raise OigApiCallError(
+                            "Error setting mode", response.status, responsecontent
                         )
 
     async def set_grid_delivery(self, mode: int) -> bool:
-        with tracer.start_as_current_span("set_grid_delivery") as span:
+        with tracer.start_as_current_span("set_grid_delivery"):
             try:
-                if self._no_telemetry:
-                    raise Exception(
-                        "Tato funkce je ve vývoji a proto je momentálně dostupná pouze pro systémy s aktivní telemetrií."
-                    )
-
-                self._logger.debug(f"Setting grid delivery to {mode}")
+                self._check_telemetry_or_throw()
+                if self.call_in_progress:
+                    self._logger.warning("Another call in progress, aborting...")
+                    return False
+                self._logger.debug("Setting grid delivery to %s", mode)
                 async with self.get_session() as session:
                     data = json.dumps(
                         {
                             "id_device": self.box_id,
-                            "value": mode, 
+                            "value": mode,
                         }
                     )
 
                     _nonce = int(time.time() * 1000)
                     target_url = (
-                        f"{self._base_url}{self._set_grid_delivery_url}?_nonce={_nonce}"
+                        f"{OIG_BASE_URL}{OIG_SET_GRID_DELIVERY_URL}?_nonce={_nonce}"
                     )
                     self._logger.info(
                         f"Sending grid delivery request to {target_url} for {data.replace(self.box_id, 'xxxxxx')}"
@@ -248,103 +259,102 @@ class OigCloudApi:
                             if response.status == 200:
                                 response_json = json.loads(responsecontent)
                                 self._logger.debug(f"Response: {response_json}")
-
                                 return True
-                            else:
-                                raise Exception(
-                                    "Error setting grid delivery", responsecontent
-                                )
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
-                
-    # Funkce na nastavení nabíjení baterie z gridu    
-#     async def set_battery_formating(self, mode: str) -> bool:
-#         with tracer.start_as_current_span("set_batt_formating") as span:
-#             try:
-#                 self._logger.debug(f"Setting formating battery to {mode}")
-#                 async with self.get_session() as session:
-#                     data = json.dumps(
-#                         {
-#                             "id_device": self.box_id,
-#                             "column": "bat_ac",
-#                             "value": self.batt_prc,
-#                         }
-#                     )
 
-#                     _nonce = int(time.time() * 1000)
-#                     target_url = f"{self._base_url}{self._set_batt_formating_url}?_nonce={_nonce}"
+                            raise OigApiCallError(
+                                "Error setting grid delivery",
+                                response.status,
+                                responsecontent,
+                            )
+            except Exception as error:
+                self._logger.error(f"Error: {error}", stack_info=True)
+                raise error
+            finally:
+                self.call_in_progress = False
 
-#                     self._logger.debug(
-#                         f"Sending formating battery request to {target_url} with {data.replace(self.box_id, 'xxxxxx')}"
-#                     )
-#                     with tracer.start_as_current_span(
-#                         "set_mode.post",
-#                         kind=SpanKind.SERVER,
-#                         attributes={"http.url": target_url, "http.method": "POST"},
-#                     ):
-#                         async with session.post(
-#                             target_url,
-#                             data=data,
-#                             headers={"Content-Type": "application/json"},
-#                         ) as response:
-#                             responsecontent = await response.text()
-#                             if response.status == 200:
-#                                 response_json = json.loads(responsecontent)
-#                                 message = response_json[0][2]
-#                                 self._logger.info(f"Response: {message}")
-#                                 return True
-#                             else:
-#                                 raise Exception(
-#                                     f"Error setting mode: {response.status}",
-#                                     responsecontent,
-#                                 )
-#             except Exception as e:
-#                 self._logger.error(f"Error: {e}", stack_info=True)
-#                 raise e
+    async def set_formating_mode(self, mode: str) -> bool:
+        with tracer.start_as_current_span("set_formating_battery"):
+            try:
+                if self.call_in_progress:
+                    self._logger.warning("Another call in progress, aborting...")
+                    return False
+                self._logger.debug("Setting grid delivery to battery %s", mode)
+                async with self.get_session() as session:
+                    data = json.dumps(
+                        {
+                            "bat_ac": mode,
+                        }
+                    )
 
-# # Funkce na nastavení kolik dodat kWh v době NT do bojleru    
-#     async def set_boiler_mode(self, mode: str) -> bool:
-#         with tracer.start_as_current_span("set_boiler_mode") as span:
-#             try:
-#                 self._logger.debug(f"Setting boiler energy to {mode}")
-#                 async with self.get_session() as session:
-#                     data = json.dumps(
-#                         {
-#                             "id_device": self.box_id,
-#                             "table": "boiler_prms",
-#                             "column": "wd",
-#                             "value": self.boiler_wh,
-#                         }
-#                     )
+                    _nonce = int(time.time() * 1000)
+                    target_url = (
+                        f"{OIG_BASE_URL}{OIG_SET_BATT_FORMATTING_URL}?_nonce={_nonce}"
+                    )
+                    self._logger.info(
+                        "Sending grid battery delivery request to %s for %s",
+                        target_url,
+                        data.replace(self.box_id, "xxxxxx"),
+                    )
+                    with tracer.start_as_current_span(
+                        "set_formating_battery.post",
+                        kind=SpanKind.SERVER,
+                        attributes={"http.url": target_url, "http.method": "POST"},
+                    ):
+                        async with session.post(
+                            target_url,
+                            data=data,
+                            headers={"Content-Type": "application/json"},
+                        ) as response:
+                            responsecontent = await response.text()
+                            if response.status == 200:
+                                response_json = json.loads(responsecontent)
+                                self._logger.debug(f"Response: {response_json}")
+                                return True
+                            raise Exception(
+                                "Error setting set_formating_battery",
+                                responsecontent,
+                            )
+            except Exception as error:
+                self._logger.error(f"Error: {error}", stack_info=True)
+                raise error
+            finally:
+                self.call_in_progress = False
 
-#                     _nonce = int(time.time() * 1000)
-#                     target_url = f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
+    def _check_telemetry_or_throw(self):
+        if self._no_telemetry:
+            raise OigNoTelemetryException(
+                "Tato funkce je ve vývoji a proto je momentálně dostupná pouze pro systémy s aktivní telemetrií"
+            )
 
-#                     self._logger.debug(
-#                         f"Sending boiler energy request to {target_url} with {data.replace(self.box_id, 'xxxxxx')}"
-#                     )
-#                     with tracer.start_as_current_span(
-#                         "set_mode.post",
-#                         kind=SpanKind.SERVER,
-#                         attributes={"http.url": target_url, "http.method": "POST"},
-#                     ):
-#                         async with session.post(
-#                             target_url,
-#                             data=data,
-#                             headers={"Content-Type": "application/json"},
-#                         ) as response:
-#                             responsecontent = await response.text()
-#                             if response.status == 200:
-#                                 response_json = json.loads(responsecontent)
-#                                 message = response_json[0][2]
-#                                 self._logger.info(f"Response: {message}")
-#                                 return True
-#                             else:
-#                                 raise Exception(
-#                                     f"Error setting bojler energy: {response.status}",
-#                                     responsecontent,
-#                                 )
-#             except Exception as e:
-#                 self._logger.error(f"Error: {e}", stack_info=True)
-#                 raise e
+    def _set_expected_state(self, node: str, item: str, value):
+        self.expected_state = {
+            "node": node,
+            "item": item,
+            "value": value,
+            "expected_since": datetime.datetime.utcnow(),
+        }
+        self.call_in_progress = True
+
+    def _validate_and_reset_expected_state(self, json_tree) -> bool:
+        if not self.expected_state:
+            return False
+        try:
+            current_value = json_tree[self.box_id][self.expected_state["node"]][
+                self.expected_state["item"]
+            ]
+            expected_state_age = (
+                datetime.datetime.utcnow() - self.expected_state["expected_since"]
+            ).total_seconds()
+            if expected_state_age > 600:
+                self._logger.warning(
+                    "Expected state is too old (%s s), ignoring", expected_state_age
+                )
+                self.expected_state = {}
+                return False
+            if current_value == self.expected_state["value"]:
+                self.expected_state = {}
+                return False
+            return True
+        except KeyError:
+            self.expected_state = {}
+            return False

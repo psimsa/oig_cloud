@@ -2,7 +2,7 @@ from enum import StrEnum
 from opentelemetry.sdk.resources import Resource
 
 
-from ..release_const import COMPONENT_VERSION, SERVICE_NAME
+from custom_components.oig_cloud.release_const import COMPONENT_VERSION, SERVICE_NAME
 
 
 def get_resource(email_hash: str, hass_id: str) -> Resource:

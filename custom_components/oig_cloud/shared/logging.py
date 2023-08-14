@@ -8,8 +8,8 @@ from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
 
 from opentelemetry._logs import set_logger_provider
 
-from ..const import OT_ENDPOINT, OT_HEADERS, OT_INSECURE
-from .shared import get_resource
+from custom_components.oig_cloud.const import OT_ENDPOINT, OT_HEADERS, OT_INSECURE
+from custom_components.oig_cloud.shared.shared import get_resource
 
 
 def setup_otel_logging(email_hash: str, hass_id: str) -> LoggingHandler:

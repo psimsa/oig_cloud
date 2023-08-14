@@ -372,8 +372,8 @@ SENSOR_TYPES = {
         "requires": ["boiler"],
     },
     "cbb_consumption_w": {
-        "name": "CBB - Consumption Energy (Computed)",
-        "name_cs": "CBB - Spotřeba (Vypočítaná)",
+        "name": "Box Energy Consumption (Computed)",
+        "name_cs": "Spotřeba boxu (Vypočítaná)",
         "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": None,
