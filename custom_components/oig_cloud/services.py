@@ -83,6 +83,12 @@ SCHEMA_FORMATTING_MODE = vol.Schema({
     vol.Required("Acknowledgement"): vol.Boolean(True),
 })
 
+BOILER_MODE = {"CBB": 0, "Manual": 1}
+
+FORMAT_BATTERY = {"Nenabíjet": 0, "Nabíjet": 1}
+
+SSR_MODE = {"OFF": 0, "ON": 1}
+
 tracer = trace.get_tracer(__name__)
 
 
@@ -202,21 +208,20 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
             mode_value = SSR_MODE.get(mode)
             success = await client.set_ssr_rele_3(mode_value)
 
-    async def async_set_battery_formating(call):
+    async def async_set_formating_mode(call):
         acknowledged = call.data.get("Acknowledgement")
         limit = call.data.get("Limit")
-
         if not acknowledged:
             raise vol.Invalid("Acknowledgement is required")
 
         if limit is not None and (limit > 100 or limit < 20):
             raise vol.Invalid("Limit musí být v rozmezí 20-100")
 
-        with tracer.start_as_current_span("async_set_battery_formating"):
+        with tracer.start_as_current_span("async_set_formating_mode"):
             client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
             mode = call.data.get("Mode")
-            mode_value = MODES.get(mode)
-            success = await client.async_set_battery_formating(mode_value, int(limit))
+            mode_value = FORMAT_BATTERY.get(mode)
+            success = await client.set_formating_mode(limit)
 
     hass.services.async_register(
         DOMAIN,
