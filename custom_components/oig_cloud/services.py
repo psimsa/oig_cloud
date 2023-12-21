@@ -83,11 +83,12 @@ SCHEMA_FORMATTING_MODE = vol.Schema({
     vol.Required("Acknowledgement"): vol.Boolean(True),
 })
 
+
 BOILER_MODE = {"CBB": 0, "Manual": 1}
 
 FORMAT_BATTERY = {"Nenabíjet": 0, "Nabíjet": 1}
 
-SSR_MODE = {"OFF": 0, "ON": 1}
+SSR_MODE = {"Vypnuto": 0, "Zapnuto": 1}
 
 tracer = trace.get_tracer(__name__)
 
@@ -275,8 +276,8 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
             {
                 "Mode": vol.In(
                     [
-                        "OFF",
-                        "ON",
+                        "Vypnuto",
+                        "Zapnuto",
                     ]
                 ),
                 "Acknowledgement": vol.Boolean(1),
@@ -292,8 +293,8 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
             {
                 "Mode": vol.In(
                     [
-                        "OFF",
-                        "ON",
+                        "Vypnuto",
+                        "Zapnuto",
                     ]
                 ),
                 "Acknowledgement": vol.Boolean(1),
@@ -309,8 +310,8 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
             {
                 "Mode": vol.In(
                     [
-                        "OFF",
-                        "ON",
+                        "Vypnuto",
+                        "Zapnuto",
                     ]
                 ),
                 "Acknowledgement": vol.Boolean(1),
