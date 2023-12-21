@@ -117,8 +117,8 @@ set_ssr_rele_1:
       selector:
         select:
           options:
-            - OFF
-            - ON
+            - Zapnuto
+            - Vypnuto
     Acknowledgement:
       description: |
         I acknowledge that calling the service will result in parameter modification of a live system.
@@ -138,8 +138,8 @@ set_ssr_rele_2:
       selector:
         select:
           options:
-            - OFF
-            - ON
+            - Zapnuto
+            - Vypnuto
     Acknowledgement:
       description: |
         I acknowledge that calling the service will result in parameter modification of a live system.
@@ -159,8 +159,8 @@ set_ssr_rele_3:
       selector:
         select:
           options:
-            - OFF
-            - ON
+            - Zapnuto
+            - Vypnuto
     Acknowledgement:
       description: |
         I acknowledge that calling the service will result in parameter modification of a live system.
