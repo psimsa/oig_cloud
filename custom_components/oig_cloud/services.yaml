@@ -83,3 +83,118 @@ set_grid_delivery:
         https://drive.google.com/viewerng/viewer?embedded=true&url=https://www.oigpower.cz/cez/pretoky-sankce.pdf
       selector:
         boolean:
+
+set_boiler_mode:
+  name: Nastavení manuálního nabíjení bojleru
+  description: |
+    Tímto parametrem obejdete nastavení CBB ohledně řízení přetoků do bojleru a výkon patrony je v plném režimu 
+    bez ohledu na HDO a nebo výrobu FVE. Defaultně je SSR, kdy si plně CBB řídí nabíjení bojleru podle HDO a přetoků. 
+    Nastavení Manual všechno toto obchází.
+  fields:
+    Mode:
+      description: Režim bojleru
+      selector:
+        select:
+          options:
+            - CBB
+            - Manual
+    Acknowledgement:
+      description: |
+        I acknowledge that calling the service will result in parameter modification of a live system.
+        I take on full responsibility for the changes and any effect they may have, expected or otherwise.
+        Beru na vědomí, že volání této služby povede ke změně parametrů živého systému.
+        Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
+      selector:
+        boolean:
+
+set_ssr_rele_1:
+  name: SSR Relé 1
+  description: |
+    Vypíná a zapíná SSR relé pro fázi 1.
+  fields:
+    Mode:
+      description: SSR1
+      selector:
+        select:
+          options:
+            - OFF
+            - ON
+    Acknowledgement:
+      description: |
+        I acknowledge that calling the service will result in parameter modification of a live system.
+        I take on full responsibility for the changes and any effect they may have, expected or otherwise.
+        Beru na vědomí, že volání této služby povede ke změně parametrů živého systému.
+        Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
+      selector:
+        boolean:
+
+set_ssr_rele_2:
+  name: SSR Relé 2
+  description: |
+    Vypíná a zapíná SSR relé pro fázi 2.
+  fields:
+    Mode:
+      description: SSR2
+      selector:
+        select:
+          options:
+            - OFF
+            - ON
+    Acknowledgement:
+      description: |
+        I acknowledge that calling the service will result in parameter modification of a live system.
+        I take on full responsibility for the changes and any effect they may have, expected or otherwise.
+        Beru na vědomí, že volání této služby povede ke změně parametrů živého systému.
+        Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
+      selector:
+        boolean:
+
+set_ssr_rele_3:
+  name: SSR Relé 3
+  description: |
+    Vypíná a zapíná SSR relé pro fázi 3.
+  fields:
+    Mode:
+      description: SSR3
+      selector:
+        select:
+          options:
+            - OFF
+            - ON
+    Acknowledgement:
+      description: |
+        I acknowledge that calling the service will result in parameter modification of a live system.
+        I take on full responsibility for the changes and any effect they may have, expected or otherwise.
+        Beru na vědomí, že volání této služby povede ke změně parametrů živého systému.
+        Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
+      selector:
+        boolean:
+
+set_formating_mode:
+  name: Nabíjení baterie z GRIDU
+  description: |
+    Tímto parametrem nastavujete okamžité spuštění nabíjení baterige ze sítě na stanovenou hodnotu limitu.
+  fields:
+    Mode:
+      description: Nabíjení baterie z GRIDU
+      selector:
+        select:
+          options:
+            - Nenabíjet
+            - Nabíjet
+    Limit:
+      description: Cílové procento nabití baterie
+      example: 100
+      selector:
+        number:
+          min: 25
+          max: 100
+          unit_of_measurement: "%"
+    Acknowledgement:
+      description: |
+        I acknowledge that calling the service will result in parameter modification of a live system.
+        I take on full responsibility for the changes and any effect they may have, expected or otherwise.
+        Beru na vědomí, že volání této služby povede ke změně parametrů živého systému.
+        Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
+      selector:
+        boolean:
