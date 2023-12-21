@@ -107,6 +107,69 @@ set_boiler_mode:
       selector:
         boolean:
 
+set_ssr_rele_1:
+  name: SSR Relé 1
+  description: |
+    Vypíná a zapíná SSR relé pro fázi 1.
+  fields:
+    Mode:
+      description: SSR1
+      selector:
+        select:
+          options:
+            - OFF
+            - ON
+    Acknowledgement:
+      description: |
+        I acknowledge that calling the service will result in parameter modification of a live system.
+        I take on full responsibility for the changes and any effect they may have, expected or otherwise.
+        Beru na vědomí, že volání této služby povede ke změně parametrů živého systému.
+        Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
+      selector:
+        boolean:
+
+set_ssr_rele_2:
+  name: SSR Relé 2
+  description: |
+    Vypíná a zapíná SSR relé pro fázi 2.
+  fields:
+    Mode:
+      description: SSR2
+      selector:
+        select:
+          options:
+            - OFF
+            - ON
+    Acknowledgement:
+      description: |
+        I acknowledge that calling the service will result in parameter modification of a live system.
+        I take on full responsibility for the changes and any effect they may have, expected or otherwise.
+        Beru na vědomí, že volání této služby povede ke změně parametrů živého systému.
+        Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
+      selector:
+        boolean:
+
+set_ssr_rele_3:
+  name: SSR Relé 3
+  description: |
+    Vypíná a zapíná SSR relé pro fázi 3.
+  fields:
+    Mode:
+      description: SSR3
+      selector:
+        select:
+          options:
+            - OFF
+            - ON
+    Acknowledgement:
+      description: |
+        I acknowledge that calling the service will result in parameter modification of a live system.
+        I take on full responsibility for the changes and any effect they may have, expected or otherwise.
+        Beru na vědomí, že volání této služby povede ke změně parametrů živého systému.
+        Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
+      selector:
+        boolean:
+
 set_formating_mode:
   name: Nabíjení baterie z GRIDU
   description: |
