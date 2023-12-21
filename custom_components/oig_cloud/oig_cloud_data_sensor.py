@@ -62,18 +62,16 @@ class OigCloudDataSensor(OigCloudSensor):
                 box_id = list(self.coordinator.data.keys())[0]
                 pv_data = self.coordinator.data[box_id]
                 return self._grid_mode(pv_data, node_value, language)
-            except (KeyError, IndexError) as e:
-                _LOGGER.warning(f"Error processing grid mode: {e}")
-                return _LANGS["unknown"][language]
 
-        if self._sensor_type in ["boiler_ssr1", "boiler_ssr2", "boiler_ssr3", "boiler_manual_mode"]:
-            return self._get_ssrmode_name(node_value, language)
-
-        # Try to convert to float for numeric values
-        try:
-            return float(node_value)
-        except (ValueError, TypeError):
-            return node_value
+            if self._sensor_type == "boiler_ssr1" or self._sensor_type == "boiler_ssr2" or self._sensor_type == "boiler_ssr3" or self._sensor_type == "boiler_manual_mode" :
+                return self._get_ssrmode_name(node_value, language)
+            
+            try:
+                return float(node_value)
+            except ValueError:
+                return node_value
+        except KeyError:
+            return None
         
     def _get_mode_name(self, node_value: int, language: str) -> str:
         """Convert box mode number to human-readable name."""
@@ -136,9 +134,8 @@ class OigCloudDataSensor(OigCloudSensor):
         elif zapnuto:
             return GridMode.ON.value
         return _LANGS["changing"][language]
-
-    def _get_ssrmode_name(self, node_value: int, language: str) -> str:
-        """Convert SSR mode number to human-readable name."""
+    
+    def _get_ssrmode_name(self, node_value, language):
         if node_value == 0:
             return "Vypnuto/Off"
         elif node_value == 1:
