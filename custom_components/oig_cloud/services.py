@@ -16,12 +16,11 @@ MODES = {
 
 GRID_DELIVERY = {"Vypnuto / Off": 0, "Zapnuto / On": 1, "S omezením / Limited": 2}
 
-
 BOILER_MODE = {"CBB": 0, "Manual": 1}
 
 FORMAT_BATTERY = {"Nenabíjet": 0, "Nabíjet": 1}
 
-SSR_MODE = {"Vypnuto": 0, "Zapnuto": 1}
+SSR_MODE = {"OFF": 0, "ON": 1}
 
 tracer = trace.get_tracer(__name__)
 
@@ -194,8 +193,8 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
             {
                 "Mode": vol.In(
                     [
-                        "Vypnuto",
-                        "Zapnuto",
+                        "OFF",
+                        "ON",
                     ]
                 ),
                 "Acknowledgement": vol.Boolean(1),
@@ -211,8 +210,8 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
             {
                 "Mode": vol.In(
                     [
-                        "Vypnuto",
-                        "Zapnuto",
+                        "OFF",
+                        "ON",
                     ]
                 ),
                 "Acknowledgement": vol.Boolean(1),
@@ -228,8 +227,8 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
             {
                 "Mode": vol.In(
                     [
-                        "Vypnuto",
-                        "Zapnuto",
+                        "OFF",
+                        "ON",
                     ]
                 ),
                 "Acknowledgement": vol.Boolean(1),
