@@ -223,7 +223,7 @@ class OigCloudApi:
             except Exception as e:
                 self._logger.error(f"Error: {e}", stack_info=True)
                 raise e
-
+            
     async def set_boiler_mode(self, mode: str) -> bool:
         with tracer.start_as_current_span("set_boiler_mode") as span:
             try:
@@ -260,21 +260,20 @@ class OigCloudApi:
                 self._logger.error(f"Error: {e}", stack_info=True)
                 raise e
 
-    async def set_box_params_internal(
-        self, table: str, column: str, value: str
-    ) -> bool:
-        with tracer.start_as_current_span("set_box_params_internal") as span:
-            async with self.get_session() as session:
-                data = json.dumps(
-                    {
-                        "id_device": self.box_id,
-                        "table": table,
-                        "column": column,
-                        "value": value,
-                    }
-                )
-                _nonce = int(time.time() * 1000)
-                target_url = f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
+    async def set_box_params_internal(self, table: str, column: str, value: str) -> bool:
+       with tracer.start_as_current_span("set_box_params_internal") as span:
+
+        async with self.get_session() as session:
+            data = json.dumps(
+                {
+                    "id_device": self.box_id,
+                    "table": table,
+                    "column": column,
+                    "value": value,
+                }
+            )
+            _nonce = int(time.time() * 1000)
+            target_url = f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
 
                 self._logger.debug(
                     f"Sending mode request to {target_url} with {data.replace(self.box_id, 'xxxxxx')}"
@@ -359,20 +358,20 @@ class OigCloudApi:
             except Exception as e:
                 self._logger.error(f"Error: {e}", stack_info=True)
                 raise e
-
-    # Funkce na nastavení nabíjení baterie z gridu
+                
+    # Funkce na nastavení nabíjení baterie z gridu    
     async def set_battery_formating(self, mode: str, limit: int) -> bool:
-        with tracer.start_as_current_span("set_batt_formating") as span:
-            try:
-                self._logger.debug(f"Setting formating battery to {limit} percent")
-                async with self.get_session() as session:
-                    data = json.dumps(
-                        {
-                            "id_device": self.box_id,
-                            "column": "bat_ac",
-                            "value": limit,
-                        }
-                    )
+         with tracer.start_as_current_span("set_batt_formating") as span:
+             try:
+                 self._logger.debug(f"Setting formating battery to {limit} percent")
+                 async with self.get_session() as session:
+                     data = json.dumps(
+                         {
+                             "id_device": self.box_id,
+                             "column": "bat_ac",
+                             "value": limit,
+                         }
+                     )
 
                     _nonce = int(time.time() * 1000)
                     target_url = f"{self._base_url}{self._set_batt_formating_url}?_nonce={_nonce}"
@@ -414,3 +413,4 @@ class OigCloudApi:
             except Exception as e:
                 self._logger.error(f"Error: {e}", stack_info=True)
                 raise e
+ 
