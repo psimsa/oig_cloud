@@ -72,47 +72,24 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
 
     async def async_set_boiler_mode(call):
         acknowledged = call.data.get("Acknowledgement")
+        limit = call.data.get("Limit")
+
         if not acknowledged:
             raise vol.Invalid("Acknowledgement is required")
+
+        if limit is not None and (limit > 200000 or limit < 1):
+            raise vol.Invalid("Limit musí být v rozmezí 1-200000")
+
+        if limit is not None:
+            success = await client.set_boiler_delivery_limit(int(limit))
+            if not success:
+                raise vol.Invalid("Limit se nepodařilo nastavit.")
 
         with tracer.start_as_current_span("async_set_boiler_mode"):
             client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
             mode = call.data.get("Mode")
-            mode_value = BOILER_MODE.get(mode)
-            success = await client.set_boiler_mode(mode_value)
-
-    async def async_set_ssr_rele_1(call):
-        acknowledged = call.data.get("Acknowledgement")
-        if not acknowledged:
-            raise vol.Invalid("Acknowledgement is required")
-
-        with tracer.start_as_current_span("async_set_ssr_rele_1"):
-            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
-            mode = call.data.get("Mode")
-            mode_value = SSR_MODE.get(mode)
-            success = await client.set_ssr_rele_1(mode_value)
-
-    async def async_set_ssr_rele_2(call):
-        acknowledged = call.data.get("Acknowledgement")
-        if not acknowledged:
-            raise vol.Invalid("Acknowledgement is required")
-
-        with tracer.start_as_current_span("async_set_ssr_rele_2"):
-            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
-            mode = call.data.get("Mode")
-            mode_value = SSR_MODE.get(mode)
-            success = await client.set_ssr_rele_2(mode_value)
-
-    async def async_set_ssr_rele_3(call):
-        acknowledged = call.data.get("Acknowledgement")
-        if not acknowledged:
-            raise vol.Invalid("Acknowledgement is required")
-
-        with tracer.start_as_current_span("async_set_ssr_rele_3"):
-            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
-            mode = call.data.get("Mode")
-            mode_value = SSR_MODE.get(mode)
-            success = await client.set_ssr_rele_3(mode_value)
+            mode_value = MODES.get(mode)
+            success = await client.async_set_boiler_mode(mode_value, int(limit))
 
     async def async_set_formating_mode(call):
         acknowledged = call.data.get("Acknowledgement")
@@ -167,7 +144,7 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
             }
         ),
     )
-    
+
     hass.services.async_register(
         DOMAIN,
         "set_boiler_mode",
@@ -176,80 +153,30 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
             {
                 "Mode": vol.In(
                     [
-                        "CBB",
-                        "Manual",
+                        "Vypnuto / Off",
+                        "Zapnuto / On",
                     ]
                 ),
                 "Acknowledgement": vol.Boolean(1),
-            }
-        ),
-    )
-
-    hass.services.async_register(
-        DOMAIN,
-        "set_ssr_rele_1",
-        async_set_ssr_rele_1,
-        schema=vol.Schema(
-            {
-                "Mode": vol.In(
-                    [
-                        "OFF",
-                        "ON",
-                    ]
-                ),
-                "Acknowledgement": vol.Boolean(1),
-            }
-        ),
-    )
-
-    hass.services.async_register(
-        DOMAIN,
-        "set_ssr_rele_2",
-        async_set_ssr_rele_2,
-        schema=vol.Schema(
-            {
-                "Mode": vol.In(
-                    [
-                        "OFF",
-                        "ON",
-                    ]
-                ),
-                "Acknowledgement": vol.Boolean(1),
-            }
-        ),
-    )
-
-    hass.services.async_register(
-        DOMAIN,
-        "set_ssr_rele_3",
-        async_set_ssr_rele_3,
-        schema=vol.Schema(
-            {
-                "Mode": vol.In(
-                    [
-                        "OFF",
-                        "ON",
-                    ]
-                ),
-                "Acknowledgement": vol.Boolean(1),
-            }
-        ),
-    )
-
-    hass.services.async_register(
-        DOMAIN,
-        "set_formating_mode",
-        async_set_formating_mode,
-        schema=vol.Schema(
-            {
-                "Mode": vol.In(
-                    [
-                        "Nenabíjet",
-                        "Nabíjet",
-                    ]
-                ),
                 "Limit": vol.Any(None, vol.Coerce(int)),
+            }
+        ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "set_battery_formating",
+        async_set_battery_formating,
+        schema=vol.Schema(
+            {
+                "Mode": vol.In(
+                    [
+                        "Vypnuto / Off",
+                        "Zapnuto / On",
+                    ]
+                ),
                 "Acknowledgement": vol.Boolean(1),
+                "Limit": vol.Any(None, vol.Coerce(int)),
             }
         ),
     )
