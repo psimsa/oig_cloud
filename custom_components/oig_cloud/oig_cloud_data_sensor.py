@@ -63,9 +63,6 @@ class OigCloudDataSensor(OigCloudSensor):
                 pv_data = self.coordinator.data[box_id]
                 return self._grid_mode(pv_data, node_value, language)
 
-            if self._sensor_type == "boiler_ssr1" or self._sensor_type == "boiler_ssr2" or self._sensor_type == "boiler_ssr3" or self._sensor_type == "boiler_manual_mode" :
-                return self._get_ssrmode_name(node_value, language)
-            
             try:
                 return float(node_value)
             except ValueError:
@@ -134,10 +131,3 @@ class OigCloudDataSensor(OigCloudSensor):
         elif zapnuto:
             return GridMode.ON.value
         return _LANGS["changing"][language]
-    
-    def _get_ssrmode_name(self, node_value, language):
-        if node_value == 0:
-            return "Vypnuto/Off"
-        elif node_value == 1:
-            return "Zapnuto/On"
-        return _LANGS["unknown"][language]
