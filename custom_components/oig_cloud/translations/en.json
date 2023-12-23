@@ -19,5 +19,54 @@
         }
       }
     }
+  },
+  "selector": {
+    "set_box_mode": {
+      "options": {
+        "Home 1": "Home 1",
+        "Home 2": "Home 2",
+        "Home 3": "Home 3",
+        "Home UPS": "Home UPS"
+      },
+      "Acknowledgement":{
+        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+      }
+    },
+    "set_grid_delivery": {
+      "options": {
+        "Vypnuto / Off": "Vypnuto / Off",
+        "Zapnuto / On": "Zapnuto / On",
+        "S omezením / Limited": "S omezením / Limited"
+      },
+      "Acknowledgement":{
+        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+      },
+      "Upozornění":{
+        "description": "Před použitím této funkce se seznamte s omezeními dostupnými v aplikaci OIG Power / ČEZ Battery Box."
+      }
+    },
+    "set_boiler_mode": {
+      "options": {
+        "CBB": "CBB",
+        "Manual": "Manual"
+      },
+      "Acknowledgement":{
+        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+      }
+    },
+    "set_formating_mode": {
+      "options": {
+        "Nenabíjet": "Nenabíjet",
+        "Nabíjet": "Nabíjet"
+      },
+      "Limit": {
+        "min": "min",
+        "max": "max",
+        "unit_of_measurement": "unit_of_measurement"
+      },
+      "Acknowledgement":{
+        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+      }
+    }
   }
 }
