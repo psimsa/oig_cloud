@@ -5,13 +5,13 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 
-from .oig_cloud_computed_sensor import OigCloudComputedSensor
-from .oig_cloud_data_sensor import OigCloudDataSensor
-from .const import (
+from custom_components.oig_cloud.oig_cloud_computed_sensor import OigCloudComputedSensor
+from custom_components.oig_cloud.oig_cloud_data_sensor import OigCloudDataSensor
+from custom_components.oig_cloud.const import (
     DOMAIN,
 )
-from .sensor_types import SENSOR_TYPES
-from .api.oig_cloud_api import OigCloudApi
+from custom_components.oig_cloud.sensor_types import SENSOR_TYPES
+from custom_components.oig_cloud.api.oig_cloud_api import OigCloudApi
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -1,8 +1,8 @@
 import voluptuous as vol
 
 from homeassistant import config_entries
-from .const import CONF_NO_TELEMETRY, DEFAULT_NAME, DOMAIN, CONF_USERNAME, CONF_PASSWORD
-from .api.oig_cloud_api import OigCloudApi
+from custom_components.oig_cloud.const import CONF_NO_TELEMETRY, DEFAULT_NAME, DOMAIN, CONF_USERNAME, CONF_PASSWORD
+from custom_components.oig_cloud.api.oig_cloud_api import OigCloudApi
 
 
 class OigCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -10,7 +10,7 @@ class OigCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             oig = OigCloudApi(user_input[CONF_USERNAME], user_input[CONF_PASSWORD], user_input[CONF_NO_TELEMETRY],
                            self.hass)
-            valid = await oig.authenticate()
+            valid = await oig.authenticator.authenticate()
             if valid:
                 state = await oig.get_stats()
                 box_id = list(state.keys())[0]
