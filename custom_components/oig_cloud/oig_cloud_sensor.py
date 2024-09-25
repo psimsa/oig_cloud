@@ -52,11 +52,12 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
         data = self.coordinator.data
         vals = data.values()
         pv_data = list(vals)[0]
-        is_queen = pv_data["queen"]
-        if is_queen:
-            model_name = f"{DEFAULT_NAME} Queen"
-        else:
-            model_name = f"{DEFAULT_NAME} Home"
+        model_name = f"{DEFAULT_NAME} Home"
+ #       is_queen = pv_data["queen"]
+ #       if is_queen:
+ #           model_name = f"{DEFAULT_NAME} Queen"
+ #       else:
+ #           model_name = f"{DEFAULT_NAME} Home"
 
         return {
             "identifiers": {(DOMAIN, self._box_id)},
