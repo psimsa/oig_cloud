@@ -34,7 +34,7 @@ class OigCloudComputedSensor(OigCloudSensor):
         language = self.hass.config.language
         data = self.coordinator.data
         vals = data.values()
-        pv_data = list(vals)[0]
+        pv_data: dict[str, dict[str, any]] = list(vals)[0]
 
         # computed values
         if self._sensor_type == "ac_in_aci_wtotal":
@@ -44,18 +44,25 @@ class OigCloudComputedSensor(OigCloudSensor):
                 + pv_data["ac_in"]["aci_wt"]
             )
 
-        if self._sensor_type == "batt_batt_comp_p":
-            return float(pv_data["batt"]["bat_i"] * pv_data["batt"]["bat_v"] * -1)
+        if self._sensor_type == "actual_aci_wtotal":
+            return float(
+                pv_data["actual"]["aci_wr"]
+                + pv_data["actual"]["aci_ws"]
+                + pv_data["actual"]["aci_wt"]
+            )
 
         if self._sensor_type == "dc_in_fv_total":
             return float(pv_data["dc_in"]["fv_p1"] + pv_data["dc_in"]["fv_p2"])
+
+        if self._sensor_type == "actual_fv_total":
+            return float(pv_data["actual"]["fv_p1"] + pv_data["actual"]["fv_p2"])
 
         if self._node_id == "boiler" or self._sensor_type == "boiler_current_w":
             return self._get_boiler_consumption(pv_data)
 
         # Spotreba CBB
-        if self._sensor_type == "cbb_consumption_w":
-            return self._get_cbb_consumption(pv_data)
+        # if self._sensor_type == "cbb_consumption_w":
+        #     return self._get_cbb_consumption(pv_data)
 
         return None
 
