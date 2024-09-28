@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import hashlib
 
@@ -38,16 +39,19 @@ async def async_setup_entry(
             email_hash = hashlib.sha256(username.encode("utf-8")).hexdigest()
             hass_id = hashlib.sha256(hass.data["core.uuid"].encode("utf-8")).hexdigest()
 
-            setup_tracing(email_hash, hass_id)
+            loop = asyncio.get_running_loop()
+
+            await loop.run_in_executor(None, setup_tracing, email_hash, hass_id)
+
             api_logger = logging.getLogger(oig_cloud_api.__name__)
-            api_logger.addHandler(setup_otel_logging(email_hash, hass_id))
+            
+            otel_logging_handler = await loop.run_in_executor(None, setup_otel_logging, email_hash, hass_id)
+            
+            api_logger.addHandler(otel_logging_handler)
 
             logger = logging.getLogger(__name__)
             logger.info(f"Account hash is {email_hash}")
             logger.info(f"Home Assistant ID is {hass_id}")
-
-            # logging.getLogger(binary_sensor.__name__).addHandler(LOGGING_HANDLER)
-            # logging.getLogger(sensor.__name__).addHandler(LOGGING_HANDLER)
 
         oig_api = OigCloudApi(username, password, no_telemetry, hass)
 
@@ -55,15 +59,9 @@ async def async_setup_entry(
 
         hass.data[DOMAIN][entry.entry_id] = oig_api
 
-        hass.async_create_task(
-            hass.config_entries.async_forward_entry_setup(entry, "sensor")
-        )
+        await hass.config_entries.async_forward_entry_setups(entry, ["sensor", "binary_sensor"])
 
-        hass.async_create_task(
-            hass.config_entries.async_forward_entry_setup(entry, "binary_sensor")
-        )
-
-        hass.async_create_task(async_setup_entry_services(hass, entry))
+        await async_setup_entry_services(hass, entry)
 
         return True
     except Exception as e:

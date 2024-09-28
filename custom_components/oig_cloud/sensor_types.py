@@ -256,7 +256,7 @@ SENSOR_TYPES = {
     },
     "batt_bat_c": {
         "name": "Battery Percent",
-        "name_cs": "Nabití baterie (procenta)",
+        "name_cs": "Nabití baterie (procenta, live)",
         "device_class": SensorDeviceClass.BATTERY,
         "unit_of_measurement": "%",
         "node_id": "actual",
@@ -265,7 +265,7 @@ SENSOR_TYPES = {
     },
     "batt_batt_comp_p": {
         "name": "Battery Power",
-        "name_cs": "Výkon baterie",
+        "name_cs": "Výkon baterie (live)",
         "device_class": SensorDeviceClass.POWER,
         "unit_of_measurement": "W",
         "node_id": "actual",
