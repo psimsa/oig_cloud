@@ -77,12 +77,12 @@ class OigCloudDataSensor(OigCloudSensor):
             return "Home UPS"
         return _LANGS["unknown"][language]
     
-    def _grid_mode(self, pv_data, node_value, language):
+    def _grid_mode(self, pv_data: dict, node_value, language):
         grid_enabled = int(pv_data["box_prms"]["crcte"])
         to_grid = int(node_value)
         max_grid_feed = int(pv_data["invertor_prm1"]["p_max_feed_grid"])
 
-        if bool(pv_data["queen"]):
+        if "queen" in pv_data and bool(pv_data["queen"]):
             return self._grid_mode_queen(grid_enabled, to_grid, max_grid_feed, language)
         return self._grid_mode_king(grid_enabled, to_grid, max_grid_feed, language)
 
