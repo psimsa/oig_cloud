@@ -32,10 +32,6 @@ jobs:
         pip install -r requirements.txt
         pip install -r requirements-dev.txt || true
 
-    - name: Set environment variables to disable telemetry
-      run: |
-        echo "OTEL_SDK_DISABLED=true" >> $GITHUB_ENV
-
     - name: Set PYTHONPATH
       run: echo "PYTHONPATH=$(pwd)" >> $GITHUB_ENV
 
