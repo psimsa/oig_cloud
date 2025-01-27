@@ -1,3 +1,4 @@
 homeassistant==2024.12.5
 aiodiscover==2.1.0
 pyspeex-noise==1.0.2
+opentelemetry-sdk
