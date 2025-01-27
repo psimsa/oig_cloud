@@ -9,3 +9,7 @@ isort
 
 # Optional: Type checking
 mypy
+
+# Additional dependencies
+opentelemetry-api
+opentelemetry-sdk
