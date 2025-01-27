@@ -47,7 +47,7 @@ class OigCloudDataSensor(OigCloudSensor):
         pv_data = list(vals)[0]
 
         try:
-            node_value = pv_data[self._node_id][self._node_key]
+            node_value = pv_data.get(self._node_id, {}).get(self._node_key, None)
 
             # special cases
             if self._sensor_type == "box_prms_mode":
@@ -58,6 +58,9 @@ class OigCloudDataSensor(OigCloudSensor):
 
             if self._sensor_type == "boiler_ssr1" or self._sensor_type == "boiler_ssr2" or self._sensor_type == "boiler_ssr3" or self._sensor_type == "boiler_manual_mode" :
                 return self._get_ssrmode_name(node_value, language)
+            
+            if self._sensor_type == "batt_bat_c" and node_value is None:
+                node_value = pv_data[self._backup_node_id][self._backup_node_key]
 
             try:
                 return float(node_value)

@@ -18,6 +18,8 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
         self._attr_state_class = SENSOR_TYPES[sensor_type]["state_class"]
         self._node_id = SENSOR_TYPES[sensor_type]["node_id"]
         self._node_key = SENSOR_TYPES[sensor_type]["node_key"]
+        self._backup_node_id = SENSOR_TYPES[sensor_type].get("backup_node_id")
+        self._backup_node_key = SENSOR_TYPES[sensor_type].get("backup_node_key")
         self._box_id = list(self.coordinator.data.keys())[0]
         self.entity_id = f"sensor.oig_{self._box_id}_{sensor_type}"
         _LOGGER.debug(f"Created sensor {self.entity_id}")
@@ -53,12 +55,10 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
         vals = data.values()
         pv_data = list(vals)[0]
         model_name = f"{DEFAULT_NAME} Home"
- #       is_queen = pv_data["queen"]
- #       if is_queen:
- #           model_name = f"{DEFAULT_NAME} Queen"
- #       else:
- #           model_name = f"{DEFAULT_NAME} Home"
-
+        is_queen = pv_data["device"]["id_type"] == 3004
+        if is_queen:
+            model_name = f"{DEFAULT_NAME} Queen"
+       
         return {
             "identifiers": {(DOMAIN, self._box_id)},
             "name": f"{model_name} {self._box_id}",

@@ -12,6 +12,10 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "unit_of_measurement": "%",
         "node_id": "actual",
         "node_key": "bat_c",
+        "backup_node_id": "batt",
+        "backup_node_key": "bat_c",
+        "backup_name": "Battery Percent",
+        "backup_name_cs": "Nabití baterie (procenta)",
         "state_class": SensorStateClass.MEASUREMENT,
     },
     "batt_batt_comp_p": {
