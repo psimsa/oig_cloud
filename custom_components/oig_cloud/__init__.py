@@ -15,7 +15,14 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.typing import ConfigType
 
 from .api.oig_cloud_api import OigCloudApi, OigCloudApiError, OigCloudAuthError
-from .const import CONF_NO_TELEMETRY, DOMAIN, CONF_USERNAME, CONF_PASSWORD, DEFAULT_UPDATE_INTERVAL
+from .const import (
+    CONF_NO_TELEMETRY,
+    CONF_UPDATE_INTERVAL,
+    DOMAIN,
+    CONF_USERNAME,
+    CONF_PASSWORD,
+    DEFAULT_UPDATE_INTERVAL,
+)
 from .coordinator import OigCloudDataUpdateCoordinator
 from .services import async_setup_entry_services
 from .shared.tracing import setup_tracing
@@ -41,8 +48,16 @@ async def async_setup_entry(
         username: str = entry.data[CONF_USERNAME]
         password: str = entry.data[CONF_PASSWORD]
 
-        # Default to telemetry enabled if not specified
-        no_telemetry: bool = entry.data.get(CONF_NO_TELEMETRY, False)
+        # Get settings from options or data with fallbacks
+        no_telemetry: bool = entry.options.get(
+            CONF_NO_TELEMETRY,
+            entry.data.get(CONF_NO_TELEMETRY, False)
+        )
+        
+        update_interval: int = entry.options.get(
+            CONF_UPDATE_INTERVAL,
+            DEFAULT_UPDATE_INTERVAL
+        )
 
         # Setup telemetry if enabled
         if not no_telemetry:
@@ -59,6 +74,8 @@ async def async_setup_entry(
 
             _LOGGER.info(f"Telemetry enabled with account hash {email_hash}")
             _LOGGER.info(f"Home Assistant ID hash is {hass_id}")
+        else:
+            _LOGGER.info("Telemetry disabled by user configuration")
 
         # Create the API client
         _LOGGER.debug("Creating OIG Cloud API client")
@@ -76,11 +93,12 @@ async def async_setup_entry(
             raise ConfigEntryNotReady("Unexpected error during OIG Cloud setup") from err
 
         # Create the coordinator
-        _LOGGER.debug("Creating OIG Cloud data coordinator")
+        _LOGGER.debug(f"Creating OIG Cloud data coordinator with update interval of {update_interval} seconds")
         coordinator = OigCloudDataUpdateCoordinator(
             hass,
             oig_api,
-            update_interval=timedelta(seconds=DEFAULT_UPDATE_INTERVAL),
+            config_entry=entry,
+            update_interval=timedelta(seconds=update_interval),
         )
 
         # Fetch initial data
@@ -105,6 +123,9 @@ async def async_setup_entry(
         # Setup services
         _LOGGER.debug("Setting up OIG Cloud services")
         await async_setup_entry_services(hass, entry)
+        
+        # Register update listener for option changes
+        entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
         _LOGGER.info("OIG Cloud setup completed successfully")
         return True
@@ -131,3 +152,11 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[DOMAIN].pop(entry.entry_id)
         
     return unload_ok
+
+
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload OIG Cloud config entry."""
+    _LOGGER.debug(f"Reloading OIG Cloud integration for {entry.entry_id}")
+    
+    await async_unload_entry(hass, entry)
+    await async_setup_entry(hass, entry)

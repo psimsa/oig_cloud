@@ -19,5 +19,17 @@
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configure OIG Cloud",
+        "description": "Adjust settings for your OIG Cloud integration",
+        "data": {
+          "update_interval": "Update interval (seconds)",
+          "no_telemetry": "Disable telemetry (opt-out of data collection)"
+        }
+      }
+    }
   }
 }

@@ -4,6 +4,7 @@ import logging
 from datetime import timedelta
 from typing import Any, Awaitable, Callable, Dict, Optional
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -22,6 +23,7 @@ class OigCloudDataUpdateCoordinator(DataUpdateCoordinator):
         self,
         hass: HomeAssistant,
         api: OigCloudApi,
+        config_entry: ConfigEntry,
         update_interval: Optional[timedelta] = None,
     ) -> None:
         """Initialize the coordinator."""
@@ -30,6 +32,7 @@ class OigCloudDataUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER,
             name=DOMAIN,
             update_interval=update_interval or timedelta(seconds=DEFAULT_UPDATE_INTERVAL),
+            config_entry=config_entry,
         )
         self.api = api
 
