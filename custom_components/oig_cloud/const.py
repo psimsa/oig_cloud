@@ -1,4 +1,3 @@
-
 from .release_const import COMPONENT_VERSION, SERVICE_NAME
 
 DOMAIN = "oig_cloud"
@@ -8,6 +7,7 @@ CONF_PASSWORD = "password"
 CONF_NO_TELEMETRY = "no_telemetry"
 
 DEFAULT_NAME = "ČEZ Battery Box"
+DEFAULT_UPDATE_INTERVAL = 60  # Update interval in seconds
 
 
 OT_ENDPOINT = "https://otlp.eu01.nr-data.net"
