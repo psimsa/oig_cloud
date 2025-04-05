@@ -1,51 +1,52 @@
 import voluptuous as vol
+from typing import Any, Dict, Mapping, Optional, Union
 
 from opentelemetry import trace
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall
 from .const import DOMAIN
 from .api.oig_cloud_api import OigCloudApi
 
-MODES = {
+MODES: Dict[str, str] = {
     "Home 1": "0",
     "Home 2": "1",
     "Home 3": "2",
     "Home UPS": "3",
 }
 
-GRID_DELIVERY = {"Vypnuto / Off": 0, "Zapnuto / On": 1, "S omezením / Limited": 2}
+GRID_DELIVERY: Dict[str, int] = {"Vypnuto / Off": 0, "Zapnuto / On": 1, "S omezením / Limited": 2}
 
-BOILER_MODE = {"CBB": 0, "Manual": 1}
+BOILER_MODE: Dict[str, int] = {"CBB": 0, "Manual": 1}
 
-FORMAT_BATTERY = {"Nenabíjet": 0, "Nabíjet": 1}
+FORMAT_BATTERY: Dict[str, int] = {"Nenabíjet": 0, "Nabíjet": 1}
 
 tracer = trace.get_tracer(__name__)
 
 
 async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    async def async_set_box_mode(call):
-        acknowledged = call.data.get("Acknowledgement")
+    async def async_set_box_mode(call: ServiceCall) -> None:
+        acknowledged: bool = call.data.get("Acknowledgement")
         if not acknowledged:
             raise vol.Invalid("Acknowledgement is required")
 
         with tracer.start_as_current_span("async_set_box_mode"):
             client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
-            mode = call.data.get("Mode")
-            mode_value = MODES.get(mode)
-            success = await client.set_box_mode(mode_value)
+            mode: str = call.data.get("Mode")
+            mode_value: str = MODES.get(mode)
+            success: bool = await client.set_box_mode(mode_value)
 
-    async def async_set_grid_delivery(call):
-        acknowledged = call.data.get("Acknowledgement")
+    async def async_set_grid_delivery(call: ServiceCall) -> None:
+        acknowledged: bool = call.data.get("Acknowledgement")
         if not acknowledged:
             raise vol.Invalid("Acknowledgement is required")
 
-        accepted = call.data.get("Upozornění")
+        accepted: bool = call.data.get("Upozornění")
         if not accepted:
             raise vol.Invalid("Upozornění je třeba odsouhlasit")
 
-        grid_mode = call.data.get("Mode")
-        limit = call.data.get("Limit")
+        grid_mode: Optional[str] = call.data.get("Mode")
+        limit: Optional[int] = call.data.get("Limit")
 
         if (grid_mode is None and limit is None) or (
             grid_mode is not None and limit is not None
@@ -60,28 +61,28 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
         with tracer.start_as_current_span("async_set_grid_delivery"):
             client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
             if grid_mode is not None:
-                mode = GRID_DELIVERY.get(grid_mode)
+                mode: int = GRID_DELIVERY.get(grid_mode)
                 await client.set_grid_delivery(mode)
 
             if limit is not None:
-                success = await client.set_grid_delivery_limit(int(limit))
+                success: bool = await client.set_grid_delivery_limit(int(limit))
                 if not success:
                     raise vol.Invalid("Limit se nepodařilo nastavit.")
 
-    async def async_set_boiler_mode(call):
-        acknowledged = call.data.get("Acknowledgement")
+    async def async_set_boiler_mode(call: ServiceCall) -> None:
+        acknowledged: bool = call.data.get("Acknowledgement")
         if not acknowledged:
             raise vol.Invalid("Acknowledgement is required")
 
         with tracer.start_as_current_span("async_set_boiler_mode"):
             client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
-            mode = call.data.get("Mode")
-            mode_value = BOILER_MODE.get(mode)
-            success = await client.set_boiler_mode(mode_value)
+            mode: str = call.data.get("Mode")
+            mode_value: int = BOILER_MODE.get(mode)
+            success: bool = await client.set_boiler_mode(mode_value)
 
-    async def async_set_formating_mode(call):
-        acknowledged = call.data.get("Acknowledgement")
-        limit = call.data.get("Limit")
+    async def async_set_formating_mode(call: ServiceCall) -> None:
+        acknowledged: bool = call.data.get("Acknowledgement")
+        limit: Optional[int] = call.data.get("Limit")
         if not acknowledged:
             raise vol.Invalid("Acknowledgement is required")
 
@@ -90,9 +91,9 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
 
         with tracer.start_as_current_span("async_set_formating_mode"):
             client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
-            mode = call.data.get("Mode")
-            mode_value = FORMAT_BATTERY.get(mode)
-            success = await client.set_formating_mode(limit)
+            mode: str = call.data.get("Mode")
+            mode_value: int = FORMAT_BATTERY.get(mode)
+            success: bool = await client.set_formating_mode(limit)
 
     hass.services.async_register(
         DOMAIN,

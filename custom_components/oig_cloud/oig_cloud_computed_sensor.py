@@ -1,4 +1,5 @@
 import logging
+from typing import Any, Dict, Optional, Union
 
 from .oig_cloud_sensor import OigCloudSensor
 
@@ -26,15 +27,15 @@ _LANGS = {
 
 class OigCloudComputedSensor(OigCloudSensor):
     @property
-    def state(self):
+    def state(self) -> Optional[Union[float, str]]:
         _LOGGER.debug(f"Getting state for {self.entity_id}")
         if self.coordinator.data is None:
             _LOGGER.debug(f"Data is None for {self.entity_id}")
             return None
-        language = self.hass.config.language
-        data = self.coordinator.data
+        language: str = self.hass.config.language
+        data: Dict[str, Any] = self.coordinator.data
         vals = data.values()
-        pv_data: dict[str, dict[str, any]] = list(vals)[0]
+        pv_data: Dict[str, Any] = list(vals)[0]
 
         # computed values
         if self._sensor_type == "ac_in_aci_wtotal":
@@ -72,8 +73,8 @@ class OigCloudComputedSensor(OigCloudSensor):
 
         return None
 
-    def _get_cbb_consumption(self, pv_data) -> float:
-        boiler_p = 0
+    def _get_cbb_consumption(self, pv_data: Dict[str, Any]) -> float:
+        boiler_p: float = 0
         if (
             len(pv_data["boiler"]) > 0
             and pv_data["boiler"]["p"] is not None
@@ -101,19 +102,19 @@ class OigCloudComputedSensor(OigCloudSensor):
             (pv_data["batt"]["bat_i"] * pv_data["batt"]["bat_v"] * -1)
         )
 
-    def _get_batt_power_charge(self, pv_data) -> float:
+    def _get_batt_power_charge(self, pv_data: Dict[str, Any]) -> float:
         if (pv_data["actual"]["bat_p"] > 0):
             return float(pv_data["actual"]["bat_p"])
         else:
             return 0
             
-    def _get_batt_power_discharge(self, pv_data) -> float:
+    def _get_batt_power_discharge(self, pv_data: Dict[str, Any]) -> float:
         if (pv_data["actual"]["bat_p"] < 0):
             return float(pv_data["actual"]["bat_p"]*-1)
         else:
             return 0
 
-    def _get_boiler_consumption(self, pv_data):
+    def _get_boiler_consumption(self, pv_data: Dict[str, Any]) -> Optional[float]:
         if len(pv_data["boiler"]) > 0 and pv_data["boiler"]["p"] is not None:
             # Spotreba bojleru
             if (
@@ -136,9 +137,8 @@ class OigCloudComputedSensor(OigCloudSensor):
                 )
             elif self._sensor_type == "boiler_current_w":
                 return float(pv_data["boiler"]["p"])
-        else:
-            return None
+        return None
 
-    async def async_update(self):
+    async def async_update(self) -> None:
         # Request the coordinator to fetch new data and update the entity's state
         await self.coordinator.async_request_refresh()

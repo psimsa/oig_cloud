@@ -1,4 +1,6 @@
 from enum import StrEnum
+from typing import Dict, Any
+
 from opentelemetry.sdk.resources import Resource
 
 
@@ -6,7 +8,7 @@ from ..release_const import COMPONENT_VERSION, SERVICE_NAME
 
 
 def get_resource(email_hash: str, hass_id: str) -> Resource:
-    resource = Resource.create(
+    resource: Resource = Resource.create(
         {
             "service.name": SERVICE_NAME,
             "service.version": COMPONENT_VERSION,

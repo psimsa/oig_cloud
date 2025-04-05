@@ -1,6 +1,11 @@
 import logging
 from datetime import timedelta
+from typing import Any, Callable, Dict, List, Optional, cast
 
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.typing import DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
@@ -16,17 +21,17 @@ from .api.oig_cloud_api import OigCloudApi
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(hass, config_entry, async_add_entities):
+async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities: Callable[[List[Entity], bool], None]) -> None:
     _LOGGER.debug("async_setup_entry")
 
     oig_cloud: OigCloudApi = hass.data[DOMAIN][config_entry.entry_id]
 
-    async def update_data():
+    async def update_data() -> Dict[str, Any]:
         """Fetch data from API endpoint."""
         return await oig_cloud.get_stats()
 
     # We create a new DataUpdateCoordinator.
-    coordinator = DataUpdateCoordinator(
+    coordinator: DataUpdateCoordinator = DataUpdateCoordinator(
         hass,
         _LOGGER,
         name="sensor",
@@ -50,7 +55,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     _LOGGER.debug("async_setup_entry done")
 
 
-def _register_boiler_entities(async_add_entities, coordinator):
+def _register_boiler_entities(async_add_entities: Callable[[List[Entity], bool], None], coordinator: DataUpdateCoordinator) -> None:
     async_add_entities(
         OigCloudDataSensor(coordinator, sensor_type)
         for sensor_type in SENSOR_TYPES
@@ -67,7 +72,7 @@ def _register_boiler_entities(async_add_entities, coordinator):
     )
 
 
-def _register_common_entities(async_add_entities, coordinator):
+def _register_common_entities(async_add_entities: Callable[[List[Entity], bool], None], coordinator: DataUpdateCoordinator) -> None:
     async_add_entities(
         OigCloudDataSensor(coordinator, sensor_type)
         for sensor_type in SENSOR_TYPES
