@@ -16,6 +16,7 @@ from homeassistant.helpers.typing import ConfigType
 
 from .api.oig_cloud_api import OigCloudApi, OigCloudApiError, OigCloudAuthError
 from .const import (
+    CONF_LOG_LEVEL,
     CONF_NO_TELEMETRY,
     CONF_UPDATE_INTERVAL,
     DOMAIN,
@@ -32,7 +33,7 @@ PLATFORMS = ["sensor", "binary_sensor"]
 
 tracer = trace.get_tracer(__name__)
 _LOGGER = logging.getLogger(__name__)
-
+_LOGGER.setLevel(logging.INFO)
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the OIG Cloud integration."""
@@ -58,6 +59,13 @@ async def async_setup_entry(
             CONF_UPDATE_INTERVAL,
             DEFAULT_UPDATE_INTERVAL
         )
+
+        log_level: str = entry.options.get(
+            CONF_LOG_LEVEL,
+            entry.data.get(CONF_LOG_LEVEL, "INFO")
+        )
+
+        _LOGGER.setLevel(log_level.upper())
 
         # Setup telemetry if enabled
         if not no_telemetry:

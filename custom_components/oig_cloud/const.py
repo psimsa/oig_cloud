@@ -6,6 +6,7 @@ CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
 CONF_NO_TELEMETRY = "no_telemetry"
 CONF_UPDATE_INTERVAL = "update_interval"
+CONF_LOG_LEVEL = "log_level"
 
 DEFAULT_NAME = "ČEZ Battery Box"
 DEFAULT_UPDATE_INTERVAL = 60  # Update interval in seconds

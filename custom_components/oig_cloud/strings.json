@@ -23,11 +23,12 @@
   "options": {
     "step": {
       "init": {
-        "title": "Configure OIG Cloud",
-        "description": "Adjust settings for your OIG Cloud integration",
+        "title": "[%key:common::config_flow::options::title%]",
+        "description": "[%key:common::config_flow::options::description%]",
         "data": {
-          "update_interval": "Update interval (seconds)",
-          "no_telemetry": "Disable telemetry (opt-out of data collection)"
+          "update_interval": "[%key:common::config_flow::options::data::update_interval%]",
+          "no_telemetry": "[%key:common::config_flow::options::data::no_telemetry%]",
+          "log_level": "[%key:common::config_flow::options::data::log_level%]"
         }
       }
     }

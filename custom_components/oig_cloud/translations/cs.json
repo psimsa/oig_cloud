@@ -1,0 +1,85 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Zařízení je již nakonfigurováno"
+    },
+    "error": {
+      "cannot_connect": "Nepodařilo se připojit",
+      "invalid_auth": "Neplatné přihlašovací údaje",
+      "unknown": "Neočekávaná chyba"
+    },
+    "step": {
+      "user": {
+        "title": "Přihlášení do OIG",
+        "description": "Zadejte své přihlašovací jméno/e-mail a heslo pro přihlášení do OIG",
+        "data": {
+          "no_telemetry": "Zakázat sběr telemetrie (funkce v aktivním vývoji mohou být omezeny)",
+          "password": "Heslo",
+          "username": "Přihlašovací jméno nebo e-mail"
+        }
+      }
+    }
+  },
+  "selector": {
+    "set_box_mode": {
+      "options": {
+        "Home 1": "Home 1",
+        "Home 2": "Home 2",
+        "Home 3": "Home 3",
+        "Home UPS": "Home UPS"
+      },
+      "Acknowledgement": {
+        "description": "Beru na vědomí, že volání této služby povede ke změně parametrů živého systému. Přijímám plnou odpovědnost za změny a jakýkoli jejich očekávaný či neočekávaný dopad."
+      }
+    },
+    "set_grid_delivery": {
+      "options": {
+        "Vypnuto / Off": "Vypnuto / Off",
+        "Zapnuto / On": "Zapnuto / On",
+        "S omezením / Limited": "S omezením / Limited"
+      },
+      "Acknowledgement": {
+        "description": "Beru na vědomí, že volání této služby povede ke změně parametrů živého systému. Přijímám plnou odpovědnost za změny a jakýkoli jejich očekávaný či neočekávaný dopad."
+      },
+      "Upozornění": {
+        "description": "Před použitím této funkce se seznamte s omezeními dostupnými v aplikaci OIG Power / ČEZ Battery Box."
+      }
+    },
+    "set_boiler_mode": {
+      "options": {
+        "CBB": "CBB",
+        "Manual": "Manuální"
+      },
+      "Acknowledgement": {
+        "description": "Beru na vědomí, že volání této služby povede ke změně parametrů živého systému. Přijímám plnou odpovědnost za změny a jakýkoli jejich očekávaný či neočekávaný dopad."
+      }
+    },
+    "set_formating_mode": {
+      "options": {
+        "Nenabíjet": "Nenabíjet",
+        "Nabíjet": "Nabíjet"
+      },
+      "Limit": {
+        "min": "minimální",
+        "max": "maximální",
+        "unit_of_measurement": "jednotka měření"
+      },
+      "Acknowledgement": {
+        "description": "Beru na vědomí, že volání této služby povede ke změně parametrů živého systému. Přijímám plnou odpovědnost za změny a jakýkoli jejich očekávaný či neočekávaný dopad."
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Konfigurace",
+        "description": "Nastavení integrace OIG Cloud",
+        "data": {
+          "update_interval": "Interval aktualizace (vteřiny)",
+          "no_telemetry": "Zakázat telemetrii (odhlášení ze sběru dat)",
+          "log_level": "Úroveň protokolování"
+        }
+      }
+    }
+  }
+}
