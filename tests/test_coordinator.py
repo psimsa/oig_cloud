@@ -10,6 +10,7 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 from custom_components.oig_cloud.api.oig_cloud_api import OigCloudApi, OigCloudApiError
 from custom_components.oig_cloud.const import DEFAULT_UPDATE_INTERVAL
 from custom_components.oig_cloud.coordinator import OigCloudDataUpdateCoordinator
+from homeassistant.config_entries import ConfigEntry
 
 
 @pytest.fixture
@@ -19,6 +20,11 @@ def mock_api():
     api.get_data = AsyncMock()
     return api
 
+@pytest.fixture
+def mock_config_entry():
+    """Create a mock config entry."""
+    return Mock(spec=ConfigEntry)
+
 
 @pytest.fixture
 def mock_hass():
@@ -27,15 +33,15 @@ def mock_hass():
 
 
 @pytest.fixture
-def coordinator(mock_hass, mock_api):
+def coordinator(mock_hass, mock_api, mock_config_entry):
     """Create a coordinator with mock dependencies."""
-    return OigCloudDataUpdateCoordinator(mock_hass, mock_api)
+    return OigCloudDataUpdateCoordinator(mock_hass, mock_api, mock_config_entry)
 
 
 @pytest.mark.asyncio
-async def test_coordinator_initialization(mock_hass, mock_api):
+async def test_coordinator_initialization(mock_hass, mock_api, mock_config_entry):
     """Test coordinator initialization."""
-    coordinator = OigCloudDataUpdateCoordinator(mock_hass, mock_api)
+    coordinator = OigCloudDataUpdateCoordinator(mock_hass, mock_api, mock_config_entry)
     
     assert coordinator.api == mock_api
     assert coordinator.name == "oig_cloud"
@@ -44,7 +50,7 @@ async def test_coordinator_initialization(mock_hass, mock_api):
     # Test with custom update interval
     custom_interval = timedelta(seconds=60)
     coordinator = OigCloudDataUpdateCoordinator(
-        mock_hass, mock_api, update_interval=custom_interval
+        mock_hass, mock_api, mock_config_entry, update_interval=custom_interval
     )
     assert coordinator.update_interval == custom_interval
 
