@@ -1,6 +1,7 @@
 # Testing dependencies
 pytest
 pytest-cov
+pytest-asyncio
 
 # Linting dependencies
 flake8
