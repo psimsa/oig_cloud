@@ -30,7 +30,7 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
             raise vol.Invalid("Acknowledgement is required")
 
         with tracer.start_as_current_span("async_set_box_mode"):
-            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
+            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]["api"]
             mode = call.data.get("Mode")
             mode_value = MODES.get(mode)
             success = await client.set_box_mode(mode_value)
@@ -58,7 +58,7 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
             raise vol.Invalid("Limit musí být v rozmezí 1-9999")
 
         with tracer.start_as_current_span("async_set_grid_delivery"):
-            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
+            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]["api"]
             if grid_mode is not None:
                 mode = GRID_DELIVERY.get(grid_mode)
                 await client.set_grid_delivery(mode)
@@ -74,7 +74,7 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
             raise vol.Invalid("Acknowledgement is required")
 
         with tracer.start_as_current_span("async_set_boiler_mode"):
-            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
+            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]["api"]
             mode = call.data.get("Mode")
             mode_value = BOILER_MODE.get(mode)
             success = await client.set_boiler_mode(mode_value)
@@ -89,7 +89,7 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
             raise vol.Invalid("Limit musí být v rozmezí 20-100")
 
         with tracer.start_as_current_span("async_set_formating_mode"):
-            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
+            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]["api"]
             mode = call.data.get("Mode")
             mode_value = FORMAT_BATTERY.get(mode)
             success = await client.set_formating_mode(limit)

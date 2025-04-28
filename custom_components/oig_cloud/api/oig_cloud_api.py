@@ -22,28 +22,19 @@ class OigCloudApi:
     _set_mode_url = "inc/php/scripts/Device.Set.Value.php"
     _set_grid_delivery_url = "inc/php/scripts/ToGrid.Toggle.php"
     _set_batt_formating_url = "inc/php/scripts/Battery.Format.Save.php"
-    # {"id_device":"2205232120","table":"invertor_prm1","column":"p_max_feed_grid","value":"2000"}
-
-    _username: str = None
-    _password: str = None
-
-    _phpsessid: str = None
-
-    box_id: str = None
 
     def __init__(
-        self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant
+        self, username: str, password: str, no_telemetry: bool, hass: core.HomeAssistant, standard_scan_interval: int = 30
     ) -> None:
-        with tracer.start_as_current_span("initialize") as span:
-            self._no_telemetry = no_telemetry
-            self._logger = logging.getLogger(__name__)
-
-            self._last_update = datetime.datetime(1, 1, 1, 0, 0)
-            self._username = username
-            self._password = password
-
-            self.last_state = None
-            self._logger.debug("OigCloud initialized")
+        self._no_telemetry = no_telemetry
+        self._logger = logging.getLogger(__name__)
+        self._last_update = datetime.datetime(1, 1, 1, 0, 0)
+        self._username = username
+        self._password = password
+        self._standard_scan_interval = standard_scan_interval
+        self.last_state = None
+        self.box_id = None
+        self._logger.debug("OigCloud initialized")
 
     async def authenticate(self) -> bool:
         with tracer.start_as_current_span("authenticate") as span:
@@ -60,28 +51,12 @@ class OigCloudApi:
                         kind=SpanKind.SERVER,
                         attributes={"http.url": url, "http.method": "POST"},
                     ):
-                        async with session.post(
-                            url,
-                            data=data,
-                            headers=headers,
-                        ) as response:
+                        async with session.post(url, data=data, headers=headers) as response:
                             responsecontent = await response.text()
-                            span.add_event(
-                                "Received auth response",
-                                {
-                                    "response": responsecontent,
-                                    "status": response.status,
-                                },
-                            )
+                            span.add_event("Received auth response", {"response": responsecontent, "status": response.status})
                             if response.status == 200:
                                 if responsecontent == '[[2,"",false]]':
-                                    self._phpsessid = (
-                                        session.cookie_jar.filter_cookies(
-                                            self._base_url
-                                        )
-                                        .get("PHPSESSID")
-                                        .value
-                                    )
+                                    self._phpsessid = session.cookie_jar.filter_cookies(self._base_url).get("PHPSESSID").value
                                     return True
                             raise Exception("Authentication failed")
             except Exception as e:
@@ -94,59 +69,38 @@ class OigCloudApi:
     async def get_stats(self) -> object:
         async with lock:
             current_time = datetime.datetime.now()
-            if (current_time - self._last_update).total_seconds() < 30:
+            if (current_time - self._last_update).total_seconds() < self._standard_scan_interval:
                 self._logger.debug("Using cached stats")
                 return self.last_state
             with tracer.start_as_current_span("get_stats") as span:
                 try:
-                    to_return: object = None
-                    try:
-                        to_return = await self.get_stats_internal()
-                    except:
-                        self._logger.debug("Retrying authentication")
-                        if await self.authenticate():
-                            to_return = await self.get_stats_internal()
+                    to_return = await self._try_get_stats()
                     self._logger.debug("Retrieved stats")
-                    if self.box_id is None:
+                    if self.box_id is None and to_return:
                         self.box_id = list(to_return.keys())[0]
-
                     self._last_update = datetime.datetime.now()
-                    self._logger.debug(f"Last update: {self._last_update}")
+                    self.last_state = to_return
                     return to_return
                 except Exception as e:
                     self._logger.error(f"Error: {e}", stack_info=True)
                     raise e
 
-    async def get_stats_internal(self, dependent: bool = False) -> object:
+    async def _try_get_stats(self, dependent: bool = False) -> object:
         with tracer.start_as_current_span("get_stats_internal"):
-            to_return: object = None
-            self._logger.debug("Starting session")
             async with self.get_session() as session:
                 url = self._base_url + self._get_stats_url
                 self._logger.debug(f"Getting stats from {url}")
-                with tracer.start_as_current_span(
-                    "get_stats_internal.get",
-                    kind=SpanKind.SERVER,
-                    attributes={"http.url": url, "http.method": "GET"},
-                ):
-                    async with session.get(url) as response:
-                        if response.status == 200:
-                            to_return = await response.json()
-                            # the response should be a json dictionary, otherwise it's an error
-                            if not isinstance(to_return, dict) and not dependent:
-                                self._logger.info("Retrying authentication")
-                                if await self.authenticate():
-                                    second_try = await self.get_stats_internal(True)
-                                    if not isinstance(second_try, dict):
-                                        self._logger.warn(f"Error: {second_try}")
-                                        return None
-                                    else:
-                                        to_return = second_try
-                                else:
-                                    return None
-                        self.last_state = to_return
-                        self._logger.debug("Retrieved stats internal finished")
-                    return to_return
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        if not isinstance(result, dict) and not dependent:
+                            self._logger.info("Retrying authentication")
+                            if await self.authenticate():
+                                return await self._try_get_stats(True)
+                            return None
+                        return result
+                    else:
+                        raise Exception(f"Failed to fetch stats, status {response.status}")
 
     async def set_box_mode(self, mode: str) -> bool:
         with tracer.start_as_current_span("set_mode") as span:
@@ -305,4 +259,33 @@ class OigCloudApi:
                                 )
             except Exception as e:
                 self._logger.error(f"Error: {e}", stack_info=True)
+                raise e
+                
+    async def get_extended_stats(self, name: str, from_date: str, to_date: str) -> object:
+        with tracer.start_as_current_span("get_extended_stats") as span:
+            try:
+                async with self.get_session() as session:
+                    url = self._base_url + "json2.php"
+                    self._logger.debug(f"Requesting extended stats from {url}")
+
+                    payload = {
+                        "name": name,
+                        "range": f"{from_date},{to_date},0"
+                    }
+                    headers = {"Content-Type": "application/json"}
+
+                    with tracer.start_as_current_span(
+                        "get_extended_stats.post",
+                        kind=SpanKind.SERVER,
+                        attributes={"http.url": url, "http.method": "POST"},
+                    ):
+                        async with session.post(url, json=payload, headers=headers) as response:
+                            if response.status == 200:
+                                result = await response.json()
+                                self._logger.debug(f"Extended stats '{name}' retrieved successfully")
+                                return result
+                            else:
+                                raise Exception(f"Error fetching extended stats: {response.status}")
+            except Exception as e:
+                self._logger.error(f"Error in get_extended_stats: {e}", stack_info=True)
                 raise e
