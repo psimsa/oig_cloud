@@ -1,92 +1,64 @@
-"""Sensor platform for OIG Cloud integration."""
 import logging
-from typing import Any, Callable, Dict, List, Optional, cast
+from datetime import timedelta
 
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import Entity
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-
-from .const import DOMAIN
-from .coordinator import OigCloudDataUpdateCoordinator
-from .oig_cloud_computed_sensor import OigCloudComputedSensor
+from .oig_cloud_coordinator import OigCloudCoordinator
 from .oig_cloud_data_sensor import OigCloudDataSensor
+from .oig_cloud_computed_sensor import OigCloudComputedSensor
 from .sensor_types import SENSOR_TYPES
+from .const import DOMAIN
+from .config_flow import CONF_STANDARD_SCAN_INTERVAL, CONF_EXTENDED_SCAN_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(
-    hass: HomeAssistant, 
-    config_entry: ConfigEntry, 
-    async_add_entities: AddEntitiesCallback
-) -> None:
-    """Set up OIG Cloud sensors from a config entry."""
+async def async_setup_entry(hass, config_entry, async_add_entities):
+    """Nastavení senzorů OIG Cloud při načtení integrace."""
     _LOGGER.debug("Setting up OIG Cloud sensors")
-    
-    # Get coordinator from hass.data
-    entry_data = hass.data[DOMAIN][config_entry.entry_id]
-    coordinator: OigCloudDataUpdateCoordinator = entry_data["coordinator"]
-    
-    # Check if we have data before proceeding
-    if not coordinator.data:
-        _LOGGER.error("No data available from coordinator")
-        return
-    
-    _LOGGER.debug("First coordinator refresh successful, adding entities")
 
-    # Add common entities
-    _register_common_entities(async_add_entities, coordinator)
+    # 🛠 Správně rozbalíme, protože v hass.data je dict
+    api_data = hass.data[DOMAIN][config_entry.entry_id]
+    api = api_data["api"]
 
-    # Get the box ID from the coordinator data
-    box_id = list(coordinator.data.keys())[0]
-    
-    # Add entities that require 'boiler' if available
-    if "boiler" in coordinator.data[box_id] and len(coordinator.data[box_id]["boiler"]) > 0:
-        _LOGGER.debug("Registering boiler entities")
-        _register_boiler_entities(async_add_entities, coordinator)
-    else:
-        _LOGGER.debug("No boiler data available, skipping boiler entities")
+    # Vytáhnout intervaly z options (nebo defaulty)
+    standard_interval = config_entry.options.get(CONF_STANDARD_SCAN_INTERVAL, 30)
+    extended_interval = config_entry.options.get(CONF_EXTENDED_SCAN_INTERVAL, 300)
 
-    _LOGGER.debug("Sensor setup completed")
+    _LOGGER.debug(f"Using standard_interval={standard_interval}s and extended_interval={extended_interval}s")
 
-
-def _register_boiler_entities(async_add_entities: AddEntitiesCallback, coordinator: DataUpdateCoordinator) -> None:
-    """Register boiler-specific sensor entities."""
-    # Add data sensors that require boiler data
-    async_add_entities(
-        OigCloudDataSensor(coordinator, sensor_type)
-        for sensor_type in SENSOR_TYPES
-        if "requires" in SENSOR_TYPES[sensor_type]
-        and "boiler" in SENSOR_TYPES[sensor_type]["requires"]
-        and SENSOR_TYPES[sensor_type]["node_id"] is not None
+    # Vytvořit koordinátor
+    coordinator = OigCloudCoordinator(
+        hass,
+        api,
+        standard_interval_seconds=standard_interval,
+        extended_interval_seconds=extended_interval
     )
-    
-    # Add computed sensors that require boiler data
+
+    # První refresh
+    await coordinator.async_config_entry_first_refresh()
+
+    _LOGGER.debug("First data refresh completed, now registering entities")
+
+    # Registrace senzorů
+    _register_entities(async_add_entities, coordinator)
+
+    _LOGGER.debug("OIG Cloud sensors setup done")
+
+
+def _register_entities(async_add_entities, coordinator: OigCloudCoordinator):
+    """Registrace všech entit."""
+    async_add_entities(
+        OigCloudDataSensor(
+            coordinator,
+            sensor_type,
+            extended=sensor_type.startswith("extended_")
+        )
+        for sensor_type in SENSOR_TYPES
+        if SENSOR_TYPES[sensor_type].get("node_id") is not None or sensor_type.startswith("extended_")
+    )
+
     async_add_entities(
         OigCloudComputedSensor(coordinator, sensor_type)
         for sensor_type in SENSOR_TYPES
-        if "requires" in SENSOR_TYPES[sensor_type]
-        and "boiler" in SENSOR_TYPES[sensor_type]["requires"]
-        and SENSOR_TYPES[sensor_type]["node_id"] is None
-    )
-
-
-def _register_common_entities(async_add_entities: AddEntitiesCallback, coordinator: DataUpdateCoordinator) -> None:
-    """Register common sensor entities that don't require specific components."""
-    # Add standard data sensors
-    async_add_entities(
-        OigCloudDataSensor(coordinator, sensor_type)
-        for sensor_type in SENSOR_TYPES
-        if "requires" not in SENSOR_TYPES[sensor_type]
-        and SENSOR_TYPES[sensor_type]["node_id"] is not None
-    )
-    
-    # Add computed sensors
-    async_add_entities(
-        OigCloudComputedSensor(coordinator, sensor_type)
-        for sensor_type in SENSOR_TYPES
-        if "requires" not in SENSOR_TYPES[sensor_type]
-        and SENSOR_TYPES[sensor_type]["node_id"] is None
+        if SENSOR_TYPES[sensor_type].get("node_id") is None and not sensor_type.startswith("extended_")
     )
