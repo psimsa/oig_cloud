@@ -1,138 +1,102 @@
-"""Binary sensor platform for OIG Cloud integration."""
 import logging
 from datetime import timedelta
-from typing import Any, Dict, List, Optional
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import (
-    CoordinatorEntity,
-    DataUpdateCoordinator,
-)
-from .const import (
-    DEFAULT_NAME,
-    DOMAIN,
-)
-from .coordinator import OigCloudDataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator
+from .const import DOMAIN, DEFAULT_NAME, CONF_STANDARD_SCAN_INTERVAL
 from .binary_sensor_types import BINARY_SENSOR_TYPES
+from .api.oig_cloud_api import OigCloudApi
 
 _LOGGER = logging.getLogger(__name__)
 
 class OigCloudBinarySensor(CoordinatorEntity, BinarySensorEntity):
-    """Binary sensor for OIG Cloud data."""
-    
-    def __init__(self, coordinator: DataUpdateCoordinator, sensor_type: str) -> None:
-        """Initialize binary sensor."""
+    def __init__(self, coordinator, sensor_type):
         super().__init__(coordinator)
-        self.coordinator: DataUpdateCoordinator = coordinator
-        self._sensor_type: str = sensor_type
-        self._node_id: str = BINARY_SENSOR_TYPES[sensor_type]["node_id"]
-        self._node_key: str = BINARY_SENSOR_TYPES[sensor_type]["node_key"]
-        self._box_id: str = list(self.coordinator.data.keys())[0]
-        self.entity_id = f"binary_sensor.oig_{self._box_id}_{sensor_type}"
-        _LOGGER.debug(f"Created binary sensor {self.entity_id}")
+        self._sensor_type = sensor_type
+        self._node_id = BINARY_SENSOR_TYPES[sensor_type]["node_id"]
+        self._node_key = BINARY_SENSOR_TYPES[sensor_type]["node_key"]
+        self._box_id = None  # Box ID načteme později bezpečně
+
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+        if self.coordinator.data:
+            self._box_id = list(self.coordinator.data.keys())[0]
+            _LOGGER.debug(f"Created binary sensor {self.name} with box_id {self._box_id}")
 
     @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        language: str = self.hass.config.language
+    def name(self):
+        language = getattr(self.hass.config, "language", "en")
         if language == "cs":
             return BINARY_SENSOR_TYPES[self._sensor_type]["name_cs"]
         return BINARY_SENSOR_TYPES[self._sensor_type]["name"]
 
     @property
-    def device_class(self) -> Optional[str]:
-        """Return the device class."""
+    def unique_id(self):
+        if self._box_id:
+            return f"oig_cloud_{self._box_id}_{self._sensor_type}"
+        return None
+
+    @property
+    def device_class(self):
         return BINARY_SENSOR_TYPES[self._sensor_type]["device_class"]
 
     @property
-    def is_on(self) -> Optional[bool]:
-        """Return true if the binary sensor is on."""
-        _LOGGER.debug(f"Getting state for {self.entity_id}")
-        if not self.coordinator.data:
-            _LOGGER.debug(f"Data is None for {self.entity_id}")
+    def is_on(self):
+        if not self.coordinator.data or not self._box_id:
             return None
-
-        data: Dict[str, Any] = self.coordinator.data
-        vals = data.values()
-        pv_data: Dict[str, Any] = list(vals)[0]
-
         try:
-            node_value: Any = pv_data[self._node_id][self._node_key]
-            return bool(node_value)
-        except (KeyError, TypeError):
-            _LOGGER.warning(f"Could not find data for {self._node_id}.{self._node_key}")
+            pv_data = self.coordinator.data[self._box_id]
+            value = pv_data[self._node_id][self._node_key]
+            return bool(value)
+        except Exception as e:
+            _LOGGER.error(f"Error reading state for {self.unique_id}: {e}")
             return None
 
     @property
-    def unique_id(self) -> str:
-        """Return unique ID for sensor."""
-        return f"oig_cloud_{self._box_id}_{self._sensor_type}"
+    def should_poll(self):
+        return False
 
     @property
-    def device_info(self) -> DeviceInfo:
-        """Return device information."""
-        data: Dict[str, Any] = self.coordinator.data
-        vals = data.values()
-        pv_data: Dict[str, Any] = list(vals)[0]
-        is_queen: bool = pv_data.get("queen", False)
-        
-        model_name: str = f"{DEFAULT_NAME} {'Queen' if is_queen else 'Home'}"
+    def device_info(self):
+        if not self._box_id:
+            return None
+        try:
+            model_name = f"{DEFAULT_NAME} Home"
+            is_queen = self.coordinator.data[self._box_id].get("queen", False)
+            if is_queen:
+                model_name = f"{DEFAULT_NAME} Queen"
+            return {
+                "identifiers": {(DOMAIN, self._box_id)},
+                "name": f"{model_name} {self._box_id}",
+                "manufacturer": "OIG",
+                "model": model_name,
+            }
+        except Exception:
+            return None
 
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._box_id)},
-            name=f"{model_name} {self._box_id}",
-            manufacturer="OIG",
-            model=model_name,
-        )
+async def async_setup_entry(hass, config_entry, async_add_entities):
+    _LOGGER.debug("Setting up OIG Cloud Binary Sensors")
 
-    @property
-    def available(self) -> bool:
-        """Return if entity is available."""
-        # First, check if coordinator is available at all
-        if not self.coordinator.last_update_success:
-            return False
-            
-        # Then check if we have the necessary data
-        if not self.coordinator.data:
-            return False
-            
-        # If we have data, check if we have the required node
-        box_id = list(self.coordinator.data.keys())[0]
-        if self._node_id not in self.coordinator.data[box_id]:
-            return False
-            
-        return True
+    oig_data = hass.data[DOMAIN][config_entry.entry_id]
+    api: OigCloudApi = oig_data["api"]
+    standard_scan_interval = oig_data.get("standard_scan_interval", 30)
 
+    async def update_data():
+        return await api.get_stats()
 
-async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
-    """Set up OIG Cloud binary sensors from a config entry."""
-    _LOGGER.debug("Setting up OIG Cloud binary sensors")
-    
-    # Get coordinator from hass.data
-    entry_data = hass.data[DOMAIN][config_entry.entry_id]
-    coordinator: OigCloudDataUpdateCoordinator = entry_data["coordinator"]
-    
-    if not coordinator.data:
-        _LOGGER.error("No data available from coordinator")
-        return
-        
-    if not BINARY_SENSOR_TYPES:
-        _LOGGER.info("No binary sensor types defined, skipping binary sensor setup")
-        return
-    
-    # Create sensor entities
-    entities = [
+    coordinator = DataUpdateCoordinator(
+        hass,
+        _LOGGER,
+        name="OIG Cloud Binary Sensor Coordinator",
+        update_method=update_data,
+        update_interval=timedelta(seconds=standard_scan_interval),
+    )
+
+    await coordinator.async_config_entry_first_refresh()
+
+    async_add_entities(
         OigCloudBinarySensor(coordinator, sensor_type)
         for sensor_type in BINARY_SENSOR_TYPES
-    ]
-    
-    if not entities:
-        _LOGGER.debug("No binary sensor entities to add")
-        return
-        
-    async_add_entities(entities)
-    _LOGGER.debug("Binary sensor setup completed")
+    )
+
+    _LOGGER.debug("Finished setting up OIG Cloud Binary Sensors")
