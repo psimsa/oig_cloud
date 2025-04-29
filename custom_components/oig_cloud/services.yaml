@@ -6,7 +6,7 @@ set_box_mode:
     in the BBox and the UI, but occasionally may take up to an hour.
     You can check whether the call was successful in the OIG web or mobile app in the Notifications section.
   fields:
-    Mode:
+    mode:
       description: The mode to set
       selector:
         select:
@@ -15,7 +15,7 @@ set_box_mode:
             - Home 2
             - Home 3
             - Home UPS
-    Acknowledgement:
+    acknowledgement:
       description: |
         I acknowledge that calling the service will result in parameter modification of a live system.
         I take on full responsibility for the changes and any effect they may have, expected or otherwise.
@@ -38,7 +38,7 @@ set_grid_delivery:
     Berte prosím v úvahu, že v mezičase může dojít k nadměrnému exportu do sítě. Příklad nastavení lze nalézt na
     https://raw.githubusercontent.com/psimsa/oig_cloud/main/docs/grid_delivery_script_sample.yaml
   fields:
-    Mode:
+    mode:
       description: Režim přetoků
       selector:
         select:
@@ -46,14 +46,14 @@ set_grid_delivery:
             - Vypnuto / Off
             - Zapnuto / On
             - S omezením / Limited
-    Limit:
+    limit:
       description: Nastavení limitu výkonu přetoků (W)
       selector:
         number:
           min: 1
           max: 9999
           unit_of_measurement: "W"
-    Acknowledgement:
+    acknowledgement:
       description: |
         I acknowledge that calling the service will result in parameter modification of a live system.
         I take on full responsibility for the changes and any effect they may have, expected or otherwise.
@@ -62,7 +62,7 @@ set_grid_delivery:
       required: true
       selector:
         boolean:
-    Warning:
+    warning:
       description: |
         Před použitím této funkce se seznamte s omezeními dostupnými v aplikaci OIG Power / ČEZ Battery Box.
         AKTIVACÍ PŘETOKŮ NA ZAŘÍZENÍ BATTERY BOX BERETE NA VĚDOMÍ NÍŽE UVEDENÉ A PŘEBÍRÁTE NA SEBE
@@ -92,14 +92,14 @@ set_boiler_mode:
     bez ohledu na HDO a nebo výrobu FVE. Defaultně je SSR, kdy si plně CBB řídí nabíjení bojleru podle HDO a přetoků.
     Nastavení Manual všechno toto obchází.
   fields:
-    Mode:
+    mode:
       description: Režim bojleru
       selector:
         select:
           options:
             - CBB
             - Manual
-    Acknowledgement:
+    acknowledgement:
       description: |
         I acknowledge that calling the service will result in parameter modification of a live system.
         I take on full responsibility for the changes and any effect they may have, expected or otherwise.
@@ -114,21 +114,21 @@ set_formating_mode:
   description: |
     Tímto parametrem nastavujete okamžité spuštění nabíjení baterige ze sítě na stanovenou hodnotu limitu.
   fields:
-    Mode:
+    mode:
       description: Režim nabíjení
       selector:
         select:
           options:
             - Nenabíjet
             - Nabíjet
-    Limit:
+    limit:
       description: Cílové procento nabití
       selector:
         number:
           min: 25
           max: 100
           unit_of_measurement: "%"
-    Acknowledgement:
+    acknowledgement:
       description: |
         I acknowledge that calling the service will result in parameter modification of a live system.
         I take on full responsibility for the changes and any effect they may have, expected or otherwise.
