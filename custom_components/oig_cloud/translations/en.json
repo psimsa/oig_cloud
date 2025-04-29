@@ -20,32 +20,32 @@
       }
     }
   },
-  "entity": {
+  "services": {
     "set_box_mode": {
       "fields": {
         "Mode": "Select battery box mode",
-        "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+        "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take full responsibility for any effects."
       }
     },
     "set_grid_delivery": {
       "fields": {
         "Mode": "Grid delivery mode",
-        "Limit": "Grid export limit (W)",
-        "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise.",
-        "Warning": "Before using this function, familiarize yourself with the restrictions available in the OIG Power / ČEZ Battery Box app. By enabling grid export, you acknowledge full responsibility for any fines or issues that may arise."
+        "Limit": "Grid export limit in watts",
+        "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take full responsibility for any effects.",
+        "Warning": "Warning: Before enabling grid export, ensure you have permission from your DSO. Failure may result in penalties."
       }
     },
     "set_boiler_mode": {
       "fields": {
         "Mode": "Select boiler mode",
-        "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+        "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take full responsibility for any effects."
       }
     },
     "set_formating_mode": {
       "fields": {
-        "Mode": "Charging battery from GRID",
+        "Mode": "Enable or disable battery charging from the grid",
         "Limit": "Target battery charge percentage",
-        "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+        "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take full responsibility for any effects."
       }
     }
   }
