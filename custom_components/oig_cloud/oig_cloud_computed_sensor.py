@@ -19,6 +19,7 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
     def __init__(self, coordinator, sensor_type: str):
         super().__init__(coordinator, sensor_type)
         self._last_update = None
+        self._attr_extra_state_attributes = {}
 
         self._energy = {
             "charge_today": 0.0,
@@ -42,24 +43,13 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
         )
 
         old_state = await self.async_get_last_state()
-        if old_state and old_state.state not in (None, "unknown", "unavailable"):
+        if old_state and old_state.attributes:
             _LOGGER.debug(
                 f"[{self.entity_id}] Restoring energy state from previous session"
             )
-            try:
-                value = float(old_state.state)
-                for key in self._energy:
-                    if (
-                        key.endswith("today")
-                        and "charge" in key
-                        and "fve" not in key
-                        and "grid" not in key
-                    ):
-                        self._energy[key] = value
-            except ValueError:
-                _LOGGER.warning(
-                    f"[{self.entity_id}] Failed to restore previous energy value"
-                )
+            for key in self._energy:
+                if key in old_state.attributes:
+                    self._energy[key] = float(old_state.attributes[key])
 
     async def _reset_daily(self, *_):
         now = datetime.utcnow()
@@ -126,11 +116,6 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
             fv_power = float(pv_data["actual"]["fv_p1"]) + float(
                 pv_data["actual"]["fv_p2"]
             )
-            grid_power = (
-                float(pv_data["actual"]["aci_wr"])
-                + float(pv_data["actual"]["aci_ws"])
-                + float(pv_data["actual"]["aci_wt"])
-            )
 
             if self._last_update is not None:
                 delta_seconds = (now - self._last_update).total_seconds()
@@ -169,6 +154,10 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
                 )
 
             self._last_update = now
+            self._attr_extra_state_attributes = {
+                k: round(v, 3) for k, v in self._energy.items()
+            }
+
             return self._get_energy_value()
 
         except Exception as e:
@@ -198,6 +187,7 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
     def _get_boiler_consumption(self, pv_data):
         if self._sensor_type != "boiler_current_w":
             return None
+
         try:
             fv_power = float(pv_data["actual"]["fv_p1"]) + float(
                 pv_data["actual"]["fv_p2"]
@@ -208,25 +198,27 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
                 + float(pv_data["actual"]["aci_ws"])
                 + float(pv_data["actual"]["aci_wt"])
             )
-
             boiler_p_set = float(pv_data["boiler_prms"].get("p_set", 0))
             boiler_manual = pv_data["boiler_prms"].get("manual", 0) == 1
+            bat_power = float(pv_data["actual"]["bat_p"])
 
             if boiler_manual:
-                # Manuální režim - patrona jede naplno podle p_set (doplňuje síť)
                 boiler_power = boiler_p_set
             else:
-                # Automatický režim - využíváme dostupný výkon z FVE
-                available_power = fv_power - load_power - export_power
-                boiler_power = min(max(available_power, 0), boiler_p_set)
+                if bat_power <= 0:
+                    available_power = fv_power - load_power - export_power
+                    boiler_power = min(max(available_power, 0), boiler_p_set)
+                else:
+                    boiler_power = 0
 
             boiler_power = max(boiler_power, 0)
 
             _LOGGER.debug(
-                f"[{self.entity_id}] Estimated boiler power: FVE={fv_power}W, Load={load_power}W, Export={export_power}W, Set={boiler_p_set}W, Manual={boiler_manual} => Boiler={boiler_power}W"
+                f"[{self.entity_id}] Estimated boiler power: FVE={fv_power}W, Load={load_power}W, Export={export_power}W, Set={boiler_p_set}W, Manual={boiler_manual}, Bat_P={bat_power}W => Boiler={boiler_power}W"
             )
 
             return round(boiler_power, 2)
+
         except Exception as e:
             _LOGGER.error(f"Error calculating boiler consumption: {e}", exc_info=True)
             return None
