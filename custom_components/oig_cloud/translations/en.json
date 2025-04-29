@@ -1,51 +1,52 @@
 {
-  "config": {
-    "abort": {
-      "already_configured": "Device is already configured"
-    },
-    "error": {
-      "cannot_connect": "Failed to connect",
-      "invalid_auth": "Invalid authentication",
-      "unknown": "Unexpected error"
-    },
-    "step": {
-      "user": {
-        "title": "Login to OIG",
-        "description": "Enter your login/email and password for OIG Cloud",
-        "data": {
-          "username": "Username or email",
-          "password": "Password",
-          "no_telemetry": "Disable telemetry collection"
-        }
-      }
-    }
-  },
   "services": {
     "set_box_mode": {
       "fields": {
-        "Mode": "Select battery box mode",
-        "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take full responsibility for any effects."
+        "Mode": {
+          "name": "Select battery box mode"
+        },
+        "Acknowledgement": {
+          "name": "I acknowledge that calling the service will result in parameter modification of a live system. I take full responsibility for any effects."
+        }
       }
     },
     "set_grid_delivery": {
       "fields": {
-        "Mode": "Grid delivery mode",
-        "Limit": "Grid export limit in watts",
-        "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take full responsibility for any effects.",
-        "Warning": "Warning: Before enabling grid export, ensure you have permission from your DSO. Failure may result in penalties."
+        "Mode": {
+          "name": "Grid delivery mode"
+        },
+        "Limit": {
+          "name": "Grid export limit in watts"
+        },
+        "Acknowledgement": {
+          "name": "I acknowledge that calling the service will result in parameter modification of a live system. I take full responsibility for any effects."
+        },
+        "Warning": {
+          "name": "Warning: Before enabling grid export, ensure you have permission from your DSO. Failure may result in penalties."
+        }
       }
     },
     "set_boiler_mode": {
       "fields": {
-        "Mode": "Select boiler mode",
-        "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take full responsibility for any effects."
+        "Mode": {
+          "name": "Manual or automatic boiler mode"
+        },
+        "Acknowledgement": {
+          "name": "I acknowledge that calling the service will result in parameter modification of a live system. I take full responsibility for any effects."
+        }
       }
     },
     "set_formating_mode": {
       "fields": {
-        "Mode": "Enable or disable battery charging from the grid",
-        "Limit": "Target battery charge percentage",
-        "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take full responsibility for any effects."
+        "Mode": {
+          "name": "Enable or disable battery charging from the grid"
+        },
+        "Limit": {
+          "name": "Target battery charge percentage"
+        },
+        "Acknowledgement": {
+          "name": "I acknowledge that calling the service will result in parameter modification of a live system. I take full responsibility for any effects."
+        }
       }
     }
   }
