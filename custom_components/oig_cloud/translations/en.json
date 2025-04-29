@@ -1,51 +1,59 @@
 {
   "services": {
     "set_box_mode": {
+      "name": "Set Battery Box Mode",
+      "description": "Sets the mode of the Battery Box device.",
       "fields": {
-        "Mode": {
+        "mode": {
           "name": "Select battery box mode"
         },
-        "Acknowledgement": {
-          "name": "I acknowledge that calling the service will result in parameter modification of a live system. I take full responsibility for any effects."
+        "acknowledgement": {
+          "name": "Acknowledgement of responsibility for system changes."
         }
       }
     },
     "set_grid_delivery": {
+      "name": "Set Grid Delivery Mode",
+      "description": "Configure whether grid delivery is enabled or limited.",
       "fields": {
-        "Mode": {
+        "mode": {
           "name": "Grid delivery mode"
         },
-        "Limit": {
-          "name": "Grid export limit in watts"
+        "limit": {
+          "name": "Grid export limit (W)"
         },
-        "Acknowledgement": {
-          "name": "I acknowledge that calling the service will result in parameter modification of a live system. I take full responsibility for any effects."
+        "acknowledgement": {
+          "name": "Acknowledgement of responsibility for system changes."
         },
-        "Warning": {
-          "name": "Warning: Before enabling grid export, ensure you have permission from your DSO. Failure may result in penalties."
+        "warning": {
+          "name": "Warning regarding permission for grid export."
         }
       }
     },
     "set_boiler_mode": {
+      "name": "Set Boiler Mode",
+      "description": "Enable manual or automatic mode for boiler heating.",
       "fields": {
-        "Mode": {
-          "name": "Manual or automatic boiler mode"
+        "mode": {
+          "name": "Boiler operation mode"
         },
-        "Acknowledgement": {
-          "name": "I acknowledge that calling the service will result in parameter modification of a live system. I take full responsibility for any effects."
+        "acknowledgement": {
+          "name": "Acknowledgement of responsibility for system changes."
         }
       }
     },
     "set_formating_mode": {
+      "name": "Enable Battery Charging from Grid",
+      "description": "Manually start charging the battery from the grid to a set limit.",
       "fields": {
-        "Mode": {
-          "name": "Enable or disable battery charging from the grid"
+        "mode": {
+          "name": "Grid charging mode"
         },
-        "Limit": {
-          "name": "Target battery charge percentage"
+        "limit": {
+          "name": "Battery charge limit (%)"
         },
-        "Acknowledgement": {
-          "name": "I acknowledge that calling the service will result in parameter modification of a live system. I take full responsibility for any effects."
+        "acknowledgement": {
+          "name": "Acknowledgement of responsibility for system changes."
         }
       }
     }
