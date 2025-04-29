@@ -10,63 +10,66 @@
     },
     "step": {
       "user": {
-        "title": "Přihlášení do OIG",
-        "description": "Zadejte své přihlašovací jméno/e-mail a heslo pro přihlášení do OIG",
+        "title": "Login to OIG",
+        "description": "Enter your login/email and password for OIG Cloud",
         "data": {
-          "no_telemetry": "Zakázat sběr telemetrie (funkce v aktivním vývoji mohou být omezeny)",
-          "password": "Heslo",
-          "username": "Přihlašovací jméno nebo e-mail"
+          "no_telemetry": "Disable telemetry collection",
+          "password": "Password",
+          "username": "Username or email"
         }
       }
     }
   },
   "selector": {
     "set_box_mode": {
-      "options": {
-        "Home 1": "Home 1",
-        "Home 2": "Home 2",
-        "Home 3": "Home 3",
-        "Home UPS": "Home UPS"
+      "mode": {
+        "options": {
+          "home_1": "Home 1",
+          "home_2": "Home 2",
+          "home_3": "Home 3",
+          "home_ups": "Home UPS"
+        }
       },
-      "Acknowledgement":{
-        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
-      }
+      "acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system."
     },
     "set_grid_delivery": {
-      "options": {
-        "Vypnuto / Off": "Vypnuto / Off",
-        "Zapnuto / On": "Zapnuto / On",
-        "S omezením / Limited": "S omezením / Limited"
+      "mode": {
+        "options": {
+          "off": "Vypnuto / Off",
+          "on": "Zapnuto / On",
+          "limited": "S omezením / Limited"
+        }
       },
-      "Acknowledgement":{
-        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+      "limit": {
+        "unit_of_measurement": "W",
+        "min": 1,
+        "max": 9999
       },
-      "Upozornění":{
-        "description": "Před použitím této funkce se seznamte s omezeními dostupnými v aplikaci OIG Power / ČEZ Battery Box."
-      }
+      "acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system.",
+      "warning": "Před použitím této funkce se seznamte s omezeními dostupnými v aplikaci OIG Power / ČEZ Battery Box."
     },
     "set_boiler_mode": {
-      "options": {
-        "CBB": "CBB",
-        "Manual": "Manual"
+      "mode": {
+        "options": {
+          "cbb": "CBB",
+          "manual": "Manual"
+        }
       },
-      "Acknowledgement":{
-        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
-      }
+      "acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system."
     },
     "set_formating_mode": {
-      "options": {
-        "Nenabíjet": "Nenabíjet",
-        "Nabíjet": "Nabíjet"
+      "mode": {
+        "options": {
+          "no_charge": "Nenabíjet",
+          "charge": "Nabíjet"
+        }
       },
-      "Limit": {
-        "min": "min",
-        "max": "max",
-        "unit_of_measurement": "unit_of_measurement"
+      "limit": {
+        "unit_of_measurement": "%",
+        "min": 25,
+        "max": 100
       },
-      "Acknowledgement":{
-        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
-      }
+      "acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system."
     }
   }
 }
