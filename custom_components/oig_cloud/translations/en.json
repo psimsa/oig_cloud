@@ -20,25 +20,33 @@
       }
     }
   },
-  "services": {
+  "entity": {
     "set_box_mode": {
-      "mode": "Set the mode of the device",
-      "acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+      "fields": {
+        "Mode": "Select battery box mode",
+        "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+      }
     },
     "set_grid_delivery": {
-      "mode": "Grid delivery mode",
-      "limit": "Grid export limit (W)",
-      "acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise.",
-      "warning": "Before using this function, familiarize yourself with the restrictions available in the OIG Power / ČEZ Battery Box app. By enabling grid export, you acknowledge full responsibility for any fines or issues that may arise from violating DS connection agreements."
+      "fields": {
+        "Mode": "Grid delivery mode",
+        "Limit": "Grid export limit (W)",
+        "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise.",
+        "Warning": "Before using this function, familiarize yourself with the restrictions available in the OIG Power / ČEZ Battery Box app. By enabling grid export, you acknowledge full responsibility for any fines or issues that may arise."
+      }
     },
     "set_boiler_mode": {
-      "mode": "Boiler heating mode",
-      "acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+      "fields": {
+        "Mode": "Select boiler mode",
+        "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+      }
     },
     "set_formating_mode": {
-      "mode": "Charging battery from GRID",
-      "limit": "Target battery charge percentage",
-      "acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+      "fields": {
+        "Mode": "Charging battery from GRID",
+        "Limit": "Target battery charge percentage",
+        "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+      }
     }
   }
 }
