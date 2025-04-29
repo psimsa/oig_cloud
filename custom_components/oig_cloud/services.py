@@ -40,7 +40,7 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
         if not acknowledged:
             raise vol.Invalid("Acknowledgement is required")
 
-        accepted = call.data.get("Upozornění")
+        accepted = call.data.get("warning")
         if not accepted:
             raise vol.Invalid("Upozornění je třeba odsouhlasit")
 
