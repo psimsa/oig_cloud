@@ -49,13 +49,13 @@
       "warning": "Před použitím této funkce se seznamte s omezeními dostupnými v aplikaci OIG Power / ČEZ Battery Box."
     },
     "set_boiler_mode": {
-      "mode": {
-        "options": {
-          "cbb": "CBB",
-          "manual": "Manual"
-        }
+      "options": {
+        "CBB": "CBB",
+        "Manual": "Manual"
       },
-      "acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system."
+      "acknowledgement": {
+        "description": "I acknowledge that calling the service will result in parameter modification of a live system."
+      }
     },
     "set_formating_mode": {
       "mode": {
