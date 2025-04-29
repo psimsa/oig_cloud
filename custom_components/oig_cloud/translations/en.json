@@ -20,74 +20,25 @@
       }
     }
   },
-  "selector": {
+  "services": {
     "set_box_mode": {
-      "fields": {
-        "Mode": {
-          "options": {
-            "home_1": "Home 1",
-            "home_2": "Home 2",
-            "home_3": "Home 3",
-            "home_ups": "Home UPS"
-          }
-        },
-        "Acknowledgement": {
-          "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise. Beru na vědomí, že volání této služby povede ke změně parametrů živého systému. Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby."
-        }
-      }
+      "mode": "Set the mode of the device",
+      "acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
     },
     "set_grid_delivery": {
-      "fields": {
-        "Mode": {
-          "options": {
-            "off": "Vypnuto / Off",
-            "on": "Zapnuto / On",
-            "limited": "S omezením / Limited"
-          }
-        },
-        "Limit": {
-          "unit_of_measurement": "W",
-          "min": 1,
-          "max": 9999
-        },
-        "Acknowledgement": {
-          "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise. Beru na vědomí, že volání této služby povede ke změně parametrů živého systému. Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby."
-        },
-        "Warning": {
-          "description": "Before using this function, review the limitations available in the OIG Power / ČEZ Battery Box app. ACTIVATING FEED-IN INTO THE GRID ON THE BATTERY BOX DEVICE MEANS YOU ACKNOWLEDGE AND ACCEPT FULL RESPONSIBILITY FOR ANY SANCTIONS FOR VIOLATING THE DISTRIBUTION RULES. THE BATTERY BOX MANUFACTURER IS NOT RESPONSIBLE FOR SUCH ACTIONS. Full details: https://www.oigpower.cz/cez/pretoky-sankce.pdf"
-        }
-      }
+      "mode": "Grid delivery mode",
+      "limit": "Grid export limit (W)",
+      "acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise.",
+      "warning": "Before using this function, familiarize yourself with the restrictions available in the OIG Power / ČEZ Battery Box app. By enabling grid export, you acknowledge full responsibility for any fines or issues that may arise from violating DS connection agreements."
     },
     "set_boiler_mode": {
-      "fields": {
-        "Mode": {
-          "options": {
-            "cbb": "CBB",
-            "manual": "Manual"
-          }
-        },
-        "Acknowledgement": {
-          "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise. Beru na vědomí, že volání této služby povede ke změně parametrů živého systému. Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby."
-        }
-      }
+      "mode": "Boiler heating mode",
+      "acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
     },
     "set_formating_mode": {
-      "fields": {
-        "Mode": {
-          "options": {
-            "no_charge": "Nenabíjet",
-            "charge": "Nabíjet"
-          }
-        },
-        "Limit": {
-          "unit_of_measurement": "%",
-          "min": 25,
-          "max": 100
-        },
-        "Acknowledgement": {
-          "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise. Beru na vědomí, že volání této služby povede ke změně parametrů živého systému. Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby."
-        }
-      }
+      "mode": "Charging battery from GRID",
+      "limit": "Target battery charge percentage",
+      "acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
     }
   }
 }
