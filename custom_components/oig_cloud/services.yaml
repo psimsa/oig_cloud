@@ -89,26 +89,27 @@ set_grid_delivery:
 set_boiler_mode:
   name: Nastavení manuálního nabíjení bojleru
   description: |
-    (celý tvůj text)
-  fields:
-    mode:
-      description: |
     Tímto parametrem obejdete nastavení CBB ohledně řízení přetoků do bojleru a výkon patrony je v plném režimu
     bez ohledu na HDO a nebo výrobu FVE. Defaultně je SSR, kdy si plně CBB řídí nabíjení bojleru podle HDO a přetoků.
     Nastavení Manual všechno toto obchází.
-    selector:
+  fields:
+    Mode:
+      description: Režim bojleru
+      selector:
         select:
           options:
             - CBB
             - Manual
     acknowledgement:
       description: |
-        I acknowledge that calling the service will result in parameter modification of a live system.
-        I take on full responsibility for the changes and any effect they may have, expected or otherwise.
-        Beru na vědomí, že volání této služby povede ke změně parametrů živého systému.
-        Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
+          I acknowledge that calling the service will result in parameter modification of a live system.
+          I take on full responsibility for the changes and any effect they may have, expected or otherwise.
+          Beru na vědomí, že volání této služby povede ke změně parametrů živého systému.
+          Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
+      required: true
       selector:
         boolean:
+
 
 set_formating_mode:
   name: Nabíjení baterie z GRIDU
