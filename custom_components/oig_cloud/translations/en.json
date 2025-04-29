@@ -50,7 +50,7 @@
     },
     "set_boiler_mode": {
       "options": {
-        "CBB": "CBB",
+        "cbb": "CBB",
         "Manual": "Manual"
       },
       "acknowledgement": {
