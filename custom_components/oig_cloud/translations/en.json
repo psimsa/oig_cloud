@@ -13,16 +13,16 @@
         "title": "Login to OIG",
         "description": "Enter your login/email and password for OIG Cloud",
         "data": {
-          "no_telemetry": "Disable telemetry collection",
+          "username": "Username or email",
           "password": "Password",
-          "username": "Username or email"
+          "no_telemetry": "Disable telemetry collection"
         }
       }
     }
   },
   "selector": {
     "set_box_mode": {
-      "mode": {
+      "Mode": {
         "options": {
           "home_1": "Home 1",
           "home_2": "Home 2",
@@ -30,46 +30,46 @@
           "home_ups": "Home UPS"
         }
       },
-      "acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system."
+      "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
     },
     "set_grid_delivery": {
-      "mode": {
+      "Mode": {
         "options": {
           "off": "Vypnuto / Off",
           "on": "Zapnuto / On",
           "limited": "S omezením / Limited"
         }
       },
-      "limit": {
+      "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise.",
+      "Warning": "Před použitím této funkce se seznamte s omezeními dostupnými v aplikaci OIG Power / ČEZ Battery Box.",
+      "Limit": {
         "unit_of_measurement": "W",
         "min": 1,
         "max": 9999
-      },
-      "acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system.",
-      "warning": "Před použitím této funkce se seznamte s omezeními dostupnými v aplikaci OIG Power / ČEZ Battery Box."
-    },
-    "set_boiler_mode": {
-      "options": {
-        "cbb": "CBB",
-        "Manual": "Manual"
-      },
-      "acknowledgement": {
-        "description": "I acknowledge that calling the service will result in parameter modification of a live system."
       }
     },
+    "set_boiler_mode": {
+      "Mode": {
+        "options": {
+          "cbb": "CBB",
+          "manual": "Manual"
+        }
+      },
+      "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+    },
     "set_formating_mode": {
-      "mode": {
+      "Mode": {
         "options": {
           "no_charge": "Nenabíjet",
           "charge": "Nabíjet"
         }
       },
-      "limit": {
+      "Acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise.",
+      "Limit": {
         "unit_of_measurement": "%",
         "min": 25,
         "max": 100
-      },
-      "acknowledgement": "I acknowledge that calling the service will result in parameter modification of a live system."
+      }
     }
   }
 }
