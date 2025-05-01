@@ -19,5 +19,17 @@
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Adjust Scan Intervals",
+        "description": "Set the scan intervals for standard and extended data.",
+        "data": {
+          "standard_scan_interval": "Standard Scan Interval (seconds)",
+          "extended_scan_interval": "Extended Scan Interval (seconds)"
+        }
+      }
+    }
   }
 }

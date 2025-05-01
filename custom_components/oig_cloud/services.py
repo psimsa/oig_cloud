@@ -25,27 +25,27 @@ tracer = trace.get_tracer(__name__)
 
 async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) -> None:
     async def async_set_box_mode(call):
-        acknowledged = call.data.get("Acknowledgement")
+        acknowledged = call.data.get("acknowledgement")
         if not acknowledged:
             raise vol.Invalid("Acknowledgement is required")
 
         with tracer.start_as_current_span("async_set_box_mode"):
-            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
-            mode = call.data.get("Mode")
+            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]["api"]
+            mode = call.data.get("mode")
             mode_value = MODES.get(mode)
             success = await client.set_box_mode(mode_value)
 
     async def async_set_grid_delivery(call):
-        acknowledged = call.data.get("Acknowledgement")
+        acknowledged = call.data.get("acknowledgement")
         if not acknowledged:
             raise vol.Invalid("Acknowledgement is required")
 
-        accepted = call.data.get("Upozornění")
+        accepted = call.data.get("warning")
         if not accepted:
             raise vol.Invalid("Upozornění je třeba odsouhlasit")
 
-        grid_mode = call.data.get("Mode")
-        limit = call.data.get("Limit")
+        grid_mode = call.data.get("mode")
+        limit = call.data.get("limit")
 
         if (grid_mode is None and limit is None) or (
             grid_mode is not None and limit is not None
@@ -58,7 +58,7 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
             raise vol.Invalid("Limit musí být v rozmezí 1-9999")
 
         with tracer.start_as_current_span("async_set_grid_delivery"):
-            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
+            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]["api"]
             if grid_mode is not None:
                 mode = GRID_DELIVERY.get(grid_mode)
                 await client.set_grid_delivery(mode)
@@ -69,19 +69,19 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
                     raise vol.Invalid("Limit se nepodařilo nastavit.")
 
     async def async_set_boiler_mode(call):
-        acknowledged = call.data.get("Acknowledgement")
+        acknowledged = call.data.get("acknowledgement")
         if not acknowledged:
             raise vol.Invalid("Acknowledgement is required")
 
         with tracer.start_as_current_span("async_set_boiler_mode"):
-            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
-            mode = call.data.get("Mode")
+            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]["api"]
+            mode = call.data.get("mode")
             mode_value = BOILER_MODE.get(mode)
             success = await client.set_boiler_mode(mode_value)
 
     async def async_set_formating_mode(call):
-        acknowledged = call.data.get("Acknowledgement")
-        limit = call.data.get("Limit")
+        acknowledged = call.data.get("acknowledgement")
+        limit = call.data.get("limit")
         if not acknowledged:
             raise vol.Invalid("Acknowledgement is required")
 
@@ -89,10 +89,23 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
             raise vol.Invalid("Limit musí být v rozmezí 20-100")
 
         with tracer.start_as_current_span("async_set_formating_mode"):
-            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]
-            mode = call.data.get("Mode")
+            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]["api"]
+            mode = call.data.get("mode")
             mode_value = FORMAT_BATTERY.get(mode)
             success = await client.set_formating_mode(limit)
+
+    async def async_get_extended_stats(call):
+        acknowledged = call.data.get("acknowledgement")
+        if not acknowledged:
+            raise vol.Invalid("Acknowledgement is required")
+
+        with tracer.start_as_current_span("async_get_extended_stats"):
+            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]["api"]
+            name = call.data.get("name")
+            from_date = call.data.get("from_date")
+            to_date = call.data.get("to_date")
+            result = await client.get_extended_stats(name, from_date, to_date)
+            return result
 
     hass.services.async_register(
         DOMAIN,
@@ -100,7 +113,7 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
         async_set_box_mode,
         schema=vol.Schema(
             {
-                vol.Required("Mode"): vol.In(
+                vol.Required("mode"): vol.In(
                     [
                         "Home 1",
                         "Home 2",
@@ -108,7 +121,7 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
                         "Home UPS",
                     ]
                 ),
-                "Acknowledgement": vol.Boolean(1),
+                "acknowledgement": vol.Boolean(1),
             }
         ),
     )
@@ -119,16 +132,16 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
         async_set_grid_delivery,
         schema=vol.Schema(
             {
-                "Mode": vol.In(
+                "mode": vol.In(
                     [
                         "Vypnuto / Off",
                         "Zapnuto / On",
                         "S omezením / Limited",
                     ]
                 ),
-                "Limit": vol.Any(None, vol.Coerce(int)),
-                "Acknowledgement": vol.Boolean(1),
-                "Upozornění": vol.Boolean(1),
+                "limit": vol.Any(None, vol.Coerce(int)),
+                "acknowledgement": vol.Boolean(1),
+                "warning": vol.Boolean(1),
             }
         ),
     )
@@ -139,13 +152,13 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
         async_set_boiler_mode,
         schema=vol.Schema(
             {
-                "Mode": vol.In(
+                "mode": vol.In(
                     [
                         "CBB",
                         "Manual",
                     ]
                 ),
-                "Acknowledgement": vol.Boolean(1),
+                "acknowledgement": vol.Boolean(1),
             }
         ),
     )
@@ -156,14 +169,28 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
         async_set_formating_mode,
         schema=vol.Schema(
             {
-                "Mode": vol.In(
+                "mode": vol.In(
                     [
                         "Nenabíjet",
                         "Nabíjet",
                     ]
                 ),
-                "Limit": vol.Any(None, vol.Coerce(int)),
-                "Acknowledgement": vol.Boolean(1),
+                "limit": vol.Any(None, vol.Coerce(int)),
+                "acknowledgement": vol.Boolean(1),
+            }
+        ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "get_extended_stats",
+        async_get_extended_stats,
+        schema=vol.Schema(
+            {
+                vol.Required("name"): str,
+                vol.Required("from_date"): str,
+                vol.Required("to_date"): str,
+                "acknowledgement": vol.Boolean(1),
             }
         ),
     )
