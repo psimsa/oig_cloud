@@ -1,0 +1,120 @@
+{
+    "2205232120": {
+        "ac_in": {
+            "aci_vr": 235.6,
+            "aci_vs": 238.6,
+            "aci_vt": 237.1,
+            "aci_wr": 19,
+            "aci_ws": -72,
+            "aci_wt": 0,
+            "aci_f": 50.03,
+            "ac_ad": 7583,
+            "ac_am": 11,
+            "ac_ay": 186,
+            "ac_pd": 18132,
+            "ac_pm": 123,
+            "ac_py": 1502
+        },
+        "ac_in_b": {
+            "aci_wr": 0,
+            "aci_ws": 0,
+            "aci_wt": 0
+        },
+        "ac_out": {
+            "aco_p": 274,
+            "aco_pr": 136,
+            "aco_ps": 15,
+            "aco_pt": 116,
+            "en_day": 6866
+        },
+        "batt": {
+            "bat_c": 89
+        },
+        "batt_prms": {
+            "bat_min": 20,
+            "bat_gl_min": 15,
+            "bat_hdo": 0,
+            "bal_on": 0,
+            "hdo1_s": 0,
+            "hdo1_e": 0,
+            "hdo2_s": 0,
+            "hdo2_e": 0
+        },
+        "boiler": [],
+        "boiler_prms": {
+            "ison": 0,
+            "prrty": 0,
+            "p_set": 0,
+            "p_set2": 0,
+            "p_set3": 0,
+            "zone1_s": 0,
+            "zone1_e": 0,
+            "zone2_s": 0,
+            "zone2_e": 0,
+            "zone3_s": 0,
+            "zone3_e": 0,
+            "zone4_s": 0,
+            "zone4_e": 0,
+            "hdo": 0,
+            "termostat": 0,
+            "manual": 0,
+            "wd": 50000,
+            "ssr0": 1,
+            "ssr1": 1,
+            "ssr2": 1,
+            "id_subd": 0,
+            "stht": 0,
+            "offset": 100,
+            "offset2": 0,
+            "offset3": 0,
+            "tset": 0,
+            "tset2": 0
+        },
+        "box": {
+            "temp": 24.6,
+            "humid": 24.5
+        },
+        "box_prms": {
+            "bat_ac": 30,
+            "p_fve": 9600,
+            "p_bat": 9600,
+            "mode": 0,
+            "mode1": 0,
+            "crct": 0,
+            "crcte": 1
+        },
+        "box_prm2": {
+            "app": 0,
+            "wdogx": 0
+        },
+        "dc_in": {
+            "fv_proc": 0,
+            "fv_p1": 0,
+            "fv_p2": 0,
+            "fv_ad": 45610,
+            "fv_am": 229,
+            "fv_ay": 2385
+        },
+        "device": {
+            "id_type": 3002,
+            "lastcall": "2025-04-05 20:55:43"
+        },
+        "invertor_prms": {
+            "to_grid": 1
+        },
+        "invertor_prm1": {
+            "p_max_feed_grid": 10000
+        },
+        "actual": {
+            "aci_wr": 23,
+            "aci_ws": -76,
+            "aci_wt": 0,
+            "aco_p": 253,
+            "fv_p1": 0,
+            "fv_p2": 0,
+            "bat_p": -467,
+            "bat_c": 89,
+            "viz": 8
+        }
+    }
+}

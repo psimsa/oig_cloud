@@ -19,5 +19,18 @@
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "[%key:common::config_flow::options::title%]",
+        "description": "[%key:common::config_flow::options::description%]",
+        "data": {
+          "update_interval": "[%key:common::config_flow::options::data::update_interval%]",
+          "no_telemetry": "[%key:common::config_flow::options::data::no_telemetry%]",
+          "log_level": "[%key:common::config_flow::options::data::log_level%]"
+        }
+      }
+    }
   }
 }
