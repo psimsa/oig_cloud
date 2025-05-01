@@ -10,62 +10,95 @@
     },
     "step": {
       "user": {
-        "title": "Přihlášení do OIG",
-        "description": "Zadejte své přihlašovací jméno/e-mail a heslo pro přihlášení do OIG",
+        "title": "Login to OIG",
+        "description": "Enter your login/email and password for OIG Cloud",
         "data": {
-          "no_telemetry": "Zakázat sběr telemetrie (funkce v aktivním vývoji mohou být omezeny)",
-          "password": "Heslo",
-          "username": "Přihlašovací jméno nebo e-mail"
+          "username": "Username or email",
+          "password": "Password",
+          "no_telemetry": "Disable telemetry collection"
         }
       }
     }
   },
-  "selector": {
+  "options": {
+    "step": {
+      "init": {
+        "title": "Adjust Scan Intervals",
+        "description": "Set the scan intervals for standard and extended data.",
+        "data": {
+          "standard_scan_interval": "Standard Scan Interval (seconds)",
+          "extended_scan_interval": "Extended Scan Interval (seconds)"
+        }
+      }
+    }
+  },
+  "services": {
     "set_box_mode": {
-      "options": {
-        "Home 1": "Home 1",
-        "Home 2": "Home 2",
-        "Home 3": "Home 3",
-        "Home UPS": "Home UPS"
-      },
-      "Acknowledgement":{
-        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+      "name": "Set Battery Box Mode",
+      "description": "Set the operational mode of the battery box.",
+      "fields": {
+        "mode": {
+          "name": "Battery Mode",
+          "description": "Select the battery mode: Home 1, Home 2, Home 3, or Home UPS."
+        },
+        "acknowledgement": {
+          "name": "Acknowledgement",
+          "description": "I acknowledge that calling this service modifies a live system. I take full responsibility for the changes and any effects."
+        }
       }
     },
     "set_grid_delivery": {
-      "options": {
-        "Vypnuto / Off": "Vypnuto / Off",
-        "Zapnuto / On": "Zapnuto / On",
-        "S omezením / Limited": "S omezením / Limited"
-      },
-      "Acknowledgement":{
-        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
-      },
-      "Upozornění":{
-        "description": "Před použitím této funkce se seznamte s omezeními dostupnými v aplikaci OIG Power / ČEZ Battery Box."
+      "name": "Set Grid Delivery Mode",
+      "description": "Configure export of excess production to the grid. Ensure legal permissions are obtained.",
+      "fields": {
+        "mode": {
+          "name": "Grid Export Mode",
+          "description": "Choose whether grid export is allowed, limited, or disabled."
+        },
+        "limit": {
+          "name": "Grid Export Limit (W)",
+          "description": "Set the maximum allowed export to the grid in watts."
+        },
+        "acknowledgement": {
+          "name": "Acknowledgement",
+          "description": "I acknowledge that enabling this feature modifies a live system. I take full responsibility."
+        },
+        "warning": {
+          "name": "Export Warning",
+          "description": "Before enabling grid export, ensure you have DSO approval. Unauthorized export may lead to penalties."
+        }
       }
     },
     "set_boiler_mode": {
-      "options": {
-        "CBB": "CBB",
-        "Manual": "Manual"
-      },
-      "Acknowledgement":{
-        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+      "name": "Set Boiler Mode",
+      "description": "Switch boiler between automatic (CBB) and manual mode.",
+      "fields": {
+        "mode": {
+          "name": "Boiler Mode",
+          "description": "Select between CBB (automatic) or Manual operation."
+        },
+        "acknowledgement": {
+          "name": "Acknowledgement",
+          "description": "I acknowledge the risks associated with manual boiler mode and accept full responsibility."
+        }
       }
     },
     "set_formating_mode": {
-      "options": {
-        "Nenabíjet": "Nenabíjet",
-        "Nabíjet": "Nabíjet"
-      },
-      "Limit": {
-        "min": "min",
-        "max": "max",
-        "unit_of_measurement": "unit_of_measurement"
-      },
-      "Acknowledgement":{
-        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+      "name": "Set Battery Grid Charging",
+      "description": "Enable or disable immediate charging of the battery from the grid.",
+      "fields": {
+        "mode": {
+          "name": "Charging Mode",
+          "description": "Select to start or stop grid charging of the battery."
+        },
+        "limit": {
+          "name": "Target Charge (%)",
+          "description": "Set the target battery charge percentage."
+        },
+        "acknowledgement": {
+          "name": "Acknowledgement",
+          "description": "I acknowledge that starting battery charging from the grid modifies a live system and accept responsibility."
+        }
       }
     }
   }

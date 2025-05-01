@@ -1,9 +1,7 @@
 from enum import StrEnum
 from opentelemetry.sdk.resources import Resource
 
-
 from ..release_const import COMPONENT_VERSION, SERVICE_NAME
-
 
 def get_resource(email_hash: str, hass_id: str) -> Resource:
     resource = Resource.create(
@@ -17,7 +15,6 @@ def get_resource(email_hash: str, hass_id: str) -> Resource:
     )
 
     return resource
-
 
 class GridMode(StrEnum):
     OFF = "Vypnuto / Off"
