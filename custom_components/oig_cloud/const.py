@@ -11,6 +11,9 @@ CONF_LOG_LEVEL = "log_level"
 DEFAULT_NAME = "ČEZ Battery Box"
 DEFAULT_UPDATE_INTERVAL = 60  # Update interval in seconds
 
+# Nové konstanty pro scan intervaly
+CONF_STANDARD_SCAN_INTERVAL = "standard_scan_interval"
+CONF_EXTENDED_SCAN_INTERVAL = "extended_scan_interval"
 
 OT_ENDPOINT = "https://otlp.eu01.nr-data.net"
 OT_INSECURE = False

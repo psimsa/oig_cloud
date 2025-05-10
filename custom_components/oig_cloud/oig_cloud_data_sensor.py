@@ -1,82 +1,126 @@
-"""Data sensor implementation for OIG Cloud integration."""
 import logging
-from typing import Any, Dict, Final, Optional, Union, cast
 
-from .coordinator import OigCloudDataUpdateCoordinator
-from .models import OigCloudDeviceData
 from .oig_cloud_sensor import OigCloudSensor
 from .shared.shared import GridMode
 
 _LOGGER = logging.getLogger(__name__)
 
-# Language translations for different states
-_LANGS: Final[Dict[str, Dict[str, str]]] = {
-    "on": {
-        "en": "On",
-        "cs": "Zapnuto",
-    },
-    "off": {
-        "en": "Off",
-        "cs": "Vypnuto",
-    },
-    "unknown": {
-        "en": "Unknown",
-        "cs": "Neznámý",
-    },
-    "changing": {
-        "en": "Changing in progress",
-        "cs": "Probíhá změna",
-    },
-    "Zapnuto/On": {
-        "en": "On",
-        "cs": "Zapnuto",
-    },
-    "Vypnuto/Off": {
-        "en": "Off",
-        "cs": "Vypnuto",
-    },
+_LANGS = {
+    "on": {"en": "On", "cs": "Zapnuto"},
+    "off": {"en": "Off", "cs": "Vypnuto"},
+    "unknown": {"en": "Unknown", "cs": "Neznámý"},
+    "changing": {"en": "Changing in progress", "cs": "Probíhá změna"},
+    "Zapnuto/On": {"en": "On", "cs": "Zapnuto"},
+    "Vypnuto/Off": {"en": "Off", "cs": "Vypnuto"},
 }
 
-
 class OigCloudDataSensor(OigCloudSensor):
-    """Sensor that reads a value directly from the OIG Cloud API data."""
+    def __init__(self, coordinator, sensor_type: str, extended: bool = False):
+        super().__init__(coordinator, sensor_type)
+        self._extended = extended
 
     @property
-    def state(self) -> Optional[Union[float, str]]:
-        """Return the state of the sensor."""
+    def should_poll(self) -> bool:
+        return self._extended  # extended senzory budou pravidelně dotazovány
+
+    async def async_update(self):
+        # Extended senzory budou při update kontrolovat změnu dat
+        if self._extended:
+            self.async_write_ha_state()
+
+    @property
+    def state(self):
         _LOGGER.debug(f"Getting state for {self.entity_id}")
-        
-        # Use the helper method from the parent class to get the node value
-        node_value = self.get_node_value()
-        if node_value is None:
+
+        if self.coordinator.data is None:
+            _LOGGER.debug(f"Data is None for {self.entity_id}")
             return None
-            
-        language: str = self.hass.config.language
-        
-        # Process special cases
-        if self._sensor_type == "box_prms_mode":
-            return self._get_mode_name(node_value, language)
 
-        if self._sensor_type == "invertor_prms_to_grid":
-            try:
-                box_id = list(self.coordinator.data.keys())[0]
-                pv_data = self.coordinator.data[box_id]
-                return self._grid_mode(pv_data, node_value, language)
-            except (KeyError, IndexError) as e:
-                _LOGGER.warning(f"Error processing grid mode: {e}")
-                return _LANGS["unknown"][language]
+        language = self.hass.config.language
 
-        if self._sensor_type in ["boiler_ssr1", "boiler_ssr2", "boiler_ssr3", "boiler_manual_mode"]:
-            return self._get_ssrmode_name(node_value, language)
+        if getattr(self, "_extended", False):
+            if self._sensor_type.startswith("extended_battery_"):
+                return self._get_extended_value("extended_batt", self._sensor_type)
+            elif self._sensor_type.startswith("extended_fve_"):
+                return self._get_extended_value("extended_fve", self._sensor_type)
+            elif self._sensor_type.startswith("extended_grid_"):
+                return self._get_extended_value("extended_grid", self._sensor_type)
+            elif self._sensor_type.startswith("extended_load_"):
+                return self._get_extended_value("extended_load", self._sensor_type)
+            else:
+                _LOGGER.warning(f"Unknown extended sensor type: {self._sensor_type}")
+                return None
 
-        # Try to convert to float for numeric values
+        # fallback - standardní senzory
+        data = self.coordinator.data
+        vals = data.values()
+        pv_data = list(vals)[0]
+
         try:
-            return float(node_value)
-        except (ValueError, TypeError):
-            return node_value
-        
-    def _get_mode_name(self, node_value: int, language: str) -> str:
-        """Convert box mode number to human-readable name."""
+            node_value = pv_data[self._node_id][self._node_key]
+
+            if self._sensor_type == "box_prms_mode":
+                return self._get_mode_name(node_value, language)
+
+            if self._sensor_type == "invertor_prms_to_grid":
+                return self._grid_mode(pv_data, node_value, language)
+
+            if self._sensor_type in ["boiler_ssr1", "boiler_ssr2", "boiler_ssr3", "boiler_manual_mode"]:
+                return self._get_ssrmode_name(node_value, language)
+
+            try:
+                return float(node_value)
+            except ValueError:
+                return node_value
+        except KeyError:
+            return None
+
+    def _get_extended_value(self, extended_key: str, sensor_type: str):
+        extended_data = self.coordinator.data.get(extended_key)
+        if not extended_data:
+            return None
+
+        items = extended_data.get("items", [])
+        if not items:
+            return None
+
+        last_values = items[-1]["values"]
+
+        mapping = {
+            # battery
+            "extended_battery_voltage": 0,
+            "extended_battery_current": 1,
+            "extended_battery_capacity": 2,
+            "extended_battery_temperature": 3,
+            # fve
+            "extended_fve_voltage_1": 0,
+            "extended_fve_voltage_2": 1,
+            "extended_fve_current": 2,
+            "extended_fve_power_1": 3,
+            "extended_fve_power_2": 4,
+            # grid
+            "extended_grid_voltage": 0,
+            "extended_grid_power": 1,
+            "extended_grid_consumption": 2,
+            "extended_grid_delivery": 3,
+            # load
+            "extended_load_l1_power": 0,
+            "extended_load_l2_power": 1,
+            "extended_load_l3_power": 2,
+        }
+
+        index = mapping.get(sensor_type)
+        if index is None:
+            _LOGGER.warning(f"Unknown extended sensor mapping for {sensor_type}")
+            return None
+
+        if index >= len(last_values):
+            _LOGGER.warning(f"Index {index} out of range for extended values")
+            return None
+
+        return last_values[index]
+
+    def _get_mode_name(self, node_value, language):
         if node_value == 0:
             return "Home 1"
         elif node_value == 1:
@@ -86,59 +130,35 @@ class OigCloudDataSensor(OigCloudSensor):
         elif node_value == 3:
             return "Home UPS"
         return _LANGS["unknown"][language]
-    
-    def _grid_mode(self, pv_data: Dict[str, Any], node_value: Any, language: str) -> str:
-        """Determine grid delivery mode based on multiple parameters."""
-        try:
-            # Get required parameters with safe fallbacks
-            grid_enabled: int = pv_data.get("box_prms", {}).get("crcte", 0)
-            to_grid: int = int(node_value) if node_value is not None else 0
-            max_grid_feed: int = pv_data.get("invertor_prm1", {}).get("p_max_feed_grid", 0)
-            
-            # For typed data model (future usage)
-            if isinstance(pv_data, OigCloudDeviceData):
-                grid_enabled = pv_data.box_prms.crcte
-                to_grid = pv_data.invertor_prms.to_grid
-                max_grid_feed = pv_data.invertor_prm1.p_max_feed_grid
 
-            # Different logic for queen/non-queen models
-            if pv_data.get("queen", False):
-                return self._grid_mode_queen(grid_enabled, to_grid, max_grid_feed, language)
-            return self._grid_mode_king(grid_enabled, to_grid, max_grid_feed, language)
-        except (KeyError, ValueError, TypeError, AttributeError) as e:
-            _LOGGER.warning(f"Error calculating grid mode: {e}")
-            return _LANGS["unknown"][language]
+    def _grid_mode(self, pv_data: dict, node_value, language):
+        grid_enabled = int(pv_data["box_prms"]["crcte"])
+        to_grid = int(node_value)
+        max_grid_feed = int(pv_data["invertor_prm1"]["p_max_feed_grid"])
 
-    def _grid_mode_queen(self, grid_enabled: int, to_grid: int, max_grid_feed: int, language: str) -> str:
-        """Determine grid mode for Queen models."""
-        vypnuto = 0 == to_grid and 0 == max_grid_feed
-        zapnuto = 1 == to_grid
-        limited = 0 == to_grid and 0 < max_grid_feed
+        if "queen" in pv_data and bool(pv_data["queen"]):
+            return self._grid_mode_queen(grid_enabled, to_grid, max_grid_feed, language)
+        return self._grid_mode_king(grid_enabled, to_grid, max_grid_feed, language)
 
-        if vypnuto:
+    def _grid_mode_queen(self, grid_enabled, to_grid, max_grid_feed, language):
+        if 0 == to_grid and 0 == max_grid_feed:
             return GridMode.OFF.value
-        elif limited:
+        elif 0 == to_grid and 0 < max_grid_feed:
             return GridMode.LIMITED.value
-        elif zapnuto:
+        elif 1 == to_grid:
             return GridMode.ON.value
         return _LANGS["changing"][language]
 
-    def _grid_mode_king(self, grid_enabled: int, to_grid: int, max_grid_feed: int, language: str) -> str:
-        """Determine grid mode for King/regular models."""
-        vypnuto = 0 == grid_enabled and 0 == to_grid
-        zapnuto = 1 == grid_enabled and 1 == to_grid and 10000 == max_grid_feed
-        limited = 1 == grid_enabled and 1 == to_grid and 9999 >= max_grid_feed
-
-        if vypnuto:
+    def _grid_mode_king(self, grid_enabled, to_grid, max_grid_feed, language):
+        if 0 == grid_enabled and 0 == to_grid:
             return GridMode.OFF.value
-        elif limited:
-            return GridMode.LIMITED.value
-        elif zapnuto:
+        elif 1 == grid_enabled and 1 == to_grid and 10000 == max_grid_feed:
             return GridMode.ON.value
+        elif 1 == grid_enabled and 1 == to_grid and 9999 >= max_grid_feed:
+            return GridMode.LIMITED.value
         return _LANGS["changing"][language]
 
-    def _get_ssrmode_name(self, node_value: int, language: str) -> str:
-        """Convert SSR mode number to human-readable name."""
+    def _get_ssrmode_name(self, node_value, language):
         if node_value == 0:
             return "Vypnuto/Off"
         elif node_value == 1:

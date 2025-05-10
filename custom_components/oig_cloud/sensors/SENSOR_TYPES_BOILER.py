@@ -32,7 +32,7 @@ SENSOR_TYPES_BOILER: Dict[
         "name": "Boiler - Today Energy",
         "name_cs": "Bojler - Dnešní uložení",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": "Wh",
         "node_id": "boiler",
         "node_key": "w",
         "state_class": SensorStateClass.TOTAL_INCREASING,
