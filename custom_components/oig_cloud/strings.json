@@ -1,0 +1,35 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "[%key:common::config_flow::title%]",
+        "description": "[%key:common::config_flow::description%]",
+        "data": {
+          "username": "[%key:common::config_flow::data::username%]",
+          "password": "[%key:common::config_flow::data::password%]",
+          "no_telemetry": "[%key:common::config_flow::data::no_telemetry%]"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+      "unknown": "[%key:common::config_flow::error::unknown%]"
+    },
+    "abort": {
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Adjust Scan Intervals",
+        "description": "Set the scan intervals for standard and extended data.",
+        "data": {
+          "standard_scan_interval": "Standard Scan Interval (seconds)",
+          "extended_scan_interval": "Extended Scan Interval (seconds)"
+        }
+      }
+    }
+  }
+}

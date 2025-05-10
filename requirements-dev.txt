@@ -1,0 +1,11 @@
+# Testing dependencies
+pytest
+pytest-cov
+
+# Linting dependencies
+flake8
+black
+isort
+
+# Optional: Type checking
+mypy
