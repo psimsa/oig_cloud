@@ -1,10 +1,9 @@
 {
-	"name": "OIG Cloud",
-	"content_in_root": false,
-	"zip_release": false,
+	"render_readme": true,
+	"hide_default_branch": true,
+	"name": "OIG Cloud (CBB - Čez Battery Box)",
+	"country": "CZ",
 	"filename": "custom_components/oig_cloud/__init__.py",
-	"domains": ["oig_cloud"],
-	"country": "cz",
-	"homeassistant": "2022.0.0",
-	"iot_class": "cloud_polling"
-  }
+	"content_in_root": false,
+	"zip_release": false
+}
