@@ -1,4 +1,5 @@
 """Computed sensor implementation for OIG Cloud integration."""
+
 import logging
 from datetime import datetime, timedelta
 
@@ -106,6 +107,53 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
 
         if self._sensor_type.startswith("computed_batt_"):
             return self._accumulate_energy(pv_data)
+
+        try:
+            bat_p = float(pv_data["box_prms"]["p_bat"])
+            bat_c = float(pv_data["actual"]["bat_c"])
+            bat_power = float(pv_data["actual"].get("bat_p", 0))
+            # 1. Využitelná kapacita baterie
+            if self._sensor_type == "usable_battery_capacity":
+                value = round((bat_p * 0.8) / 1000, 2)
+                return value
+
+            # 2. Kolik kWh chybí do 100%
+            if self._sensor_type == "missing_battery_kwh":
+                value = round((bat_p * (1 - bat_c / 100)) / 1000, 2)
+                return value
+            # 3. Zbývající využitelná kapacita
+            if self._sensor_type == "remaining_usable_capacity":
+                usable = bat_p * 0.8
+                missing = bat_p * (1 - bat_c / 100)
+                value = round((usable - missing) / 1000, 2)
+                return value
+
+            # 4. Doba do nabití
+            if self._sensor_type == "time_to_full":
+                missing = bat_p * (1 - bat_c / 100)
+                if bat_power > 0:
+                    return self._format_time(missing / bat_power)
+                elif missing == 0:
+                    return "Nabito"
+                else:
+                    return "Vybíjí se"
+
+            # 5. Doba do vybití
+            if self._sensor_type == "time_to_empty":
+                usable = bat_p * 0.8
+                missing = bat_p * (1 - bat_c / 100)
+                remaining = usable - missing
+                if bat_power < 0:
+                    return self._format_time(remaining / abs(bat_power))
+                elif remaining == 0:
+                    return "Vybito"
+                else:
+                    return "Nabíjí se"
+
+        except Exception as e:
+            _LOGGER.error(
+                f"[{{self.entity_id}}] Error computing value: {e}", exc_info=True
+            )
 
         return None
 
@@ -232,3 +280,28 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
 
     async def async_update(self):
         await self.coordinator.async_request_refresh()
+
+    def _format_time(self, hours):
+        if hours <= 0:
+            return "N/A"
+
+        minutes = int(hours * 60)
+        days, remainder = divmod(minutes, 1440)
+        hrs, mins = divmod(remainder, 60)
+
+        self._attr_extra_state_attributes = {
+            "days": days,
+            "hours": hrs,
+            "minutes": mins,
+        }
+
+        if days >= 1:
+            return f"{days} den{'y' if days > 1 else ''} {hrs} hodin {mins} minut"
+        elif hrs >= 1:
+            return f"{hrs} hodin {mins} minut"
+        else:
+            return f"{mins} minut"
+
+    @property
+    def extra_state_attributes(self):
+        return getattr(self, "_attr_extra_state_attributes", {})

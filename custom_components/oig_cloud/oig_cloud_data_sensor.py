@@ -14,6 +14,7 @@ _LANGS = {
     "Vypnuto/Off": {"en": "Off", "cs": "Vypnuto"},
 }
 
+
 class OigCloudDataSensor(OigCloudSensor):
     def __init__(self, coordinator, sensor_type: str, extended: bool = False):
         super().__init__(coordinator, sensor_type)
@@ -57,7 +58,30 @@ class OigCloudDataSensor(OigCloudSensor):
         pv_data = list(vals)[0]
 
         try:
-            node_value = pv_data[self._node_id][self._node_key]
+            node = pv_data.get(self._node_id)
+
+            if node is None:
+                _LOGGER.debug(f"[{self.entity_id}] Node '{self._node_id}' neexistuje")
+                return None
+
+            if isinstance(node, list):
+                if not node:
+                    _LOGGER.debug(
+                        f"[{self.entity_id}] Node list '{self._node_id}' je prázdný"
+                    )
+                    return None
+                node = node[0]
+
+            if not isinstance(node, dict):
+                _LOGGER.warning(f"[{self.entity_id}] Node '{self._node_id}' není dict")
+                return None
+
+            node_value = node.get(self._node_key)
+            if node_value is None:
+                _LOGGER.debug(
+                    f"[{self.entity_id}] Klíč '{self._node_key}' nebyl nalezen v '{self._node_id}'"
+                )
+                return None
 
             if self._sensor_type == "box_prms_mode":
                 return self._get_mode_name(node_value, language)
@@ -65,14 +89,24 @@ class OigCloudDataSensor(OigCloudSensor):
             if self._sensor_type == "invertor_prms_to_grid":
                 return self._grid_mode(pv_data, node_value, language)
 
-            if self._sensor_type in ["boiler_ssr1", "boiler_ssr2", "boiler_ssr3", "boiler_manual_mode"]:
+            if self._sensor_type in [
+                "boiler_ssr1",
+                "boiler_ssr2",
+                "boiler_ssr3",
+                "boiler_manual_mode",
+                "box_prms_crct",
+                "boiler_is_use",
+            ]:
                 return self._get_ssrmode_name(node_value, language)
 
             try:
                 return float(node_value)
             except ValueError:
                 return node_value
-        except KeyError:
+        except Exception as e:
+            _LOGGER.error(
+                f"[{self.entity_id}] Chyba při získávání hodnoty: {e}", exc_info=True
+            )
             return None
 
     def _get_extended_value(self, extended_key: str, sensor_type: str):

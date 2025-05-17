@@ -1,5 +1,6 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from typing import Dict
+from homeassistant.helpers.entity import EntityCategory
 
 SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClass]] = {
     # Live hodnoty
@@ -21,7 +22,6 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_key": "bat_p",
         "state_class": SensorStateClass.MEASUREMENT,
     },
-
     # Výkon oddělený na nabíjení a vybíjení
     "batt_batt_comp_p_charge": {
         "name": "Battery Charge Power",
@@ -41,7 +41,6 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,
     },
-
     # Energie nabíjení/vybíjení CELKEM
     "computed_batt_charge_energy_today": {
         "name": "Battery Charge Energy Today",
@@ -97,7 +96,6 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_key": None,
         "state_class": SensorStateClass.TOTAL,
     },
-
     # Energie nabíjení Z FVE
     "computed_batt_charge_fve_energy_today": {
         "name": "Battery Charge Energy from Solar Today",
@@ -126,7 +124,6 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_key": None,
         "state_class": SensorStateClass.TOTAL,
     },
-
     # Energie nabíjení ZE SÍTĚ
     "computed_batt_charge_grid_energy_today": {
         "name": "Battery Charge Energy from Grid Today",

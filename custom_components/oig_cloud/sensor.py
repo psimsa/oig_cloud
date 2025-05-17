@@ -24,14 +24,16 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     standard_interval = config_entry.options.get(CONF_STANDARD_SCAN_INTERVAL, 30)
     extended_interval = config_entry.options.get(CONF_EXTENDED_SCAN_INTERVAL, 300)
 
-    _LOGGER.debug(f"Using standard_interval={standard_interval}s and extended_interval={extended_interval}s")
+    _LOGGER.debug(
+        f"Using standard_interval={standard_interval}s and extended_interval={extended_interval}s"
+    )
 
     # Vytvořit koordinátor
     coordinator = OigCloudCoordinator(
         hass,
         api,
         standard_interval_seconds=standard_interval,
-        extended_interval_seconds=extended_interval
+        extended_interval_seconds=extended_interval,
     )
 
     # První refresh
@@ -47,18 +49,25 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
 def _register_entities(async_add_entities, coordinator: OigCloudCoordinator):
     """Registrace všech entit."""
+
     async_add_entities(
         OigCloudDataSensor(
-            coordinator,
-            sensor_type,
-            extended=sensor_type.startswith("extended_")
+            coordinator, sensor_type, extended=sensor_type.startswith("extended_")
         )
         for sensor_type in SENSOR_TYPES
-        if SENSOR_TYPES[sensor_type].get("node_id") is not None or sensor_type.startswith("extended_")
+        if (
+            SENSOR_TYPES[sensor_type].get("node_id") is not None
+            or sensor_type.startswith("extended_")
+            or SENSOR_TYPES[sensor_type].get("entity_category")
+            is not None  # nově: diagnostické senzory z HTML
+        )
     )
 
     async_add_entities(
         OigCloudComputedSensor(coordinator, sensor_type)
         for sensor_type in SENSOR_TYPES
-        if SENSOR_TYPES[sensor_type].get("node_id") is None and not sensor_type.startswith("extended_")
+        if SENSOR_TYPES[sensor_type].get("node_id") is None
+        and not sensor_type.startswith("extended_")
+        and SENSOR_TYPES[sensor_type].get("entity_category")
+        is None  # zůstává pouze pro computed-only
     )

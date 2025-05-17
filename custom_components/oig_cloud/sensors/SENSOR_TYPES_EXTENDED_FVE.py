@@ -1,10 +1,13 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from typing import Dict
+from homeassistant.helpers.entity import EntityCategory
 
-SENSOR_TYPES_EXTENDED_FVE: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClass]] = {
+SENSOR_TYPES_EXTENDED_FVE: Dict[
+    str, Dict[str, str | SensorDeviceClass | SensorStateClass]
+] = {
     "extended_fve_voltage_1": {
         "name": "Extended FVE Voltage 1",
-        "name_cs": "Rozšířené napětí FV1",
+        "name_cs": "Napětí FV1",
         "unit_of_measurement": "V",
         "device_class": SensorDeviceClass.VOLTAGE,
         "state_class": SensorStateClass.MEASUREMENT,
@@ -13,7 +16,7 @@ SENSOR_TYPES_EXTENDED_FVE: Dict[str, Dict[str, str | SensorDeviceClass | SensorS
     },
     "extended_fve_voltage_2": {
         "name": "Extended FVE Voltage 2",
-        "name_cs": "Rozšířené napětí FV2",
+        "name_cs": "Napětí FV2",
         "unit_of_measurement": "V",
         "device_class": SensorDeviceClass.VOLTAGE,
         "state_class": SensorStateClass.MEASUREMENT,
@@ -22,7 +25,7 @@ SENSOR_TYPES_EXTENDED_FVE: Dict[str, Dict[str, str | SensorDeviceClass | SensorS
     },
     "extended_fve_current": {
         "name": "Extended FVE Current",
-        "name_cs": "Rozšířený proud FV",
+        "name_cs": "Proud FV",
         "unit_of_measurement": "A",
         "device_class": SensorDeviceClass.CURRENT,
         "state_class": SensorStateClass.MEASUREMENT,

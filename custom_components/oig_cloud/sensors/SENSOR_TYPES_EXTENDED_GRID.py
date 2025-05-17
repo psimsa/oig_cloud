@@ -1,7 +1,10 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from typing import Dict
+from homeassistant.helpers.entity import EntityCategory
 
-SENSOR_TYPES_EXTENDED_GRID: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClass]] = {
+SENSOR_TYPES_EXTENDED_GRID: Dict[
+    str, Dict[str, str | SensorDeviceClass | SensorStateClass]
+] = {
     "extended_grid_voltage": {
         "name": "Extended Grid Voltage",
         "name_cs": "Rozšířené napětí sítě",

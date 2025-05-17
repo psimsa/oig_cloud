@@ -1,7 +1,10 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from typing import Dict
+from homeassistant.helpers.entity import EntityCategory
 
-SENSOR_TYPES_EXTENDED_LOAD: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClass]] = {
+SENSOR_TYPES_EXTENDED_LOAD: Dict[
+    str, Dict[str, str | SensorDeviceClass | SensorStateClass]
+] = {
     "extended_load_l1_power": {
         "name": "Extended Load L1 Power",
         "name_cs": "Rozšířený odběr fáze L1",

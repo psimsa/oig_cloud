@@ -4,6 +4,8 @@ import json
 import logging
 import time
 from typing import Any, Dict, Optional, Union, cast
+from bs4 import BeautifulSoup
+import re
 
 import aiohttp
 from opentelemetry import trace

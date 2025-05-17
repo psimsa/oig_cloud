@@ -1,6 +1,5 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
-
-
+from homeassistant.helpers.entity import EntityCategory
 from typing import Dict
 
 
@@ -43,7 +42,7 @@ SENSOR_TYPES_AC_OUT: Dict[
         "node_key": "aco_pt",
         "state_class": SensorStateClass.MEASUREMENT,
     },
-   "ac_out_en_day": {
+    "ac_out_en_day": {
         "name": "Consumption Today",
         "name_cs": "Dnešní spotřeba",
         "device_class": SensorDeviceClass.ENERGY,
