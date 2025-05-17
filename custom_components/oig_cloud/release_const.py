@@ -1,2 +1,2 @@
-COMPONENT_VERSION = "1.0.5-live-data2"
+COMPONENT_VERSION = "1.0.6-beta-1"
 SERVICE_NAME = "oig_cloud"
