@@ -18,6 +18,7 @@ from .const import (
 from .services import async_setup_entry_services
 from .shared.tracing import setup_tracing
 from .shared.logging import setup_otel_logging
+from .service_shield import ServiceShield
 
 tracer = trace.get_tracer(__name__)
 _LOGGER = logging.getLogger(__name__)
@@ -25,10 +26,20 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup(hass: core.HomeAssistant, config: dict):
     hass.data.setdefault(DOMAIN, {})
+
+    # 🛡️ Inicializace ServiceShieldu (ochrana volání služeb)
+    shield = ServiceShield(hass)
+    await shield.start()
+
+    # Uložení pro použití ve services.py
+    hass.data[DOMAIN]["shield"] = shield
+
     return True
 
 
-async def async_setup_entry(hass: core.HomeAssistant, entry: config_entries.ConfigEntry):
+async def async_setup_entry(
+    hass: core.HomeAssistant, entry: config_entries.ConfigEntry
+):
     try:
         username = entry.data[CONF_USERNAME]
         password = entry.data[CONF_PASSWORD]
@@ -44,11 +55,17 @@ async def async_setup_entry(hass: core.HomeAssistant, entry: config_entries.Conf
             loop = asyncio.get_running_loop()
             await loop.run_in_executor(None, setup_tracing, email_hash, hass_id)
 
-            api_logger = logging.getLogger("custom_components.oig_cloud.api.oig_cloud_api")
-            otel_logging_handler = await loop.run_in_executor(None, setup_otel_logging, email_hash, hass_id)
+            api_logger = logging.getLogger(
+                "custom_components.oig_cloud.api.oig_cloud_api"
+            )
+            otel_logging_handler = await loop.run_in_executor(
+                None, setup_otel_logging, email_hash, hass_id
+            )
             api_logger.addHandler(otel_logging_handler)
 
-            _LOGGER.info(f"Telemetry enabled: Account hash {email_hash}, HA ID {hass_id}")
+            _LOGGER.info(
+                f"Telemetry enabled: Account hash {email_hash}, HA ID {hass_id}"
+            )
 
         oig_api = OigCloudApi(username, password, no_telemetry, hass)
 
@@ -61,7 +78,9 @@ async def async_setup_entry(hass: core.HomeAssistant, entry: config_entries.Conf
             "extended_scan_interval": extended_scan_interval,
         }
 
-        await hass.config_entries.async_forward_entry_setups(entry, ["sensor", "binary_sensor"])
+        await hass.config_entries.async_forward_entry_setups(
+            entry, ["sensor", "binary_sensor"]
+        )
         await async_setup_entry_services(hass, entry)
 
         _LOGGER.debug("OIG Cloud integration setup complete")
@@ -72,13 +91,17 @@ async def async_setup_entry(hass: core.HomeAssistant, entry: config_entries.Conf
         raise ConfigEntryNotReady(f"Error initializing OIG Cloud: {e}") from e
 
 
-async def async_unload_entry(hass: core.HomeAssistant, entry: config_entries.ConfigEntry):
+async def async_unload_entry(
+    hass: core.HomeAssistant, entry: config_entries.ConfigEntry
+):
     await hass.config_entries.async_unload_platforms(entry, ["sensor", "binary_sensor"])
     hass.data[DOMAIN].pop(entry.entry_id, None)
     return True
 
 
-async def async_reload_entry(hass: core.HomeAssistant, entry: config_entries.ConfigEntry):
+async def async_reload_entry(
+    hass: core.HomeAssistant, entry: config_entries.ConfigEntry
+):
     """Reload OIG Cloud config entry when options are updated."""
     await async_unload_entry(hass, entry)
     await async_setup_entry(hass, entry)

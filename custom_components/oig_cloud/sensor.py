@@ -1,7 +1,10 @@
 import logging
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.components.sensor import SensorEntity
+from homeassistant.helpers.entity import EntityCategory
+
 from .oig_cloud_coordinator import OigCloudCoordinator
 from .oig_cloud_data_sensor import OigCloudDataSensor
 from .oig_cloud_computed_sensor import OigCloudComputedSensor
@@ -12,23 +15,60 @@ from .config_flow import CONF_STANDARD_SCAN_INTERVAL, CONF_EXTENDED_SCAN_INTERVA
 _LOGGER = logging.getLogger(__name__)
 
 
+class OigShieldQueueSensor(SensorEntity):
+    def __init__(self, hass, shield, config_entry_id):
+        self._hass = hass
+        self._shield = shield
+        self._attr_name = "OIG Shield Service Queue"
+        self._attr_icon = "mdi:shield-sync"
+        self._attr_has_entity_name = True
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_unique_id = "oig_shield_service_queue"
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, f"shield-{config_entry_id}")},
+            "name": "OIG Cloud Shield",
+            "manufacturer": "OIG",
+            "model": "Shield",
+        }
+
+    @property
+    def state(self):
+        return len(self._shield.queue)
+
+    @property
+    def extra_state_attributes(self):
+        now = datetime.now().isoformat()
+        enriched = []
+        for idx, q in enumerate(self._shield.queue):
+            service, params, *_ = q
+            added = self._shield.queue_metadata.get(
+                (service, str(params)), "neznámý čas"
+            )
+            enriched.append(
+                {
+                    "position": idx + 1,
+                    "service": service,
+                    "params": params,
+                    "added_at": added,
+                }
+            )
+        return {
+            "running_service": self._shield.running or "žádná",
+            "queue_count": len(self._shield.queue),
+            "last_checked": now,
+            "queued_services": enriched,
+        }
+
+
 async def async_setup_entry(hass, config_entry, async_add_entities):
-    """Nastavení senzorů OIG Cloud při načtení integrace."""
     _LOGGER.debug("Setting up OIG Cloud sensors")
 
-    # 🛠 Správně rozbalíme, protože v hass.data je dict
     api_data = hass.data[DOMAIN][config_entry.entry_id]
     api = api_data["api"]
 
-    # Vytáhnout intervaly z options (nebo defaulty)
     standard_interval = config_entry.options.get(CONF_STANDARD_SCAN_INTERVAL, 30)
     extended_interval = config_entry.options.get(CONF_EXTENDED_SCAN_INTERVAL, 300)
 
-    _LOGGER.debug(
-        f"Using standard_interval={standard_interval}s and extended_interval={extended_interval}s"
-    )
-
-    # Vytvořit koordinátor
     coordinator = OigCloudCoordinator(
         hass,
         api,
@@ -36,20 +76,20 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         extended_interval_seconds=extended_interval,
     )
 
-    # První refresh
     await coordinator.async_config_entry_first_refresh()
-
-    _LOGGER.debug("First data refresh completed, now registering entities")
-
-    # Registrace senzorů
     _register_entities(async_add_entities, coordinator)
 
-    _LOGGER.debug("OIG Cloud sensors setup done")
+    # Add diagnostic queue sensor
+    shield = hass.data[DOMAIN].get("shield")
+    if shield:
+        async_add_entities([OigShieldQueueSensor(hass, shield, config_entry.entry_id)])
+    else:
+        _LOGGER.warning(
+            "OIG Shield není inicializován – senzor fronty nebude vytvořen."
+        )
 
 
 def _register_entities(async_add_entities, coordinator: OigCloudCoordinator):
-    """Registrace všech entit."""
-
     async_add_entities(
         OigCloudDataSensor(
             coordinator, sensor_type, extended=sensor_type.startswith("extended_")
@@ -58,8 +98,7 @@ def _register_entities(async_add_entities, coordinator: OigCloudCoordinator):
         if (
             SENSOR_TYPES[sensor_type].get("node_id") is not None
             or sensor_type.startswith("extended_")
-            or SENSOR_TYPES[sensor_type].get("entity_category")
-            is not None  # nově: diagnostické senzory z HTML
+            or SENSOR_TYPES[sensor_type].get("entity_category") is not None
         )
     )
 
@@ -68,6 +107,5 @@ def _register_entities(async_add_entities, coordinator: OigCloudCoordinator):
         for sensor_type in SENSOR_TYPES
         if SENSOR_TYPES[sensor_type].get("node_id") is None
         and not sensor_type.startswith("extended_")
-        and SENSOR_TYPES[sensor_type].get("entity_category")
-        is None  # zůstává pouze pro computed-only
+        and SENSOR_TYPES[sensor_type].get("entity_category") is None
     )
