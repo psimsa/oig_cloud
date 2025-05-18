@@ -39,7 +39,7 @@ Integrace obsahuje statistické entity, které lze přímo využít v panelu Ene
 
 ---
 
-# ✨ Novinky ve verzi `1.6.0`
+# ✨ Novinky ve verzi `1.0.6`
 
 - **Nové rozšířené senzory**:
 
