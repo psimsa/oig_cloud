@@ -6,7 +6,7 @@ from typing import Dict
 
 
 SENSOR_TYPES_MISC: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClass]] = {
-     "device_lastcall": {
+    "device_lastcall": {
         "name": "Last Call",
         "name_cs": "Poslední komunikace",
         "device_class": SensorDeviceClass.TIMESTAMP,
@@ -35,5 +35,36 @@ SENSOR_TYPES_MISC: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_key": "to_grid",
         "state_class": None,
         "options": ["Vypnuto / Off", "Zapnuto / On", "S omezením / Limited"],
+    },
+    "installed_battery_capacity_kwh": {
+        "name": "Installed Battery Capacity",
+        "name_cs": "Baterie - instalovaná kapacita",
+        "device_class": SensorDeviceClass.ENERGY,
+        "unit_of_measurement": "Wh",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "node_id": "box_prms",
+        "node_key": "p_bat",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "installed_fve_power_wp": {
+        "name": "Installed FVE Power",
+        "name_cs": "FVE - Instalovaný výkon",
+        "device_class": SensorDeviceClass.POWER,
+        "unit_of_measurement": "Wp",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "node_id": "box_prms",
+        "node_key": "p_fve",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "box_prms_crct": {
+        "name": "Distribution Emergency Control",
+        "name_cs": "Krizové ovládání distribuce",
+        "device_class": SensorDeviceClass.ENUM,
+        "unit_of_measurement": None,
+        "state_class": None,
+        "node_id": "box_prms",
+        "node_key": "crct",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "options": ["Vypnuto / Off", "Zapnuto / On"],
     },
 }

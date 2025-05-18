@@ -24,6 +24,7 @@ SENSOR_TYPES_BOX: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClass
         "node_id": "box_prms",
         "node_key": "mode",
         "state_class": None,
+        "entity_category": EntityCategory.DIAGNOSTIC,
     },
     "box_temp": {
         "name": "Temperature",

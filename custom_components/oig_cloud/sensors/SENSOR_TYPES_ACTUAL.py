@@ -1,4 +1,5 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
+from homeassistant.helpers.entity import EntityCategory
 
 
 from typing import Dict
