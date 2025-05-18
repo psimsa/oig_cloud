@@ -29,12 +29,15 @@ class OigCloudAuthError(OigCloudApiError):
 
 
 class OigCloudApi:
-    _base_url = "https://www.oigpower.cz/cez/"
-    _login_url = "inc/php/scripts/Login.php"
-    _get_stats_url = "json.php"
-    _set_mode_url = "inc/php/scripts/Device.Set.Value.php"
-    _set_grid_delivery_url = "inc/php/scripts/ToGrid.Toggle.php"
-    _set_batt_formating_url = "inc/php/scripts/Battery.Format.Save.php"
+    """API client for OIG Cloud."""
+
+    # API endpoints
+    _base_url: str = "https://www.oigpower.cz/cez/"
+    _login_url: str = "inc/php/scripts/Login.php"
+    _get_stats_url: str = "json.php"
+    _set_mode_url: str = "inc/php/scripts/Device.Set.Value.php"
+    _set_grid_delivery_url: str = "inc/php/scripts/ToGrid.Toggle.php"
+    _set_batt_formating_url: str = "inc/php/scripts/Battery.Format.Save.php"
 
     def __init__(
         self,
@@ -44,15 +47,21 @@ class OigCloudApi:
         hass: core.HomeAssistant,
         standard_scan_interval: int = 30,
     ) -> None:
-        self._no_telemetry = no_telemetry
-        self._logger = logging.getLogger(__name__)
-        self._last_update = datetime.datetime(1, 1, 1, 0, 0)
-        self._username = username
-        self._password = password
-        self._standard_scan_interval = standard_scan_interval
-        self.last_state = None
-        self.box_id = None
-        self._logger.debug("OigCloud initialized")
+        """Initialize the API client."""
+        with tracer.start_as_current_span("initialize") as span:
+            self._no_telemetry: bool = no_telemetry
+            self._logger: logging.Logger = logging.getLogger(__name__)
+            self._username: str = username
+            self._password: str = password
+            self._phpsessid: Optional[str] = None
+
+            self._last_update: datetime.datetime = datetime.datetime(
+                1, 1, 1, 0, 0)
+            self._standard_scan_interval: int = standard_scan_interval
+            self.box_id: Optional[str] = None
+            self.last_state: Optional[Dict[str, Any]] = None
+            self.last_parsed_state: Optional[OigCloudData] = None
+            self._logger.debug("OigCloud initialized")
 
     async def authenticate(self) -> bool:
         """Authenticate with the OIG Cloud API."""
@@ -67,7 +76,8 @@ class OigCloudApi:
                 async with aiohttp.ClientSession() as session:
                     url: str = self._base_url + self._login_url
                     data: str = json.dumps(login_command)
-                    headers: Dict[str, str] = {"Content-Type": "application/json"}
+                    headers: Dict[str, str] = {
+                        "Content-Type": "application/json"}
 
                     with tracer.start_as_current_span(
                         "authenticate.post",
@@ -98,7 +108,8 @@ class OigCloudApi:
 
                             raise OigCloudAuthError("Authentication failed")
             except OigCloudAuthError as e:
-                self._logger.error(f"Authentication error: {e}", stack_info=True)
+                self._logger.error(
+                    f"Authentication error: {e}", stack_info=True)
                 raise
             except Exception as e:
                 self._logger.error(
@@ -109,7 +120,8 @@ class OigCloudApi:
     def get_session(self) -> aiohttp.ClientSession:
         """Get a session with authentication cookies."""
         if not self._phpsessid:
-            raise OigCloudAuthError("Not authenticated, call authenticate() first")
+            raise OigCloudAuthError(
+                "Not authenticated, call authenticate() first")
 
         return aiohttp.ClientSession(headers={"Cookie": f"PHPSESSID={self._phpsessid}"})
 
@@ -132,7 +144,8 @@ class OigCloudApi:
                     self.last_state = to_return
                     return to_return
                 except Exception as e:
-                    self._logger.error(f"Unexpected error: {e}", stack_info=True)
+                    self._logger.error(
+                        f"Unexpected error: {e}", stack_info=True)
                     raise OigCloudApiError(f"Failed to get stats: {e}") from e
 
     async def _try_get_stats(self, dependent: bool = False) -> object:
@@ -265,7 +278,8 @@ class OigCloudApi:
                 self._logger.debug(f"Setting grid delivery to mode {mode}")
 
                 if not self.box_id:
-                    raise OigCloudApiError("Box ID not available, fetch stats first")
+                    raise OigCloudApiError(
+                        "Box ID not available, fetch stats first")
 
                 async with self.get_session() as session:
                     data: str = json.dumps(
@@ -289,7 +303,8 @@ class OigCloudApi:
                     with tracer.start_as_current_span(
                         "set_grid_delivery.post",
                         kind=SpanKind.SERVER,
-                        attributes={"http.url": target_url, "http.method": "POST"},
+                        attributes={"http.url": target_url,
+                                    "http.method": "POST"},
                     ):
                         async with session.post(
                             target_url,
@@ -300,7 +315,8 @@ class OigCloudApi:
 
                             if response.status == 200:
                                 response_json = json.loads(response_content)
-                                self._logger.debug(f"API response: {response_json}")
+                                self._logger.debug(
+                                    f"API response: {response_json}")
                                 return True
                             else:
                                 raise OigCloudApiError(
@@ -316,7 +332,8 @@ class OigCloudApi:
     async def set_battery_formating(self, mode: str, limit: int) -> bool:
         with tracer.start_as_current_span("set_batt_formating") as span:
             try:
-                self._logger.debug(f"Setting formatting battery to {limit} percent")
+                self._logger.debug(
+                    f"Setting formatting battery to {limit} percent")
                 async with self.get_session() as session:
                     data = json.dumps(
                         {
@@ -336,7 +353,8 @@ class OigCloudApi:
                     with tracer.start_as_current_span(
                         "set_mode.post",
                         kind=SpanKind.SERVER,
-                        attributes={"http.url": target_url, "http.method": "POST"},
+                        attributes={"http.url": target_url,
+                                    "http.method": "POST"},
                     ):
                         async with session.post(
                             target_url,
@@ -367,7 +385,8 @@ class OigCloudApi:
                     url = self._base_url + "json2.php"
                     self._logger.debug(f"Requesting extended stats from {url}")
 
-                    payload = {"name": name, "range": f"{from_date},{to_date},0"}
+                    payload = {"name": name,
+                               "range": f"{from_date},{to_date},0"}
                     headers = {"Content-Type": "application/json"}
 
                     with tracer.start_as_current_span(
@@ -389,5 +408,6 @@ class OigCloudApi:
                                     f"Error fetching extended stats: {response.status}"
                                 )
             except Exception as e:
-                self._logger.error(f"Error in get_extended_stats: {e}", stack_info=True)
+                self._logger.error(
+                    f"Error in get_extended_stats: {e}", stack_info=True)
                 raise e
