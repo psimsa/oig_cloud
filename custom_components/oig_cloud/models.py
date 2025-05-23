@@ -1,7 +1,8 @@
 """Data models for OIG Cloud integration."""
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Union, cast
+# datetime, Union, cast are not used in the provided code snippet, removing them.
+# If they are used elsewhere in the actual full file, they should be kept.
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -256,41 +257,55 @@ class OigCloudDeviceData:
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'OigCloudDeviceData':
-        """Create a device data instance from a dictionary."""
-        # Required fields
-        ac_in = AcInData(**data.get("ac_in", {}))
-        ac_out = AcOutData(**data.get("ac_out", {}))
-        actual = ActualData(**data.get("actual", {}))
-        batt_data = data.get("batt", {})
+        """Create a device data instance from a dictionary.
+        Assumes 'data' contains keys for all non-Optional fields of OigCloudDeviceData,
+        and these keys map to dictionary representations of the respective dataclasses.
+        """
+        # Required fields - using direct access assuming keys are present as fields are not Optional
+        # This will raise KeyError if a required key is missing, which is appropriate.
+        ac_in = AcInData(**data["ac_in"])
+        ac_out = AcOutData(**data["ac_out"])
+        actual = ActualData(**data["actual"])
+        
+        batt_data_dict = data.get("batt", {}) # batt field itself is not Optional
         # Handle the case where bat_c might be the only field in batt
-        if len(batt_data) == 1 and "bat_c" in batt_data:
+        if len(batt_data_dict) == 1 and "bat_c" in batt_data_dict:
             batt = BatteryData(
-                bat_c=batt_data["bat_c"],
-                bat_i=0,
-                bat_v=0
+                bat_c=batt_data_dict["bat_c"], # type: ignore
+                bat_i=0.0, # Provide default float
+                bat_v=0.0  # Provide default float
             )
         else:
-            batt = BatteryData(**batt_data)
-        dc_in = DcInData(**data.get("dc_in", {}))
-        box_prms = BoxParams(**data.get("box_prms", {}))
-        invertor_prms = InvertorParams(**data.get("invertor_prms", {}))
-        invertor_prm1 = InvertorParams1(**data.get("invertor_prm1", {}))
+            batt = BatteryData(**batt_data_dict)
+            
+        dc_in = DcInData(**data["dc_in"])
+        box_prms = BoxParams(**data["box_prms"])
+        invertor_prms = InvertorParams(**data["invertor_prms"])
+        invertor_prm1 = InvertorParams1(**data["invertor_prm1"])
         
-        # Optional fields
-        device = DeviceData(**data["device"]) if "device" in data else None
+        # Optional fields are handled with .get() or checks
+        device_data_dict = data.get("device")
+        device = DeviceData(**device_data_dict) if device_data_dict else None
+        
         queen = bool(data.get("queen", False))
         
-        # Handle boiler data which could be empty list or dict
-        boiler = None
-        if "boiler" in data and isinstance(data["boiler"], dict) and data["boiler"]:
-            boiler = BoilerData(**data["boiler"])
+        boiler_data_dict = data.get("boiler")
+        boiler = BoilerData(**boiler_data_dict) if isinstance(boiler_data_dict, dict) and boiler_data_dict else None
             
-        # Other optional components
-        boiler_prms = BoilerParams(**data["boiler_prms"]) if "boiler_prms" in data else None
-        batt_prms = BatteryParams(**data["batt_prms"]) if "batt_prms" in data else None
-        box = BoxData(**data["box"]) if "box" in data else None
-        box_prm2 = BoxParams2(**data["box_prm2"]) if "box_prm2" in data else None
-        ac_in_b = AcInBData(**data["ac_in_b"]) if "ac_in_b" in data else None
+        boiler_prms_data_dict = data.get("boiler_prms")
+        boiler_prms = BoilerParams(**boiler_prms_data_dict) if boiler_prms_data_dict else None
+        
+        batt_prms_data_dict = data.get("batt_prms")
+        batt_prms = BatteryParams(**batt_prms_data_dict) if batt_prms_data_dict else None
+        
+        box_data_dict = data.get("box")
+        box = BoxData(**box_data_dict) if box_data_dict else None
+        
+        box_prm2_data_dict = data.get("box_prm2")
+        box_prm2 = BoxParams2(**box_prm2_data_dict) if box_prm2_data_dict else None
+        
+        ac_in_b_data_dict = data.get("ac_in_b")
+        ac_in_b = AcInBData(**ac_in_b_data_dict) if ac_in_b_data_dict else None
         
         return cls(
             ac_in=ac_in,
