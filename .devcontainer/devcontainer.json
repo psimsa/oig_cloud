@@ -6,7 +6,7 @@
 	"image": "mcr.microsoft.com/devcontainers/python:1-3.12-bullseye",
 	"features": {
 		"ghcr.io/jsburckhardt/devcontainer-features/ruff:1": {},
-		"ghcr.io/hspaans/devcontainer-features/pytest:1": {}
+		"ghcr.io/hspaans/devcontainer-features/pytest:2": {}
 	}
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
