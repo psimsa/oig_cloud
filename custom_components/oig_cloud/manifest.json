@@ -14,7 +14,7 @@
     "opentelemetry-exporter-otlp-proto-grpc==1.31.0"
   ],
   "ssdp": [],
-  "version": "1.0.6-beta-2-hotfix"
+  "version": "1.0.6-beta-2-hotfix",
   "zeroconf": [],
   "country": ["CZ"],
   "homeassistant": "2022.0.0"
