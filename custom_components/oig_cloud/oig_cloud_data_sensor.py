@@ -1,11 +1,12 @@
 import logging
+from typing import Any, Dict, Optional, Union
 
 from .oig_cloud_sensor import OigCloudSensor
 from .shared.shared import GridMode
 
 _LOGGER = logging.getLogger(__name__)
 
-_LANGS = {
+_LANGS: Dict[str, Dict[str, str]] = {
     "on": {"en": "On", "cs": "Zapnuto"},
     "off": {"en": "Off", "cs": "Vypnuto"},
     "unknown": {"en": "Unknown", "cs": "Neznámý"},
@@ -16,7 +17,9 @@ _LANGS = {
 
 
 class OigCloudDataSensor(OigCloudSensor):
-    def __init__(self, coordinator, sensor_type: str, extended: bool = False):
+    def __init__(
+        self, coordinator: Any, sensor_type: str, extended: bool = False
+    ) -> None:
         super().__init__(coordinator, sensor_type)
         self._extended = extended
 
@@ -24,13 +27,13 @@ class OigCloudDataSensor(OigCloudSensor):
     def should_poll(self) -> bool:
         return self._extended  # extended senzory budou pravidelně dotazovány
 
-    async def async_update(self):
+    async def async_update(self) -> None:
         # Extended senzory budou při update kontrolovat změnu dat
         if self._extended:
             self.async_write_ha_state()
 
     @property
-    def state(self):
+    def state(self) -> Optional[Union[float, str]]:
         _LOGGER.debug(f"Getting state for {self.entity_id}")
 
         if self.coordinator.data is None:
@@ -116,7 +119,9 @@ class OigCloudDataSensor(OigCloudSensor):
             )
             return None
 
-    def _get_extended_value(self, extended_key: str, sensor_type: str):
+    def _get_extended_value(
+        self, extended_key: str, sensor_type: str
+    ) -> Optional[float]:
         extended_data = self.coordinator.data.get(extended_key)
         if not extended_data:
             return None
@@ -161,7 +166,7 @@ class OigCloudDataSensor(OigCloudSensor):
 
         return last_values[index]
 
-    def _compute_fve_current(self, sensor_type: str) -> float | None:
+    def _compute_fve_current(self, sensor_type: str) -> Optional[float]:
         try:
             extended_fve = self.coordinator.data.get("extended_fve")
             if not extended_fve or not extended_fve.get("items"):
@@ -193,7 +198,7 @@ class OigCloudDataSensor(OigCloudSensor):
             _LOGGER.error(f"Error computing {sensor_type}: {e}", exc_info=True)
             return None
 
-    def _get_mode_name(self, node_value, language):
+    def _get_mode_name(self, node_value: Any, language: str) -> str:
         if node_value == 0:
             return "Home 1"
         elif node_value == 1:
@@ -204,7 +209,9 @@ class OigCloudDataSensor(OigCloudSensor):
             return "Home UPS"
         return _LANGS["unknown"][language]
 
-    def _grid_mode(self, pv_data: dict, node_value, language):
+    def _grid_mode(
+        self, pv_data: Dict[str, Any], node_value: Any, language: str
+    ) -> str:
         grid_enabled = int(pv_data["box_prms"]["crcte"])
         to_grid = int(node_value)
         max_grid_feed = int(pv_data["invertor_prm1"]["p_max_feed_grid"])
@@ -213,7 +220,9 @@ class OigCloudDataSensor(OigCloudSensor):
             return self._grid_mode_queen(grid_enabled, to_grid, max_grid_feed, language)
         return self._grid_mode_king(grid_enabled, to_grid, max_grid_feed, language)
 
-    def _grid_mode_queen(self, grid_enabled, to_grid, max_grid_feed, language):
+    def _grid_mode_queen(
+        self, grid_enabled: int, to_grid: int, max_grid_feed: int, language: str
+    ) -> str:
         if 0 == to_grid and 0 == max_grid_feed:
             return GridMode.OFF.value
         elif 0 == to_grid and 0 < max_grid_feed:
@@ -222,7 +231,9 @@ class OigCloudDataSensor(OigCloudSensor):
             return GridMode.ON.value
         return _LANGS["changing"][language]
 
-    def _grid_mode_king(self, grid_enabled, to_grid, max_grid_feed, language):
+    def _grid_mode_king(
+        self, grid_enabled: int, to_grid: int, max_grid_feed: int, language: str
+    ) -> str:
         if 0 == grid_enabled and 0 == to_grid:
             return GridMode.OFF.value
         elif 1 == grid_enabled and 1 == to_grid and 10000 == max_grid_feed:
@@ -231,7 +242,7 @@ class OigCloudDataSensor(OigCloudSensor):
             return GridMode.LIMITED.value
         return _LANGS["changing"][language]
 
-    def _get_ssrmode_name(self, node_value, language):
+    def _get_ssrmode_name(self, node_value: Any, language: str) -> str:
         if node_value == 0:
             return "Vypnuto/Off"
         elif node_value == 1:

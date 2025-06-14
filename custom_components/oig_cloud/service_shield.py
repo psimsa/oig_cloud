@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
 from homeassistant.helpers.event import async_track_time_interval
-from homeassistant.core import callback
+from homeassistant.core import callback, HomeAssistant, Context
 from homeassistant.components import logbook
 from homeassistant.util.dt import now as dt_now
 import logging
 import uuid
+from typing import Dict, List, Tuple, Optional, Any, Callable
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -13,15 +14,26 @@ CHECK_INTERVAL_SECONDS = 15
 
 
 class ServiceShield:
-    def __init__(self, hass):
-        self.hass = hass
-        self.pending = {}
-        self.queue = []
-        self.running = None
-        self.queue_metadata = {}
-        self.last_checked_entity_id = None
+    def __init__(self, hass: HomeAssistant) -> None:
+        self.hass: HomeAssistant = hass
+        self.pending: Dict[str, Dict[str, Any]] = {}
+        self.queue: List[
+            Tuple[
+                str,
+                Dict[str, Any],
+                Dict[str, str],
+                Callable,
+                str,
+                str,
+                bool,
+                Optional[Context],
+            ]
+        ] = []
+        self.running: Optional[str] = None
+        self.queue_metadata: Dict[Tuple[str, str], str] = {}
+        self.last_checked_entity_id: Optional[str] = None
 
-    async def start(self):
+    async def start(self) -> None:
         _LOGGER.debug("[OIG Shield] Inicializace – čištění fronty")
         self.pending.clear()
         self.queue.clear()
@@ -32,7 +44,7 @@ class ServiceShield:
             self.hass, self._check_loop, timedelta(seconds=CHECK_INTERVAL_SECONDS)
         )
 
-    def _normalize_value(self, val: str) -> str:
+    def _normalize_value(self, val: Any) -> str:
         val = str(val or "").strip().lower().replace(" ", "").replace("/", "")
         mapping = {
             "vypnutoon": "vypnuto",
@@ -41,19 +53,19 @@ class ServiceShield:
         }
         return mapping.get(val, val)
 
-    def _get_entity_state(self, entity_id):
+    def _get_entity_state(self, entity_id: str) -> Optional[str]:
         state = self.hass.states.get(entity_id)
         return state.state if state else None
 
     async def intercept_service_call(
         self,
-        domain,
-        service,
-        data,
-        original_call,
-        blocking,
-        context,
-    ):
+        domain: str,
+        service: str,
+        data: Dict[str, Any],
+        original_call: Callable,
+        blocking: bool,
+        context: Optional[Context],
+    ) -> None:
         service_name = f"{domain}.{service}"
         params = data["params"]
         trace_id = str(uuid.uuid4())[:8]
@@ -200,15 +212,15 @@ class ServiceShield:
 
     async def _start_call(
         self,
-        service_name,
-        data,
-        expected_entities,
-        original_call,
-        domain,
-        service,
-        blocking,
-        context,
-    ):
+        service_name: str,
+        data: Dict[str, Any],
+        expected_entities: Dict[str, str],
+        original_call: Callable,
+        domain: str,
+        service: str,
+        blocking: bool,
+        context: Optional[Context],
+    ) -> None:
         self.running = service_name
 
         # Uložíme původní stavy entit před změnou
@@ -246,7 +258,7 @@ class ServiceShield:
         )
 
     @callback
-    async def _check_loop(self, _now):
+    async def _check_loop(self, _now: datetime) -> None:
         finished = []
 
         for service_name, info in self.pending.items():
@@ -341,7 +353,14 @@ class ServiceShield:
         elif self.running is None:
             _LOGGER.debug("[OIG Shield] Fronta prázdná, shield neaktivní.")
 
-    async def _log_event(self, event_type, service, data, reason=None, context=None):
+    async def _log_event(
+        self,
+        event_type: str,
+        service: str,
+        data: Dict[str, Any],
+        reason: Optional[str] = None,
+        context: Optional[Context] = None,
+    ) -> None:
         params = data.get("params", {})
         entities = data.get("entities", {})
         original_states = data.get("original_states", {})
@@ -431,8 +450,8 @@ class ServiceShield:
             )
 
     def extract_expected_entities(
-        self, service_name: str, data: dict
-    ) -> dict[str, str]:
+        self, service_name: str, data: Dict[str, Any]
+    ) -> Dict[str, str]:
         self.last_checked_entity_id = None
 
         def find_entity(suffix: str) -> str | None:

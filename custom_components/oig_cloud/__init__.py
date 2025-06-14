@@ -98,12 +98,23 @@ async def async_setup_entry(
         )
         await async_setup_entry_services(hass, entry)
 
+        # Přidáme listener pro změny konfigurace
+        entry.async_on_unload(entry.add_update_listener(async_update_options))
+
         _LOGGER.debug("OIG Cloud integration setup complete")
         return True
 
     except Exception as e:
         _LOGGER.error(f"Error initializing OIG Cloud: {e}", exc_info=True)
         raise ConfigEntryNotReady(f"Error initializing OIG Cloud: {e}") from e
+
+
+async def async_update_options(
+    hass: core.HomeAssistant, config_entry: config_entries.ConfigEntry
+) -> None:
+    """Update options."""
+    _LOGGER.info("Config options updated, reloading integration")
+    await hass.config_entries.async_reload(config_entry.entry_id)
 
 
 async def async_unload_entry(

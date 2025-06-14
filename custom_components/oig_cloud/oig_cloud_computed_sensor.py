@@ -2,6 +2,7 @@
 
 import logging
 from datetime import datetime, timedelta
+from typing import Any, Dict, Optional, Union
 
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -9,7 +10,7 @@ from .oig_cloud_sensor import OigCloudSensor
 
 _LOGGER = logging.getLogger(__name__)
 
-_LANGS = {
+_LANGS: Dict[str, Dict[str, str]] = {
     "on": {"en": "On", "cs": "Zapnuto"},
     "off": {"en": "Vypnuto", "cs": "Vypnuto"},
     "unknown": {"en": "Unknown", "cs": "Neznámý"},
@@ -18,12 +19,12 @@ _LANGS = {
 
 
 class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
-    def __init__(self, coordinator, sensor_type: str):
+    def __init__(self, coordinator: Any, sensor_type: str) -> None:
         super().__init__(coordinator, sensor_type)
-        self._last_update = None
-        self._attr_extra_state_attributes = {}
+        self._last_update: Optional[datetime] = None
+        self._attr_extra_state_attributes: Dict[str, Any] = {}
 
-        self._energy = {
+        self._energy: Dict[str, float] = {
             "charge_today": 0.0,
             "charge_month": 0.0,
             "charge_year": 0.0,
@@ -38,7 +39,7 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
             "charge_grid_year": 0.0,
         }
 
-    async def async_added_to_hass(self):
+    async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         async_track_time_change(
             self.hass, self._reset_daily, hour=0, minute=0, second=0
@@ -53,7 +54,7 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
                 if key in old_state.attributes:
                     self._energy[key] = float(old_state.attributes[key])
 
-    async def _reset_daily(self, *_):
+    async def _reset_daily(self, *_: Any) -> None:
         now = datetime.utcnow()
         _LOGGER.debug(f"[{self.entity_id}] Resetting daily energy")
         for key in self._energy:
@@ -73,7 +74,7 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
                     self._energy[key] = 0.0
 
     @property
-    def state(self):
+    def state(self) -> Optional[Union[float, str]]:
         if self.coordinator.data is None:
             return None
 
@@ -163,7 +164,7 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
 
         return None
 
-    def _accumulate_energy(self, pv_data):
+    def _accumulate_energy(self, pv_data: Dict[str, Any]) -> Optional[float]:
         try:
             now = datetime.utcnow()
 
@@ -219,7 +220,7 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
             _LOGGER.error(f"Error calculating energy: {e}", exc_info=True)
             return None
 
-    def _get_energy_value(self):
+    def _get_energy_value(self) -> Optional[float]:
         sensor_map = {
             "computed_batt_charge_energy_today": "charge_today",
             "computed_batt_discharge_energy_today": "discharge_today",
@@ -239,7 +240,7 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
             return round(self._energy[energy_key], 3)
         return None
 
-    def _get_boiler_consumption(self, pv_data):
+    def _get_boiler_consumption(self, pv_data: Dict[str, Any]) -> Optional[float]:
         if self._sensor_type != "boiler_current_w":
             return None
 
@@ -278,13 +279,13 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
             _LOGGER.error(f"Error calculating boiler consumption: {e}", exc_info=True)
             return None
 
-    def _get_batt_power_charge(self, pv_data) -> float:
+    def _get_batt_power_charge(self, pv_data: Dict[str, Any]) -> float:
         return max(float(pv_data["actual"]["bat_p"]), 0)
 
-    def _get_batt_power_discharge(self, pv_data: dict) -> float:
+    def _get_batt_power_discharge(self, pv_data: Dict[str, Any]) -> float:
         return max(-float(pv_data["actual"]["bat_p"]), 0)
 
-    def _get_extended_fve_current_1(self, coordinator: object) -> float | None:
+    def _get_extended_fve_current_1(self, coordinator: Any) -> Optional[float]:
         try:
             power = float(coordinator.data["extended_fve_power_1"])
             voltage = float(coordinator.data["extended_fve_voltage_1"])
@@ -296,7 +297,7 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
             _LOGGER.error(f"Error getting extended_fve_current_1: {e}", exc_info=True)
             return None
 
-    def _get_extended_fve_current_2(self, coordinator: object) -> float | None:
+    def _get_extended_fve_current_2(self, coordinator: Any) -> Optional[float]:
         try:
             power = float(coordinator.data["extended_fve_power_2"])
             voltage = float(coordinator.data["extended_fve_voltage_2"])
@@ -308,7 +309,7 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
             _LOGGER.error(f"Error getting extended_fve_current_2: {e}", exc_info=True)
             return None
 
-    async def async_update(self):
+    async def async_update(self) -> None:
         await self.coordinator.async_request_refresh()
 
     def _format_time(self, hours: float) -> str:
@@ -338,5 +339,5 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
             return f"{mins} minut"
 
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> Dict[str, Any]:
         return getattr(self, "_attr_extra_state_attributes", {})

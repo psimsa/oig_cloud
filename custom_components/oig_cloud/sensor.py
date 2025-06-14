@@ -1,5 +1,6 @@
 import logging
 from datetime import timedelta, datetime
+from typing import List, Any
 
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.components.sensor import SensorEntity
@@ -8,9 +9,16 @@ from homeassistant.helpers.entity import EntityCategory
 from .oig_cloud_coordinator import OigCloudCoordinator
 from .oig_cloud_data_sensor import OigCloudDataSensor
 from .oig_cloud_computed_sensor import OigCloudComputedSensor
+from .oig_cloud_statistics import OigCloudStatisticsSensor
+from .oig_cloud_solar_forecast import OigCloudSolarForecastSensor
 from .sensor_types import SENSOR_TYPES
+from .sensors.SENSOR_TYPES_STATISTICS import SENSOR_TYPES_STATISTICS
 from .const import DOMAIN
-from .config_flow import CONF_STANDARD_SCAN_INTERVAL, CONF_EXTENDED_SCAN_INTERVAL
+from .config_flow import (
+    CONF_STANDARD_SCAN_INTERVAL,
+    CONF_EXTENDED_SCAN_INTERVAL,
+    CONF_SOLAR_FORECAST_ENABLED,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -60,7 +68,9 @@ class OigShieldQueueSensor(SensorEntity):
         }
 
 
-async def async_setup_entry(hass, config_entry, async_add_entities):
+async def async_setup_entry(
+    hass: Any, config_entry: Any, async_add_entities: Any
+) -> None:
     _LOGGER.debug("Setting up OIG Cloud sensors")
 
     api_data = hass.data[DOMAIN][config_entry.entry_id]
@@ -77,7 +87,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     )
 
     await coordinator.async_config_entry_first_refresh()
-    _register_entities(async_add_entities, coordinator)
+    _register_entities(async_add_entities, coordinator, config_entry)
 
     # Add diagnostic queue sensor
     shield = hass.data[DOMAIN].get("shield")
@@ -89,7 +99,22 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         )
 
 
-def _register_entities(async_add_entities, coordinator: OigCloudCoordinator):
+# Přidáme update listener pro celou entry
+async def async_unload_entry(hass: Any, config_entry: Any) -> bool:
+    """Unload a config entry."""
+    return True
+
+
+async def async_options_updated(hass: Any, config_entry: Any) -> None:
+    """Handle options update."""
+    _LOGGER.info("OIG Cloud options updated, reloading sensors if needed")
+    # Solar forecast senzor má vlastní listener, ostatní senzory se restartují s coordinator
+
+
+def _register_entities(
+    async_add_entities: Any, coordinator: OigCloudCoordinator, config_entry: Any
+) -> None:
+    # Původní data senzory
     async_add_entities(
         OigCloudDataSensor(
             coordinator, sensor_type, extended=sensor_type.startswith("extended_")
@@ -102,6 +127,7 @@ def _register_entities(async_add_entities, coordinator: OigCloudCoordinator):
         )
     )
 
+    # Původní computed senzory
     async_add_entities(
         OigCloudComputedSensor(coordinator, sensor_type)
         for sensor_type in SENSOR_TYPES
@@ -109,3 +135,20 @@ def _register_entities(async_add_entities, coordinator: OigCloudCoordinator):
         and not sensor_type.startswith("extended_")
         and SENSOR_TYPES[sensor_type].get("entity_category") is None
     )
+
+    # Nové statistické senzory
+    _LOGGER.debug(f"Registering {len(SENSOR_TYPES_STATISTICS)} statistical sensors")
+    async_add_entities(
+        [
+            OigCloudStatisticsSensor(coordinator, sensor_type)
+            for sensor_type in SENSOR_TYPES_STATISTICS
+            if sensor_type != "solar_forecast"  # Solar forecast má speciální handling
+        ]
+    )
+
+    # Solar Forecast senzor (pokud je povolen)
+    if config_entry.options.get(CONF_SOLAR_FORECAST_ENABLED, False):
+        _LOGGER.debug("Registering Solar Forecast sensor")
+        async_add_entities(
+            [OigCloudSolarForecastSensor(coordinator, "solar_forecast", config_entry)]
+        )
