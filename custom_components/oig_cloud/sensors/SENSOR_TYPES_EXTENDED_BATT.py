@@ -1,0 +1,90 @@
+from typing import Dict
+from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
+from homeassistant.helpers.entity import EntityCategory
+
+SENSOR_TYPES_EXTENDED_BATT: Dict[
+    str, Dict[str, str | SensorDeviceClass | SensorStateClass]
+] = {
+    "extended_battery_voltage": {
+        "name": "Extended Battery Voltage",
+        "name_cs": "Napětí baterie",
+        "unit_of_measurement": "V",
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "node_id": None,
+        "node_key": None,
+    },
+    "extended_battery_current": {
+        "name": "Extended Battery Current",
+        "name_cs": "Proud baterie",
+        "unit_of_measurement": "A",
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "node_id": None,
+        "node_key": None,
+    },
+    "extended_battery_capacity": {
+        "name": "Extended Battery Capacity",
+        "name_cs": "Rozšířená kapacita baterie",
+        "unit_of_measurement": "%",
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "node_id": None,
+        "node_key": None,
+    },
+    "extended_battery_temperature": {
+        "name": "Extended Battery Temperature",
+        "name_cs": "Teplota baterie",
+        "unit_of_measurement": "°C",
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "node_id": None,
+        "node_key": None,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "usable_battery_capacity": {
+        "name": "Usable Battery Capacity",
+        "name_cs": "Baterie - využitelná kapacita",
+        "unit_of_measurement": "kWh",
+        "device_class": SensorDeviceClass.ENERGY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "node_id": None,
+        "node_key": None,
+    },
+    "missing_battery_kwh": {
+        "name": "Missing Energy to 100%",
+        "name_cs": "Baterie - k nabití",
+        "unit_of_measurement": "kWh",
+        "device_class": SensorDeviceClass.ENERGY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "node_id": None,
+        "node_key": None,
+    },
+    "remaining_usable_capacity": {
+        "name": "Remaining Usable Capacity",
+        "name_cs": "Baterie - zbývající kapacita",
+        "unit_of_measurement": "kWh",
+        "device_class": SensorDeviceClass.ENERGY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "node_id": None,
+        "node_key": None,
+    },
+    "time_to_full": {
+        "name": "Time to Full",
+        "name_cs": "Baterie - plné nabití",
+        "unit_of_measurement": None,
+        "device_class": None,
+        "state_class": None,
+        "node_id": None,
+        "node_key": None,
+    },
+    "time_to_empty": {
+        "name": "Time to Empty",
+        "name_cs": "Baterie - do vybití",
+        "unit_of_measurement": None,
+        "device_class": None,
+        "state_class": None,
+        "node_id": None,
+        "node_key": None,
+    },
+}

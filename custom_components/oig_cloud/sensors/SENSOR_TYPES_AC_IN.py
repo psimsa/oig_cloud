@@ -1,4 +1,5 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
+from homeassistant.helpers.entity import EntityCategory
 
 
 from typing import Dict
@@ -94,5 +95,5 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,
-    }
+    },
 }
