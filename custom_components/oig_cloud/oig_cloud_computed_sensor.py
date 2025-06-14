@@ -108,6 +108,12 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
         if self._sensor_type.startswith("computed_batt_"):
             return self._accumulate_energy(pv_data)
 
+        if self._sensor_type == "extended_fve_current_1":
+            return self._get_extended_fve_current_1(self.coordinator)
+
+        if self._sensor_type == "extended_fve_current_2":
+            return self._get_extended_fve_current_2(self.coordinator)
+
         try:
             bat_p = float(pv_data["box_prms"]["p_bat"])
             bat_c = float(pv_data["actual"]["bat_c"])
@@ -275,13 +281,37 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
     def _get_batt_power_charge(self, pv_data) -> float:
         return max(float(pv_data["actual"]["bat_p"]), 0)
 
-    def _get_batt_power_discharge(self, pv_data) -> float:
+    def _get_batt_power_discharge(self, pv_data: dict) -> float:
         return max(-float(pv_data["actual"]["bat_p"]), 0)
+
+    def _get_extended_fve_current_1(self, coordinator: object) -> float | None:
+        try:
+            power = float(coordinator.data["extended_fve_power_1"])
+            voltage = float(coordinator.data["extended_fve_voltage_1"])
+            if voltage != 0:
+                return power / voltage
+            else:
+                return 0.0
+        except (KeyError, TypeError, ZeroDivisionError) as e:
+            _LOGGER.error(f"Error getting extended_fve_current_1: {e}", exc_info=True)
+            return None
+
+    def _get_extended_fve_current_2(self, coordinator: object) -> float | None:
+        try:
+            power = float(coordinator.data["extended_fve_power_2"])
+            voltage = float(coordinator.data["extended_fve_voltage_2"])
+            if voltage != 0:
+                return power / voltage
+            else:
+                return 0.0
+        except (KeyError, TypeError, ZeroDivisionError) as e:
+            _LOGGER.error(f"Error getting extended_fve_current_2: {e}", exc_info=True)
+            return None
 
     async def async_update(self):
         await self.coordinator.async_request_refresh()
 
-    def _format_time(self, hours):
+    def _format_time(self, hours: float) -> str:
         if hours <= 0:
             return "N/A"
 
@@ -296,7 +326,12 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
         }
 
         if days >= 1:
-            return f"{days} den{'y' if days > 1 else ''} {hrs} hodin {mins} minut"
+            if days == 1:
+                return f"{days} den {hrs} hodin {mins} minut"
+            elif days in [2, 3, 4]:
+                return f"{days} dny {hrs} hodin {mins} minut"
+            else:
+                return f"{days} dnů {hrs} hodin {mins} minut"
         elif hrs >= 1:
             return f"{hrs} hodin {mins} minut"
         else:

@@ -40,6 +40,13 @@ class OigCloudDataSensor(OigCloudSensor):
         language = self.hass.config.language
 
         if getattr(self, "_extended", False):
+            # Computed senzory - spočítáme je zde
+            if self._sensor_type in [
+                "extended_fve_current_1",
+                "extended_fve_current_2",
+            ]:
+                return self._compute_fve_current(self._sensor_type)
+
             if self._sensor_type.startswith("extended_battery_"):
                 return self._get_extended_value("extended_batt", self._sensor_type)
             elif self._sensor_type.startswith("extended_fve_"):
@@ -153,6 +160,38 @@ class OigCloudDataSensor(OigCloudSensor):
             return None
 
         return last_values[index]
+
+    def _compute_fve_current(self, sensor_type: str) -> float | None:
+        try:
+            extended_fve = self.coordinator.data.get("extended_fve")
+            if not extended_fve or not extended_fve.get("items"):
+                _LOGGER.debug("No extended_fve data available for current calculation")
+                return 0.0
+
+            last_values = extended_fve["items"][-1]["values"]
+
+            if sensor_type == "extended_fve_current_1":
+                # Index 3 = power_1, Index 0 = voltage_1
+                power = float(last_values[3])  # extended_fve_power_1
+                voltage = float(last_values[0])  # extended_fve_voltage_1
+            elif sensor_type == "extended_fve_current_2":
+                # Index 4 = power_2, Index 1 = voltage_2
+                power = float(last_values[4])  # extended_fve_power_2
+                voltage = float(last_values[1])  # extended_fve_voltage_2
+            else:
+                return None
+
+            if voltage != 0:
+                current = power / voltage
+                _LOGGER.debug(
+                    f"{sensor_type}: {current:.3f}A (P={power}W, U={voltage}V)"
+                )
+                return round(current, 3)
+            else:
+                return 0.0
+        except (KeyError, TypeError, ZeroDivisionError, IndexError) as e:
+            _LOGGER.error(f"Error computing {sensor_type}: {e}", exc_info=True)
+            return None
 
     def _get_mode_name(self, node_value, language):
         if node_value == 0:

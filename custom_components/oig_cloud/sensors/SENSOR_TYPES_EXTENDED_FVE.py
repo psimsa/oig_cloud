@@ -50,4 +50,22 @@ SENSOR_TYPES_EXTENDED_FVE: Dict[
         "node_id": None,
         "node_key": None,
     },
+    "extended_fve_current_1": {
+        "name": "Extended FVE Curren FV 1",
+        "name_cs": "Proud String 1",
+        "unit_of_measurement": "A",
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "node_id": None,
+        "node_key": None,
+    },
+    "extended_fve_current_2": {
+        "name": "Extended FVE Curren FV 2",
+        "name_cs": "Proud String 2",
+        "unit_of_measurement": "A",
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "node_id": None,
+        "node_key": None,
+    },
 }

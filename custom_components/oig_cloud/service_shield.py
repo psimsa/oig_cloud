@@ -210,8 +210,16 @@ class ServiceShield:
         context,
     ):
         self.running = service_name
+
+        # Uložíme původní stavy entit před změnou
+        original_states = {}
+        for entity_id in expected_entities.keys():
+            state = self.hass.states.get(entity_id)
+            original_states[entity_id] = state.state if state else None
+
         self.pending[service_name] = {
             "entities": expected_entities,
+            "original_states": original_states,
             "params": data,
             "called_at": datetime.now(),
         }
@@ -225,6 +233,7 @@ class ServiceShield:
             {
                 "params": data,
                 "entities": expected_entities,
+                "original_states": original_states,
             },
             reason="Požadavek odeslán do API",
             context=context,
@@ -286,6 +295,7 @@ class ServiceShield:
                     {
                         "params": info["params"],
                         "entities": info["entities"],
+                        "original_states": info.get("original_states", {}),
                     },
                     reason="Změna provedena",
                 )
@@ -295,6 +305,7 @@ class ServiceShield:
                     {
                         "params": info["params"],
                         "entities": info["entities"],
+                        "original_states": info.get("original_states", {}),
                     },
                     reason="Semafor uvolněn – služba dokončena",
                 )
@@ -333,6 +344,7 @@ class ServiceShield:
     async def _log_event(self, event_type, service, data, reason=None, context=None):
         params = data.get("params", {})
         entities = data.get("entities", {})
+        original_states = data.get("original_states", {})
         context = context or data.get("context")
 
         for entity_id, expected_value in entities.items() or {None: None}.items():
@@ -344,10 +356,16 @@ class ServiceShield:
             )
             current_value = state.state if state else "neznámá"
 
+            # Pro completed událost použijeme původní stav místo aktuálního
+            if event_type == "completed" and entity_id in original_states:
+                from_value = original_states[entity_id]
+            else:
+                from_value = current_value
+
             if event_type == "change_requested":
-                message = f"Požadavek na změnu {friendly_name} z '{current_value}' na '{expected_value}'"
+                message = f"Požadavek na změnu {friendly_name} z '{from_value}' na '{expected_value}'"
             elif event_type == "completed":
-                message = f"Změna provedena – {friendly_name} z '{current_value}' na '{expected_value}'"
+                message = f"Změna provedena – {friendly_name} z '{from_value}' na '{expected_value}'"
             elif event_type == "skipped":
                 message = f"Změna přeskočena – {friendly_name} má již hodnotu '{expected_value}'"
             elif event_type == "queued":
@@ -393,7 +411,7 @@ class ServiceShield:
                     "event_type": event_type,
                     "service": service,
                     "entity_id": entity_id,
-                    "from": current_value,
+                    "from": from_value,
                     "to": expected_value,
                     "friendly_name": friendly_name,
                     "reason": reason,
@@ -407,7 +425,7 @@ class ServiceShield:
                 "[OIG Shield] Event: %s | Entity: %s | From: '%s' → To: '%s' | Reason: %s",
                 event_type,
                 entity_id,
-                current_value,
+                from_value,
                 expected_value,
                 reason or "-",
             )

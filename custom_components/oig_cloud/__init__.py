@@ -2,7 +2,19 @@ import asyncio
 import logging
 import hashlib
 
-from opentelemetry import trace
+try:
+    from opentelemetry import trace
+
+    tracer = trace.get_tracer(__name__)
+    _has_opentelemetry = True
+except ImportError:
+    tracer = None  # type: ignore
+    _has_opentelemetry = False
+    _LOGGER = logging.getLogger(__name__)
+    _LOGGER.warning(
+        "OpenTelemetry není nainstalován. Pro povolení telemetrie je nutné ručně nainstalovat balíček: pip install opentelemetry-exporter-otlp-proto-grpc==1.31.0"
+    )
+
 from homeassistant import config_entries, core
 from homeassistant.exceptions import ConfigEntryNotReady
 
@@ -20,7 +32,6 @@ from .shared.tracing import setup_tracing
 from .shared.logging import setup_otel_logging
 from .service_shield import ServiceShield
 
-tracer = trace.get_tracer(__name__)
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -48,7 +59,7 @@ async def async_setup_entry(
         standard_scan_interval = entry.data.get(CONF_STANDARD_SCAN_INTERVAL, 30)
         extended_scan_interval = entry.data.get(CONF_EXTENDED_SCAN_INTERVAL, 300)
 
-        if not no_telemetry:
+        if not no_telemetry and _has_opentelemetry:
             email_hash = hashlib.sha256(username.encode("utf-8")).hexdigest()
             hass_id = hashlib.sha256(hass.data["core.uuid"].encode("utf-8")).hexdigest()
 
@@ -65,6 +76,10 @@ async def async_setup_entry(
 
             _LOGGER.info(
                 f"Telemetry enabled: Account hash {email_hash}, HA ID {hass_id}"
+            )
+        elif not no_telemetry and not _has_opentelemetry:
+            _LOGGER.warning(
+                "Telemetrie je povolena, ale OpenTelemetry není nainstalován. Telemetrie bude vypnuta."
             )
 
         oig_api = OigCloudApi(username, password, no_telemetry, hass)
