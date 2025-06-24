@@ -598,9 +598,9 @@ class OigCloudApi:
                 f"Requesting extended stats for type '{stat_type}' from {date_from} to {date_to}"
             )
 
-            url = f"{self.base_url}/json2.php"
+            url = f"{self._base_url}/json2.php"
             data = {
-                "device_id": self.device_id,
+                "device_id": self.box_id,
                 "type": stat_type,
                 "date_from": date_from,
                 "date_to": date_to,
@@ -611,67 +611,53 @@ class OigCloudApi:
                 "User-Agent": "HomeAssistant-OIG-Cloud",
             }
 
-            if not self._session:
-                self._session = async_get_clientsession(self.hass)
+            async with self.get_session() as session:
+                self._logger.debug(f"Making POST request to {url} with data: {data}")
 
-            self._logger.debug(f"Making POST request to {url} with data: {data}")
+                async with session.post(url, data=data, headers=headers) as response:
 
-            async with self._session.post(
-                url, data=data, headers=headers, timeout=aiohttp.ClientTimeout(total=30)
-            ) as response:
+                    self._logger.debug(f"Response status: {response.status}")
 
-                self._logger.debug(f"Response status: {response.status}")
-
-                if response.status == 200:
-                    try:
-                        result = await response.json()
-                        self._logger.debug(
-                            f"Extended stats '{stat_type}' retrieved successfully, data size: {len(str(result))}"
-                        )
-                        return result
-                    except aiohttp.ContentTypeError as e:
+                    if response.status == 200:
+                        try:
+                            result = await response.json()
+                            self._logger.debug(
+                                f"Extended stats '{stat_type}' retrieved successfully, data size: {len(str(result))}"
+                            )
+                            return result
+                        except aiohttp.ContentTypeError as e:
+                            self._logger.error(
+                                f"Invalid JSON response for {stat_type}: {e}"
+                            )
+                            text_response = await response.text()
+                            self._logger.debug(
+                                f"Raw response text: {text_response[:500]}..."
+                            )
+                            return {}
+                    elif response.status == 401:
                         self._logger.error(
-                            f"Invalid JSON response for {stat_type}: {e}"
+                            f"Authentication failed for extended stats {stat_type}"
                         )
-                        text_response = await response.text()
-                        self._logger.debug(
-                            f"Raw response text: {text_response[:500]}..."
+                        raise ClientResponseError(
+                            request_info=response.request_info,
+                            history=response.history,
+                            status=401,
+                            message="Authentication required",
+                        )
+                    elif response.status == 429:
+                        self._logger.warning(
+                            f"Rate limit exceeded for extended stats {stat_type}"
                         )
                         return {}
-                elif response.status == 401:
-                    self._logger.error(
-                        f"Authentication failed for extended stats {stat_type}"
-                    )
-                    raise aiohttp.ClientResponseError(
-                        request_info=response.request_info,
-                        history=response.history,
-                        status=401,
-                        message="Authentication required",
-                    )
-                elif response.status == 429:
-                    self._logger.warning(
-                        f"Rate limit exceeded for extended stats {stat_type}"
-                    )
-                    return {}
-                else:
-                    self._logger.error(
-                        f"HTTP {response.status} error fetching extended stats for {stat_type}"
-                    )
-                    error_text = await response.text()
-                    self._logger.debug(f"Error response: {error_text[:200]}...")
-                    return {}
+                    else:
+                        self._logger.error(
+                            f"HTTP {response.status} error fetching extended stats for {stat_type}"
+                        )
+                        error_text = await response.text()
+                        self._logger.debug(f"Error response: {error_text[:200]}...")
+                        return {}
 
-        except aiohttp.ClientConnectorError as e:
-            self._logger.error(
-                f"Connection error fetching extended stats for {stat_type}: {e}"
-            )
-            return {}
-        except aiohttp.ClientTimeout as e:
-            self._logger.warning(
-                f"Timeout fetching extended stats for {stat_type}: {e}"
-            )
-            return {}
-        except aiohttp.ClientError as e:
+        except (ClientConnectorError, ClientTimeout, ClientResponseError) as e:
             self._logger.error(
                 f"Client error fetching extended stats for {stat_type}: {e}"
             )
@@ -682,55 +668,3 @@ class OigCloudApi:
                 exc_info=True,
             )
             return {}
-
-    async def get_stats(self) -> Optional[Dict[str, Any]]:
-        """Fetch standard statistics with improved error handling."""
-        try:
-            self._logger.debug(f"Getting stats from {self.base_url}/json.php")
-
-            if not self._session:
-                self._session = async_get_clientsession(self.hass)
-
-            headers = {"User-Agent": "HomeAssistant-OIG-Cloud"}
-
-            async with self._session.get(
-                f"{self.base_url}/json.php",
-                headers=headers,
-                timeout=aiohttp.ClientTimeout(total=30),
-            ) as response:
-
-                if response.status == 200:
-                    try:
-                        result = await response.json()
-                        self._logger.debug("Retrieved stats successfully")
-                        return result
-                    except aiohttp.ContentTypeError as e:
-                        self._logger.error(
-                            f"Invalid JSON response for standard stats: {e}"
-                        )
-                        return None
-                elif response.status == 401:
-                    self._logger.error("Authentication failed for standard stats")
-                    raise aiohttp.ClientResponseError(
-                        request_info=response.request_info,
-                        history=response.history,
-                        status=401,
-                        message="Authentication required",
-                    )
-                else:
-                    self._logger.error(
-                        f"HTTP {response.status} error fetching standard stats"
-                    )
-                    return None
-
-        except aiohttp.ClientConnectorError as e:
-            self._logger.error(f"Connection error fetching standard stats: {e}")
-            raise
-        except aiohttp.ClientTimeout as e:
-            self._logger.warning(f"Timeout fetching standard stats: {e}")
-            raise
-        except Exception as e:
-            self._logger.error(
-                f"Unexpected error fetching standard stats: {e}", exc_info=True
-            )
-            raise
