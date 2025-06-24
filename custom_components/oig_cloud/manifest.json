@@ -2,7 +2,8 @@
   "domain": "oig_cloud",
   "name": "OIG Cloud (Čez Battery Box)",
   "codeowners": [
-    "@psimsa"
+    "@psimsa",
+    "Muriel2Horak"
   ],
   "config_flow": true,
   "dependencies": [],
@@ -12,7 +13,7 @@
   "issue_tracker": "https://github.com/psimsa/oig_cloud/issues",
   "requirements": [],
   "ssdp": [],
-  "version": "1.0.6-beta-2-hotfix",
+  "version": "2.0.1-alpha",
   "zeroconf": [],
   "country": ["CZ"],
   "homeassistant": "2022.0.0"

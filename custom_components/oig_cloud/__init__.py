@@ -29,6 +29,15 @@ _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 
+# **OPRAVA: Globální analytics_device_info pro statistické senzory**
+analytics_device_info: Dict[str, Any] = {
+    "identifiers": {(DOMAIN, "analytics")},
+    "name": "Analytics & Predictions",
+    "manufacturer": "OIG Cloud",
+    "model": "Analytics Module",
+    "sw_version": "1.0",
+}
+
 
 async def async_setup(hass: HomeAssistant, config: Dict[str, Any]) -> bool:
     """Set up the OIG Cloud component."""
@@ -49,11 +58,11 @@ async def async_setup(hass: HomeAssistant, config: Dict[str, Any]) -> bool:
     return True
 
 
-async def async_setup_entry(
-    hass: HomeAssistant, entry: config_entries.ConfigEntry
-) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up OIG Cloud from a config entry."""
     _LOGGER.info(f"Setting up OIG Cloud entry: {entry.title}")
+    _LOGGER.debug(f"Config data keys: {list(entry.data.keys())}")
+    _LOGGER.debug(f"Config options keys: {list(entry.options.keys())}")
 
     try:
         # Async importy pro vyhnání se blokování event loopu
@@ -64,8 +73,6 @@ async def async_setup_entry(
         password = entry.data.get(CONF_PASSWORD) or entry.options.get(CONF_PASSWORD)
 
         # Debug log pro diagnostiku
-        _LOGGER.debug(f"Config data keys: {list(entry.data.keys())}")
-        _LOGGER.debug(f"Config options keys: {list(entry.options.keys())}")
         _LOGGER.debug(f"Username: {'***' if username else 'MISSING'}")
         _LOGGER.debug(f"Password: {'***' if password else 'MISSING'}")
 
@@ -124,10 +131,25 @@ async def async_setup_entry(
                 _LOGGER.error("Chyba při inicializaci solární předpovědi: %s", e)
                 solar_forecast = {"enabled": False, "error": str(e)}
 
+        # **OPRAVA: Správné nastavení statistics pro reload**
+        statistics_enabled = entry.options.get("enable_statistics", True)
+        _LOGGER.debug(f"Statistics enabled: {statistics_enabled}")
+
+        # **OPRAVA: Přidání analytics_device_info pro statistické senzory**
+        analytics_device_info = {
+            "identifiers": {(DOMAIN, f"{entry.entry_id}_analytics")},
+            "name": "Analytics & Predictions",
+            "manufacturer": "OIG Cloud",
+            "model": "Analytics Module",
+            "sw_version": "1.0",
+        }
+
         # Uložení dat do hass.data
         hass.data[DOMAIN][entry.entry_id] = {
             "coordinator": coordinator,
             "solar_forecast": solar_forecast,
+            "statistics_enabled": statistics_enabled,
+            "analytics_device_info": analytics_device_info,
         }
 
         # Vyčištění starých/nepoužívaných zařízení před registrací nových

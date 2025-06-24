@@ -39,27 +39,12 @@ except Exception as e:
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Set up OIG Cloud sensors from a config entry."""
-    # OPRAVA: Kontrola existence SENSOR_TYPES na začátku
-    if "SENSOR_TYPES" not in globals():
-        _LOGGER.error(
-            "SENSOR_TYPES is not defined - this should not happen after import"
-        )
-        return
+    _LOGGER.debug("Starting sensor setup with coordinator data")
 
-    if not SENSOR_TYPES:
-        _LOGGER.error("SENSOR_TYPES is empty - check sensor_types.py content")
-        return
-
-    _LOGGER.debug(
-        f"Starting sensor setup with {len(SENSOR_TYPES)} sensor types available"
-    )
-
-    coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
+    coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
 
     # OPRAVA: Kontrola dostupnosti dat před vytvořením senzorů
     if coordinator.data is None:
@@ -75,7 +60,7 @@ async def async_setup_entry(
     )
 
     # Vyčistíme prázdná zařízení PŘED vytvořením nových senzorů
-    await _cleanup_empty_devices(hass, config_entry)
+    await _cleanup_empty_devices(hass, entry)
 
     # 1. Basic sensors - only if data is available
     basic_sensors: List[Any] = []
@@ -174,7 +159,10 @@ async def async_setup_entry(
         _LOGGER.error(f"Error initializing computed sensors: {e}", exc_info=True)
 
     # 3. Extended sensors - only if enabled and data available
-    if config_entry.options.get("enable_extended_sensors", False):
+    extended_sensors_enabled = entry.options.get("enable_extended_sensors", False)
+    _LOGGER.debug(f"Extended sensors enabled from options: {extended_sensors_enabled}")
+
+    if extended_sensors_enabled is True:
         extended_sensors: List[Any] = []
         try:
             if coordinator.data is not None:
@@ -221,14 +209,37 @@ async def async_setup_entry(
                 _LOGGER.debug("Coordinator data is None, skipping extended sensors")
         except Exception as e:
             _LOGGER.error(f"Error initializing extended sensors: {e}", exc_info=True)
+    else:
+        _LOGGER.info("Extended sensors disabled - skipping creation")
 
     # 4. Statistics sensors - only if enabled and data available
-    if config_entry.options.get("enable_statistics", False):
+    statistics_enabled = hass.data[DOMAIN][entry.entry_id].get(
+        "statistics_enabled", False
+    )
+    statistics_option = entry.options.get("enable_statistics", True)
+    _LOGGER.info(
+        f"Statistics check: option={statistics_option}, hass.data={statistics_enabled}"
+    )
+
+    if statistics_enabled:
         try:
             if coordinator.data is not None and SENSOR_TYPES:
                 from .oig_cloud_statistics import OigCloudStatisticsSensor
+                from .sensor_types import STATISTICS_SENSOR_TYPES
 
                 statistics_sensors: List[Any] = []
+
+                # **OPRAVA: Získat analytics_device_info z hass.data místo nedefinované proměnné**
+                analytics_device_info = hass.data[DOMAIN][entry.entry_id].get(
+                    "analytics_device_info",
+                    {
+                        "identifiers": {(DOMAIN, "analytics")},
+                        "name": "Analytics & Predictions",
+                        "manufacturer": "OIG Cloud",
+                        "model": "Analytics Module",
+                        "sw_version": "1.0",
+                    },
+                )
 
                 for sensor_type, config in SENSOR_TYPES.items():
                     if config.get("sensor_type_category") == "statistics":
@@ -333,7 +344,7 @@ async def async_setup_entry(
                             continue
 
                 if statistics_sensors:
-                    _LOGGER.debug(
+                    _LOGGER.info(
                         f"Registering {len(statistics_sensors)} statistics sensors"
                     )
                     async_add_entities(statistics_sensors, True)
@@ -345,9 +356,11 @@ async def async_setup_entry(
                 )
         except Exception as e:
             _LOGGER.error(f"Error initializing statistics sensors: {e}", exc_info=True)
+    else:
+        _LOGGER.info("Statistics sensors disabled - skipping creation")
 
     # 5. Solar forecast sensors - only if enabled
-    if config_entry.options.get("enable_solar_forecast", False):
+    if entry.options.get("enable_solar_forecast", False):
         try:
             from .oig_cloud_solar_forecast import OigCloudSolarForecastSensor
 
@@ -356,9 +369,7 @@ async def async_setup_entry(
                 for sensor_type, config in SENSOR_TYPES.items():
                     if config.get("sensor_type_category") == "solar_forecast":
                         solar_sensors.append(
-                            OigCloudSolarForecastSensor(
-                                coordinator, sensor_type, config_entry
-                            )
+                            OigCloudSolarForecastSensor(coordinator, sensor_type, entry)
                         )
 
             if solar_sensors:
@@ -368,7 +379,7 @@ async def async_setup_entry(
                 async_add_entities(solar_sensors, True)
 
                 # Uložíme reference na solar forecast senzory pro službu
-                hass.data[DOMAIN][config_entry.entry_id][
+                hass.data[DOMAIN][entry.entry_id][
                     "solar_forecast_sensors"
                 ] = solar_sensors
                 _LOGGER.debug(f"Solar forecast sensors stored for service access")
