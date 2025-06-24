@@ -139,7 +139,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         ): bool,
         vol.Optional(
             "enable_extended_sensors",
-            default=False,
+            default=True,  # Oprava: změněno na True
             description="Povolit rozšířené senzory (napětí, proudy, teploty)",
         ): bool,
     }
@@ -180,7 +180,7 @@ class OigCloudOptionsFlowHandler(config_entries.OptionsFlow):
         schema_fields: Dict[Any, Any] = {
             vol.Optional(
                 "standard_scan_interval",
-                default=current_options.get("standard_scan_interval", 30),
+                default=current_options.get("standard_scan_interval", 30),  # ✅ SPRÁVNĚ
                 description="Interval aktualizace základních dat (sekundy)",
             ): vol.All(int, vol.Range(min=10, max=300)),
             vol.Optional(
@@ -426,7 +426,9 @@ class OigCloudOptionsFlowHandler(config_entries.OptionsFlow):
         schema_fields = {
             vol.Optional(
                 "extended_scan_interval",
-                default=current_options.get("extended_scan_interval", 300),
+                default=current_options.get(
+                    "extended_scan_interval", 300
+                ),  # ✅ SPRÁVNĚ
                 description="⏱️ Interval aktualizace rozšířených senzorů (sekundy)",
             ): vol.All(int, vol.Range(min=60, max=3600)),
             # **OPRAVA: Přidat možnost vypnout extended stats API volání**
@@ -535,14 +537,21 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_PASSWORD: user_input[CONF_PASSWORD],
                 },
                 options={
+                    "standard_scan_interval": 30,  # 30 sekund
+                    "extended_scan_interval": 300,  # 5 minut
                     "enable_solar_forecast": user_input.get(
                         "enable_solar_forecast", False
                     ),
                     "enable_statistics": user_input.get("enable_statistics", True),
                     "enable_extended_sensors": user_input.get(
-                        "enable_extended_sensors", False
-                    ),
+                        "enable_extended_sensors", True
+                    ),  # Změněno na True
                     "enable_pricing": user_input.get("enable_pricing", False),
+                    # Přidat defaultní extended sensors nastavení
+                    "enable_extended_battery_sensors": True,
+                    "enable_extended_fve_sensors": True,
+                    "enable_extended_grid_sensors": True,
+                    "disable_extended_stats_api": False,
                 },
             )
 
