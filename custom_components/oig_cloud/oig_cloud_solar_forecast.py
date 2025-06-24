@@ -1,366 +1,862 @@
-"""Solar Forecast API senzor pro OIG Cloud integraci."""
+"""Solar forecast senzory pro OIG Cloud integraci."""
 
+import asyncio
 import logging
-import aiohttp
+from typing import Any, Dict, Optional, Union
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Union
+import aiohttp
+import time
 
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.event import async_track_time_interval
-from homeassistant.helpers.restore_state import RestoreEntity
-from homeassistant.util.dt import now as dt_now, utcnow as dt_utcnow
+from homeassistant.helpers.storage import Store
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from .oig_cloud_sensor import OigCloudSensor
 
 _LOGGER = logging.getLogger(__name__)
 
+# URL pro forecast.solar API
+FORECAST_SOLAR_API_URL = (
+    "https://api.forecast.solar/estimate/{lat}/{lon}/{declination}/{azimuth}/{kwp}"
+)
 
-class OigCloudSolarForecastSensor(OigCloudSensor, RestoreEntity):
-    """Senzor pro Solar Forecast API data."""
 
-    def __init__(self, coordinator: Any, sensor_type: str, config_entry: Any) -> None:
+class OigCloudSolarForecastSensor(OigCloudSensor):
+    """Senzor pro solar forecast data."""
+
+    def __init__(
+        self, coordinator: Any, sensor_type: str, config_entry: ConfigEntry
+    ) -> None:
         super().__init__(coordinator, sensor_type)
-
         self._config_entry = config_entry
-        self._forecast_data: Dict[str, Any] = {}
-        self._last_forecast_update: Optional[datetime] = None
-        self._rate_limit_info: Dict[str, Any] = {}
-        self._track_time_interval_remove = None
 
-        # Načteme konfiguraci
-        self._load_config()
+        # Získáme inverter_sn ze správného místa
+        inverter_sn = "unknown"
 
-    def _load_config(self) -> None:
-        """Načtení konfigurace z config_entry options."""
-        self._api_key = self._config_entry.options.get("solar_forecast_api_key", "")
-        self._latitude = self._config_entry.options.get(
-            "solar_forecast_latitude", self.coordinator.hass.config.latitude
-        )
-        self._longitude = self._config_entry.options.get(
-            "solar_forecast_longitude", self.coordinator.hass.config.longitude
-        )
-        self._declination = self._config_entry.options.get(
-            "solar_forecast_declination", 30
-        )
-        self._azimuth = self._config_entry.options.get("solar_forecast_azimuth", 180)
-        self._kwp = self._config_entry.options.get(
-            "solar_forecast_kwp", self._get_estimated_kwp()
-        )
-        self._update_interval = self._config_entry.options.get(
-            "solar_forecast_interval", 60
-        )
+        # Zkusíme získat z coordinator.config_entry.data
+        if hasattr(coordinator, "config_entry") and coordinator.config_entry.data:
+            inverter_sn = coordinator.config_entry.data.get("inverter_sn", "unknown")
 
-    def _get_estimated_kwp(self) -> float:
-        """Odhad instalovaného výkonu z coordinator dat."""
-        try:
-            if self.coordinator.data:
-                data = self.coordinator.data
-                pv_data = list(data.values())[0]
+        # Pokud stále unknown, zkusíme z coordinator.data
+        if inverter_sn == "unknown" and coordinator.data:
+            first_device_key = list(coordinator.data.keys())[0]
+            inverter_sn = first_device_key
 
-                # Zkusíme najít max výkon
-                possible_values = [
-                    pv_data.get("dc_in", {}).get("fv_p_max", 0),
-                    pv_data.get("box_prms", {}).get("fv_p_max", 0),
-                    pv_data.get("invertor_prms", {}).get("p_max", 0),
-                ]
+        # Nastavíme Analytics Module device_info - stejné jako statistics
+        self._device_info = {
+            "identifiers": {("oig_cloud_analytics", inverter_sn)},
+            "name": f"Analytics & Predictions {inverter_sn}",
+            "manufacturer": "OIG",
+            "model": "Analytics Module",
+            "via_device": ("oig_cloud", inverter_sn),
+            "entry_type": "service",
+        }
 
-                for value in possible_values:
-                    if value and float(value) > 1000:  # Rozumná hodnota v W
-                        return float(value) / 1000.0  # W -> kWp
+        self._last_forecast_data: Optional[Dict[str, Any]] = None
+        self._last_api_call: float = 0
+        self._min_api_interval: float = 300  # 5 minut mezi voláními
+        self._retry_count: int = 0
+        self._max_retries: int = 3
+        self._update_interval_remover: Optional[Any] = None
 
-                # Odhad z aktuálního výkonu
-                fv1 = float(pv_data.get("actual", {}).get("fv_p1", 0))
-                fv2 = float(pv_data.get("actual", {}).get("fv_p2", 0))
-                if fv1 > 0 or fv2 > 0:
-                    # Hrubý odhad: aktuální * 3
-                    return ((fv1 + fv2) * 3) / 1000.0
-
-        except Exception as e:
-            _LOGGER.debug(f"Error estimating kWp: {e}")
-
-        return 10.0  # Fallback
+        # Storage key pro persistentní uložení posledního API volání a dat
+        self._storage_key = f"oig_solar_forecast_{inverter_sn}"
 
     async def async_added_to_hass(self) -> None:
-        """Při přidání do HA - obnovit stav a nastavit tracking."""
+        """Při přidání do HA - nastavit periodické aktualizace podle konfigurace."""
         await super().async_added_to_hass()
 
-        # Obnovit forecast data ze stavu
-        await self._restore_forecast_data()
+        # Načtení posledního času API volání a dat z persistentního úložiště
+        await self._load_persistent_data()
 
-        # Nastavit pravidelné stahování dat
-        self._setup_time_tracking()
-
-        # Nastavit listener pro změny konfigurace
-        self._config_entry.add_update_listener(self._update_listener)
-
-        # První volání ihned (pokud nemáme čerstvá data)
-        if self._should_fetch_data():
-            await self._fetch_forecast_data()
-
-    async def _restore_forecast_data(self) -> None:
-        """Obnovení forecast dat z uloženého stavu."""
-        old_state = await self.async_get_last_state()
-        if old_state and old_state.attributes:
-            try:
-                if "forecast_data" in old_state.attributes:
-                    self._forecast_data = old_state.attributes["forecast_data"]
-
-                if "last_forecast_update" in old_state.attributes:
-                    try:
-                        self._last_forecast_update = datetime.fromisoformat(
-                            old_state.attributes["last_forecast_update"]
-                        )
-                        # Ujistíme se, že je naive
-                        if self._last_forecast_update.tzinfo is not None:
-                            self._last_forecast_update = (
-                                self._last_forecast_update.replace(tzinfo=None)
-                            )
-                    except (ValueError, TypeError):
-                        pass
-
-                if "rate_limit_info" in old_state.attributes:
-                    self._rate_limit_info = old_state.attributes["rate_limit_info"]
-
-                _LOGGER.info(f"[{self.entity_id}] Restored solar forecast data")
-
-            except Exception as e:
-                _LOGGER.error(f"[{self.entity_id}] Error restoring forecast data: {e}")
-
-    async def _update_listener(self, hass: Any, config_entry: Any) -> None:
-        """Callback při změně konfigurace."""
-        _LOGGER.info(
-            f"[{self.entity_id}] Configuration updated, reloading solar forecast parameters"
+        forecast_mode = self._config_entry.options.get(
+            "solar_forecast_mode", "daily_optimized"
         )
 
-        # Načteme novou konfiguraci
-        self._load_config()
+        if forecast_mode != "manual":
+            interval = self._get_update_interval(forecast_mode)
+            if interval:
+                self._update_interval_remover = async_track_time_interval(
+                    self.hass, self._periodic_update, interval
+                )
+                _LOGGER.info(
+                    f"🌞 Solar forecast periodic updates enabled: {forecast_mode}"
+                )
 
-        # Zrušíme starý tracking
-        if self._track_time_interval_remove:
-            self._track_time_interval_remove()
+        # OKAMŽITÁ inicializace dat při startu - pouze pro hlavní senzor a pouze pokud jsou data zastaralá
+        if self._sensor_type == "solar_forecast" and self._should_fetch_data():
+            _LOGGER.info(
+                f"🌞 Data is outdated (last call: {datetime.fromtimestamp(self._last_api_call).strftime('%Y-%m-%d %H:%M:%S') if self._last_api_call else 'never'}), triggering immediate fetch"
+            )
+            # Spustíme úlohu na pozadí s malým zpožděním
+            self.hass.async_create_task(self._delayed_initial_fetch())
+        else:
+            # Pokud máme načtená data z úložiště, sdílíme je s koordinátorem
+            if self._last_forecast_data:
+                if hasattr(self.coordinator, "solar_forecast_data"):
+                    self.coordinator.solar_forecast_data = self._last_forecast_data
+                else:
+                    setattr(
+                        self.coordinator,
+                        "solar_forecast_data",
+                        self._last_forecast_data,
+                    )
+                _LOGGER.info(
+                    f"🌞 Loaded forecast data from storage (last call: {datetime.fromtimestamp(self._last_api_call).strftime('%Y-%m-%d %H:%M:%S')}), skipping immediate fetch"
+                )
 
-        # Nastavíme nový tracking s novým intervalem
-        self._setup_time_tracking()
-
-        # Ihned stáhneme nová data s novou konfigurací
-        await self._fetch_forecast_data()
-
-        # Aktualizujeme stav
-        self.async_write_ha_state()
-
-    def _setup_time_tracking(self) -> None:
-        """Nastavení time tracking s aktuálním intervalem."""
-        update_interval = timedelta(minutes=self._update_interval)
-        self._track_time_interval_remove = async_track_time_interval(
-            self.hass, self._fetch_forecast_data, update_interval
-        )
-
-    async def async_will_remove_from_hass(self) -> None:
-        """Cleanup při odstranění senzoru."""
-        await super().async_will_remove_from_hass()
-
-        # Zrušíme tracking
-        if self._track_time_interval_remove:
-            self._track_time_interval_remove()
-
-    def _should_fetch_data(self) -> bool:
-        """Kontrola, zda je třeba stáhnout nová data."""
-        if not self._last_forecast_update:
-            return True
-
-        # Stahujeme pouze během dne (6:00 - 21:00)
-        now = dt_now()
-        # Ujistíme se, že pracujeme s naive datetime
-        if now.tzinfo is not None:
-            now = now.replace(tzinfo=None)
-
-        if not (6 <= now.hour <= 21):
-            return False
-
-        # Kontrola času posledního update - oba musí být naive
-        last_update = self._last_forecast_update
-        if last_update.tzinfo is not None:
-            last_update = last_update.replace(tzinfo=None)
-
-        time_since_update = now - last_update
-
-        # S API key: každých 30 minut, bez API key: každou hodinu
-        required_interval = timedelta(minutes=self._update_interval)
-
-        return time_since_update >= required_interval
-
-    async def _fetch_forecast_data(self, *_: Any) -> None:
-        """Stažení dat z Solar Forecast API."""
-        if not self._should_fetch_data():
-            return
-
+    async def _load_persistent_data(self) -> None:
+        """Načte čas posledního API volání a forecast data z persistentního úložiště."""
         try:
-            url = self._build_api_url()
+            store = Store(
+                self.hass,
+                version=1,
+                key=self._storage_key,
+            )
+            data = await store.async_load()
 
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
-                    if response.status == 200:
-                        data = await response.json()
+            if data:
+                # Načtení času posledního API volání
+                if isinstance(data.get("last_api_call"), (int, float)):
+                    self._last_api_call = float(data["last_api_call"])
+                    _LOGGER.debug(
+                        f"🌞 Loaded last API call time: {datetime.fromtimestamp(self._last_api_call).strftime('%Y-%m-%d %H:%M:%S')}"
+                    )
 
-                        self._forecast_data = data.get("result", {})
-                        self._rate_limit_info = data.get("message", {}).get(
-                            "ratelimit", {}
-                        )
-                        # Ujistíme se, že čas je naive
-                        self._last_forecast_update = dt_now().replace(tzinfo=None)
-
-                        _LOGGER.info(
-                            f"[{self.entity_id}] Solar forecast data updated successfully"
-                        )
-
-                        # Aktualizuj stav senzoru
-                        self.async_write_ha_state()
-
-                    elif response.status == 429:
-                        _LOGGER.warning(
-                            f"[{self.entity_id}] Rate limit exceeded for Solar Forecast API"
-                        )
-                    else:
-                        _LOGGER.error(
-                            f"[{self.entity_id}] Error fetching solar forecast: {response.status}"
-                        )
+                # Načtení forecast dat
+                if isinstance(data.get("forecast_data"), dict):
+                    self._last_forecast_data = data["forecast_data"]
+                    _LOGGER.debug(
+                        f"🌞 Loaded forecast data from storage with {len(self._last_forecast_data)} keys"
+                    )
+                else:
+                    _LOGGER.debug("🌞 No forecast data found in storage")
+            else:
+                _LOGGER.debug("🌞 No previous data found in storage")
 
         except Exception as e:
-            _LOGGER.error(
-                f"[{self.entity_id}] Exception fetching solar forecast: {e}",
-                exc_info=True,
+            _LOGGER.warning(f"🌞 Failed to load persistent data: {e}")
+            self._last_api_call = 0
+            self._last_forecast_data = None
+
+    async def _save_persistent_data(self) -> None:
+        """Uloží čas posledního API volání a forecast data do persistentního úložiště."""
+        try:
+            store = Store(
+                self.hass,
+                version=1,
+                key=self._storage_key,
             )
 
-    def _build_api_url(self) -> str:
-        """Sestavení URL pro API volání."""
-        base_url = "https://api.forecast.solar"
+            save_data = {
+                "last_api_call": self._last_api_call,
+                "forecast_data": self._last_forecast_data,
+                "saved_at": datetime.now().isoformat(),
+            }
 
-        if self._api_key:
-            url = f"{base_url}/{self._api_key}/estimate/{self._latitude}/{self._longitude}/{self._declination}/{self._azimuth}/{self._kwp}"
-        else:
-            url = f"{base_url}/estimate/{self._latitude}/{self._longitude}/{self._declination}/{self._azimuth}/{self._kwp}"
+            await store.async_save(save_data)
+            _LOGGER.debug(
+                f"🌞 Saved persistent data: API call time {datetime.fromtimestamp(self._last_api_call).strftime('%Y-%m-%d %H:%M:%S')}"
+            )
+        except Exception as e:
+            _LOGGER.warning(f"🌞 Failed to save persistent data: {e}")
 
-        return url
+    async def _load_last_api_call(self) -> None:
+        """Načte čas posledního API volání z persistentního úložiště."""
+        # Tato metoda je teď nahrazena _load_persistent_data
+        pass
+
+    async def _save_last_api_call(self) -> None:
+        """Uloží čas posledního API volání do persistentního úložiště."""
+        # Tato metoda je teď nahrazena _save_persistent_data
+        pass
+
+    def _should_fetch_data(self) -> bool:
+        """Rozhodne zda je potřeba načíst nová data na základě módu a posledního volání."""
+        current_time = time.time()
+
+        # Pokud nemáme žádná data
+        if not self._last_api_call:
+            return True
+
+        forecast_mode = self._config_entry.options.get(
+            "solar_forecast_mode", "daily_optimized"
+        )
+
+        time_since_last = current_time - self._last_api_call
+
+        # Pro různé módy různé intervaly
+        if forecast_mode == "daily_optimized":
+            # Data starší než 4 hodiny vyžadují aktualizaci
+            return time_since_last > 14400  # 4 hodiny
+        elif forecast_mode == "daily":
+            # Data starší než 20 hodin vyžadují aktualizaci
+            return time_since_last > 72000  # 20 hodin
+        elif forecast_mode == "every_4h":
+            # Data starší než 4 hodiny
+            return time_since_last > 14400  # 4 hodiny
+        elif forecast_mode == "hourly":
+            # Data starší než 1 hodinu
+            return time_since_last > 3600  # 1 hodina
+
+        # Pro manual mode nikdy neaktualizujeme automaticky
+        return False
+
+    def _get_update_interval(self, mode: str) -> Optional[timedelta]:
+        """Získá interval aktualizace podle módu."""
+        intervals = {
+            "hourly": timedelta(hours=1),  # Pro testing - vysoká frekvence
+            "every_4h": timedelta(hours=4),  # Klasický 4-hodinový
+            "daily": timedelta(hours=24),  # Jednou denně
+            "daily_optimized": timedelta(
+                minutes=30
+            ),  # Každých 30 minut, ale update jen 3x denně
+            "manual": None,  # Pouze manuální
+        }
+        return intervals.get(mode)
+
+    async def _delayed_initial_fetch(self) -> None:
+        """Spustí okamžitou aktualizaci s malým zpožděním."""
+        # Počkáme 5 sekund na dokončení inicializace
+        await asyncio.sleep(5)
+
+        try:
+            _LOGGER.info("🌞 Starting immediate solar forecast data fetch")
+            await self.async_fetch_forecast_data()
+            _LOGGER.info("🌞 Initial solar forecast data fetch completed")
+        except Exception as e:
+            _LOGGER.error(f"🌞 Initial solar forecast fetch failed: {e}")
+
+    async def _periodic_update(self, now: datetime) -> None:
+        """Periodická aktualizace - optimalizovaná pro 3x denně."""
+        forecast_mode = self._config_entry.options.get(
+            "solar_forecast_mode", "daily_optimized"
+        )
+
+        current_time = time.time()
+
+        # Kontrola rate limiting - nikdy neaktualizujeme častěji než každých 5 minut
+        if current_time - self._last_api_call < self._min_api_interval:
+            _LOGGER.debug(
+                f"🌞 Rate limiting: {(current_time - self._last_api_call)/60:.1f} minutes since last call"
+            )
+            return
+
+        # Pro optimalizovaný denní režim - kontrolujeme konkrétní hodiny
+        if forecast_mode == "daily_optimized":
+            # Aktualizace pouze v 6:00, 12:00 a 16:00 (±5 minut tolerance)
+            target_hours = [6, 12, 16]
+            current_hour = now.hour
+            current_minute = now.minute
+
+            # Kontrola zda jsme v požadované hodině a prvních 5 minutách
+            if current_hour in target_hours and current_minute <= 5:
+                # Dodatečná kontrola - neaktualizovali jsme už v posledních 3 hodinách?
+                if self._last_api_call:
+                    time_since_last = current_time - self._last_api_call
+                    if time_since_last < 10800:  # 3 hodiny
+                        _LOGGER.debug(
+                            f"🌞 Skipping update - last call was {time_since_last/60:.1f} minutes ago"
+                        )
+                        return
+
+                # Pouze hlavní sensor provádí API call
+                if self._sensor_type == "solar_forecast":
+                    _LOGGER.info(
+                        f"🌞 Scheduled solar forecast update at {current_hour}:00"
+                    )
+                    await self.async_fetch_forecast_data()
+            return
+
+        # Pro denní režim kontrolujeme čas a datum posledního volání
+        elif forecast_mode == "daily":
+            if now.hour != 6:  # Pouze v 6:00
+                return
+
+            # Kontrola zda jsme už dnes neaktualizovali
+            if self._last_api_call:
+                last_call_date = datetime.fromtimestamp(self._last_api_call).date()
+                if last_call_date == now.date():
+                    _LOGGER.debug("🌞 Already updated today, skipping")
+                    return
+
+            # Pouze hlavní sensor provádí API call
+            if self._sensor_type == "solar_forecast":
+                await self.async_fetch_forecast_data()
+
+        # Pro every_4h režim
+        elif forecast_mode == "every_4h":
+            if self._last_api_call:
+                time_since_last = current_time - self._last_api_call
+                if time_since_last < 14400:  # 4 hodiny
+                    return
+
+            if self._sensor_type == "solar_forecast":
+                await self.async_fetch_forecast_data()
+
+        # Pro hodinový režim
+        elif forecast_mode == "hourly":
+            if self._last_api_call:
+                time_since_last = current_time - self._last_api_call
+                if time_since_last < 3600:  # 1 hodina
+                    return
+
+            if self._sensor_type == "solar_forecast":
+                await self.async_fetch_forecast_data()
+
+    # Přidání metody pro okamžitou aktualizaci
+    async def async_manual_update(self) -> bool:
+        """Manuální aktualizace forecast dat - pro službu."""
+        try:
+            _LOGGER.info(
+                f"🌞 Manual solar forecast update requested for {self.entity_id}"
+            )
+            await self.async_fetch_forecast_data()
+            return True
+        except Exception as e:
+            _LOGGER.error(
+                f"Manual solar forecast update failed for {self.entity_id}: {e}"
+            )
+            return False
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Při odebrání z HA - zrušit periodické aktualizace."""
+        if self._update_interval_remover:
+            self._update_interval_remover()
+            self._update_interval_remover = None
+        await super().async_will_remove_from_hass()
+
+    async def async_fetch_forecast_data(self) -> None:
+        """Získání forecast dat z API pro oba stringy."""
+        try:
+            _LOGGER.debug(f"[{self.entity_id}] Starting solar forecast API call")
+
+            current_time = time.time()
+
+            # Kontrola rate limiting
+            if current_time - self._last_api_call < self._min_api_interval:
+                remaining_time = self._min_api_interval - (
+                    current_time - self._last_api_call
+                )
+                _LOGGER.warning(
+                    f"🌞 Rate limiting: waiting {remaining_time:.1f} seconds before next API call"
+                )
+                return
+
+            # Konfigurační parametry
+            lat = self._config_entry.options.get("solar_forecast_latitude", 50.1219800)
+            lon = self._config_entry.options.get("solar_forecast_longitude", 13.9373742)
+            api_key = self._config_entry.options.get("solar_forecast_api_key", "")
+
+            # String 1 (povinný)
+            string1_declination = self._config_entry.options.get(
+                "solar_forecast_string1_declination", 10
+            )
+            string1_azimuth = self._config_entry.options.get(
+                "solar_forecast_string1_azimuth", 138
+            )
+            string1_kwp = self._config_entry.options.get(
+                "solar_forecast_string1_kwp", 5.4
+            )
+
+            # String 2 (volitelný)
+            string2_enabled = self._config_entry.options.get(
+                "solar_forecast_string2_enabled", False
+            )
+            string2_declination = self._config_entry.options.get(
+                "solar_forecast_string2_declination", 10
+            )
+            string2_azimuth = self._config_entry.options.get(
+                "solar_forecast_string2_azimuth", 138
+            )
+            string2_kwp = self._config_entry.options.get(
+                "solar_forecast_string2_kwp", 0
+            )
+
+            headers = {"X-Forecast-API-Key": api_key} if api_key else {}
+
+            # Získání dat pro String 1
+            url_string1 = FORECAST_SOLAR_API_URL.format(
+                lat=lat,
+                lon=lon,
+                declination=string1_declination,
+                azimuth=string1_azimuth,
+                kwp=string1_kwp,
+            )
+
+            _LOGGER.info(f"🌞 Calling forecast.solar API for string 1: {url_string1}")
+
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url_string1, headers=headers) as response:
+                    if response.status != 200:
+                        _LOGGER.error(
+                            f"Error from forecast.solar API string1: {response.status}"
+                        )
+                        return
+                    data_string1 = await response.json()
+
+            data_string2 = None
+            # Získání dat pro String 2 (pokud je povolen)
+            if string2_enabled and string2_kwp > 0:
+                url_string2 = FORECAST_SOLAR_API_URL.format(
+                    lat=lat,
+                    lon=lon,
+                    declination=string2_declination,
+                    azimuth=string2_azimuth,
+                    kwp=string2_kwp,
+                )
+
+                _LOGGER.info(
+                    f"🌞 Calling forecast.solar API for string 2: {url_string2}"
+                )
+
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url_string2, headers=headers) as response:
+                        if response.status == 200:
+                            data_string2 = await response.json()
+                        else:
+                            _LOGGER.error(
+                                f"Error from forecast.solar API string2: {response.status}"
+                            )
+
+            # Zpracování dat
+            self._last_forecast_data = self._process_forecast_data(
+                data_string1, data_string2
+            )
+            self._last_api_call = current_time
+
+            # Uložení času posledního API volání a dat do persistentního úložiště
+            await self._save_persistent_data()
+
+            # Uložení dat do koordinátoru pro sdílení mezi senzory
+            if hasattr(self.coordinator, "solar_forecast_data"):
+                self.coordinator.solar_forecast_data = self._last_forecast_data
+            else:
+                setattr(
+                    self.coordinator, "solar_forecast_data", self._last_forecast_data
+                )
+
+            _LOGGER.info(
+                f"🌞 Solar forecast data updated successfully - last API call: {datetime.fromtimestamp(current_time).strftime('%Y-%m-%d %H:%M:%S')}"
+            )
+
+            # Aktualizuj stav tohoto senzoru
+            self.async_write_ha_state()
+
+            # NOVÉ: Pošli signál ostatním solar forecast sensorům, že jsou dostupná nová data
+            await self._broadcast_forecast_data()
+
+        except Exception as e:
+            _LOGGER.error(f"[{self.entity_id}] Error fetching solar forecast data: {e}")
+            self._last_forecast_data = {
+                "error": str(e),
+                "response_time": datetime.now().isoformat(),
+            }
+
+    async def _broadcast_forecast_data(self) -> None:
+        """Pošle signál ostatním solar forecast sensorům o nových datech."""
+        try:
+            # Získáme registry správným způsobem
+            device_registry = dr.async_get(self.hass)
+            entity_registry = er.async_get(self.hass)
+
+            # Najdeme naše zařízení
+            device_id = None
+            entity_entry = entity_registry.async_get(self.entity_id)
+            if entity_entry:
+                device_id = entity_entry.device_id
+
+            if device_id:
+                # Najdeme všechny entity tohoto zařízení
+                device_entities = er.async_entries_for_device(
+                    entity_registry, device_id
+                )
+
+                # Aktualizujeme všechny solar forecast senzory
+                for device_entity in device_entities:
+                    if device_entity.entity_id.endswith(
+                        "_solar_forecast_string1"
+                    ) or device_entity.entity_id.endswith("_solar_forecast_string2"):
+
+                        entity = self.hass.states.get(device_entity.entity_id)
+                        if entity:
+                            # Spustíme aktualizaci entity
+                            self.hass.async_create_task(
+                                self.hass.services.async_call(
+                                    "homeassistant",
+                                    "update_entity",
+                                    {"entity_id": device_entity.entity_id},
+                                )
+                            )
+                            _LOGGER.debug(
+                                f"🌞 Triggered update for {device_entity.entity_id}"
+                            )
+        except Exception as e:
+            _LOGGER.error(f"Error broadcasting forecast data: {e}")
+
+    def _process_forecast_data(
+        self,
+        data_string1: Dict[str, Any],
+        data_string2: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Zpracuje data z forecast.solar API."""
+        result = {
+            "response_time": datetime.now().isoformat(),
+        }
+
+        try:
+            if "result" not in data_string1:
+                _LOGGER.error(
+                    f"Invalid data format from forecast.solar API: {data_string1}"
+                )
+                return {
+                    "error": "Invalid data format",
+                    "response_time": datetime.now().isoformat(),
+                }
+
+            # Zpracování String 1 dat
+            string1_watts = data_string1.get("result", {}).get("watts", {})
+            string1_wh_day = data_string1.get("result", {}).get("watt_hours_day", {})
+            string1_wh = data_string1.get("result", {}).get("watt_hours", {})
+
+            # Převod na hodinová data pro String 1
+            string1_hourly = self._convert_to_hourly(string1_watts)
+            string1_daily = {
+                k: v / 1000 for k, v in string1_wh_day.items()
+            }  # Převod na kWh
+
+            result.update(
+                {
+                    "string1_hourly": string1_hourly,
+                    "string1_daily": string1_daily,
+                    "string1_today_kwh": next(iter(string1_daily.values()), 0),
+                    "string1_raw_data": data_string1,
+                }
+            )
+
+            # Inicializace celkových dat s String 1
+            total_hourly = string1_hourly.copy()
+            total_daily = string1_daily.copy()
+
+            # Zpracování String 2 dat (pokud existují)
+            if data_string2 and "result" in data_string2:
+                string2_watts = data_string2.get("result", {}).get("watts", {})
+                string2_wh_day = data_string2.get("result", {}).get(
+                    "watt_hours_day", {}
+                )
+
+                string2_hourly = self._convert_to_hourly(string2_watts)
+                string2_daily = {k: v / 1000 for k, v in string2_wh_day.items()}
+
+                result.update(
+                    {
+                        "string2_hourly": string2_hourly,
+                        "string2_daily": string2_daily,
+                        "string2_today_kwh": next(iter(string2_daily.values()), 0),
+                        "string2_raw_data": data_string2,
+                    }
+                )
+
+                # Sečtení obou stringů pro celkové hodnoty
+                for hour, power in string2_hourly.items():
+                    total_hourly[hour] = total_hourly.get(hour, 0) + power
+
+                for day, energy in string2_daily.items():
+                    total_daily[day] = total_daily.get(day, 0) + energy
+            else:
+                # Pokud nemáme String 2, nastavíme prázdné hodnoty
+                result.update(
+                    {
+                        "string2_hourly": {},
+                        "string2_daily": {},
+                        "string2_today_kwh": 0,
+                    }
+                )
+
+            # Celkové hodnoty
+            result.update(
+                {
+                    "total_hourly": total_hourly,
+                    "total_daily": total_daily,
+                    "total_today_kwh": next(iter(total_daily.values()), 0),
+                }
+            )
+
+            _LOGGER.debug(
+                f"Processed forecast data: String1 today: {result['string1_today_kwh']:.1f}kWh, "
+                f"String2 today: {result['string2_today_kwh']:.1f}kWh, "
+                f"Total today: {result['total_today_kwh']:.1f}kWh"
+            )
+
+        except Exception as e:
+            _LOGGER.error(f"Error processing forecast data: {e}", exc_info=True)
+            result["error"] = str(e)
+
+        return result
+
+    def _convert_to_hourly(self, watts_data: Dict[str, float]) -> Dict[str, float]:
+        """Převede forecast data na hodinová data."""
+        hourly_data = {}
+
+        for timestamp_str, power in watts_data.items():
+            try:
+                # Parsování timestamp (forecast.solar používá UTC čas)
+                dt = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
+                # Zaokrouhlení na celou hodinu
+                hour_key = dt.replace(minute=0, second=0, microsecond=0).isoformat()
+                # Uchování nejvyšší hodnoty pro danou hodinu
+                hourly_data[hour_key] = max(hourly_data.get(hour_key, 0), power)
+            except Exception as e:
+                _LOGGER.debug(f"Error parsing timestamp {timestamp_str}: {e}")
+
+        return hourly_data
+
+    @property
+    def device_info(self) -> Optional[Dict[str, Any]]:
+        """Return device info - Analytics Module."""
+        return self._device_info
 
     @property
     def state(self) -> Optional[Union[float, str]]:
-        """Hlavní stav senzoru - aktuální forecast výkon."""
-        if not self._forecast_data or "watts" not in self._forecast_data:
+        """Stav senzoru - celková denní prognóza výroby v kWh."""
+        # Zkusíme načíst data z koordinátoru pokud nemáme vlastní
+        if not self._last_forecast_data and hasattr(
+            self.coordinator, "solar_forecast_data"
+        ):
+            self._last_forecast_data = self.coordinator.solar_forecast_data
+            _LOGGER.debug(
+                f"🌞 {self._sensor_type}: loaded shared data from coordinator"
+            )
+
+        if not self._last_forecast_data:
             return None
 
         try:
-            now = dt_now()
-            # Ujistíme se, že now je naive (bez timezone)
-            if now.tzinfo is not None:
-                now = now.replace(tzinfo=None)
+            if self._sensor_type == "solar_forecast":
+                # Celková denní výroba z obou stringů v kWh
+                return round(self._last_forecast_data.get("total_today_kwh", 0), 2)
 
-            watts_data = self._forecast_data["watts"]
+            elif self._sensor_type == "solar_forecast_string1":
+                # Denní výroba jen z string1 v kWh
+                return round(self._last_forecast_data.get("string1_today_kwh", 0), 2)
 
-            # Najdi nejbližší čas v datech
-            closest_time = None
-            closest_value = None
-            min_diff = float("inf")
-
-            for time_str, value in watts_data.items():
-                try:
-                    # Parsování času a převod na naive datetime
-                    forecast_time = datetime.fromisoformat(
-                        time_str.replace("Z", "+00:00")
-                    )
-                    if forecast_time.tzinfo is not None:
-                        forecast_time = forecast_time.replace(tzinfo=None)
-
-                    diff = abs((now - forecast_time).total_seconds())
-                    if diff < min_diff:
-                        min_diff = diff
-                        closest_time = forecast_time
-                        closest_value = value
-
-                except (ValueError, TypeError) as e:
-                    _LOGGER.debug(f"Error parsing forecast time {time_str}: {e}")
-                    continue
-
-            return closest_value if closest_value is not None else 0
+            elif self._sensor_type == "solar_forecast_string2":
+                # Denní výroba jen z string2 v kWh
+                return round(self._last_forecast_data.get("string2_today_kwh", 0), 2)
 
         except Exception as e:
-            _LOGGER.error(f"Error calculating current solar forecast: {e}")
-            return None
+            _LOGGER.error(f"Error getting solar forecast state: {e}")
+
+        return None
 
     @property
     def extra_state_attributes(self) -> Dict[str, Any]:
-        """Dodatečné atributy senzoru."""
+        """Dodatečné atributy s hodinovými výkony a aktuální hodinovou prognózou."""
+        if not self._last_forecast_data:
+            return {}
+
         attrs = {}
 
-        # Kompletní forecast data jako atributy
-        if self._forecast_data:
-            attrs["forecast_data"] = self._forecast_data
+        try:
+            # Základní informace
+            attrs["response_time"] = self._last_forecast_data.get("response_time")
 
-        # Rate limit informace
-        if self._rate_limit_info:
-            attrs["rate_limit_info"] = self._rate_limit_info
+            # Aktuální hodinová prognóza jako atribut
+            current_hour = datetime.now().replace(minute=0, second=0, microsecond=0)
 
-        # Metadata
-        attrs["last_forecast_update"] = (
-            self._last_forecast_update.isoformat()
-            if self._last_forecast_update
-            else None
-        )
-        attrs["api_key_used"] = bool(self._api_key)
-        attrs["update_interval_minutes"] = self._update_interval
-        attrs["forecast_config"] = {
-            "latitude": self._latitude,
-            "longitude": self._longitude,
-            "declination": self._declination,
-            "azimuth": self._azimuth,
-            "kwp": self._kwp,
-        }
+            if self._sensor_type == "solar_forecast":
+                # Hlavní senzor - celkové hodnoty + detaily obou stringů
+                attrs.update(
+                    {
+                        "today_total_kwh": self._last_forecast_data.get(
+                            "total_today_kwh", 0
+                        ),
+                        "string1_today_kwh": self._last_forecast_data.get(
+                            "string1_today_kwh", 0
+                        ),
+                        "string2_today_kwh": self._last_forecast_data.get(
+                            "string2_today_kwh", 0
+                        ),
+                    }
+                )
 
-        # Dnešní předpověď energie
-        if self._forecast_data and "watt_hours_day" in self._forecast_data:
-            today = dt_now().strftime("%Y-%m-%d")
-            attrs["today_forecast_kwh"] = (
-                self._forecast_data["watt_hours_day"].get(today, 0) / 1000
-            )
+                # Aktuální hodinová prognóza
+                total_hourly = self._last_forecast_data.get("total_hourly", {})
+                current_hour_watts = total_hourly.get(current_hour.isoformat(), 0)
+                attrs["current_hour_kw"] = round(current_hour_watts / 1000, 2)
 
-        # Přidáme info o použitých hodnotách
-        attrs["ha_gps_used"] = {
-            "latitude": self.coordinator.hass.config.latitude,
-            "longitude": self.coordinator.hass.config.longitude,
-        }
-        attrs["estimated_kwp_from_sensors"] = self._get_estimated_kwp()
+                # Hodinové výkony pro dnes a zítra - s timestamp
+                string1_hourly = self._last_forecast_data.get("string1_hourly", {})
+                string2_hourly = self._last_forecast_data.get("string2_hourly", {})
+
+                # Rozdělíme na dnes a zítra - ponecháme timestamp
+                today = datetime.now().date()
+                tomorrow = today + timedelta(days=1)
+
+                today_total = {}
+                tomorrow_total = {}
+                today_string1 = {}
+                tomorrow_string1 = {}
+                today_string2 = {}
+                tomorrow_string2 = {}
+
+                # Sumy pro dnes a zítra
+                today_total_sum = 0
+                tomorrow_total_sum = 0
+                today_string1_sum = 0
+                tomorrow_string1_sum = 0
+                today_string2_sum = 0
+                tomorrow_string2_sum = 0
+
+                for hour_str, power in total_hourly.items():
+                    try:
+                        hour_dt = datetime.fromisoformat(hour_str)
+                        power_kw = round(power / 1000, 2)
+
+                        if hour_dt.date() == today:
+                            today_total[hour_str] = power_kw
+                            today_total_sum += power_kw
+                        elif hour_dt.date() == tomorrow:
+                            tomorrow_total[hour_str] = power_kw
+                            tomorrow_total_sum += power_kw
+                    except:
+                        continue
+
+                for hour_str, power in string1_hourly.items():
+                    try:
+                        hour_dt = datetime.fromisoformat(hour_str)
+                        power_kw = round(power / 1000, 2)
+
+                        if hour_dt.date() == today:
+                            today_string1[hour_str] = power_kw
+                            today_string1_sum += power_kw
+                        elif hour_dt.date() == tomorrow:
+                            tomorrow_string1[hour_str] = power_kw
+                            tomorrow_string1_sum += power_kw
+                    except:
+                        continue
+
+                for hour_str, power in string2_hourly.items():
+                    try:
+                        hour_dt = datetime.fromisoformat(hour_str)
+                        power_kw = round(power / 1000, 2)
+
+                        if hour_dt.date() == today:
+                            today_string2[hour_str] = power_kw
+                            today_string2_sum += power_kw
+                        elif hour_dt.date() == tomorrow:
+                            tomorrow_string2[hour_str] = power_kw
+                            tomorrow_string2_sum += power_kw
+                    except:
+                        continue
+
+                attrs.update(
+                    {
+                        "today_hourly_total_kw": today_total,
+                        "tomorrow_hourly_total_kw": tomorrow_total,
+                        "today_hourly_string1_kw": today_string1,
+                        "tomorrow_hourly_string1_kw": tomorrow_string1,
+                        "today_hourly_string2_kw": today_string2,
+                        "tomorrow_hourly_string2_kw": tomorrow_string2,
+                        # Sumy hodinových výkonů
+                        "today_total_sum_kw": round(today_total_sum, 2),
+                        "tomorrow_total_sum_kw": round(tomorrow_total_sum, 2),
+                        "today_string1_sum_kw": round(today_string1_sum, 2),
+                        "tomorrow_string1_sum_kw": round(tomorrow_string1_sum, 2),
+                        "today_string2_sum_kw": round(today_string2_sum, 2),
+                        "tomorrow_string2_sum_kw": round(tomorrow_string2_sum, 2),
+                    }
+                )
+
+            elif self._sensor_type == "solar_forecast_string1":
+                # String 1 senzor
+                attrs["today_kwh"] = self._last_forecast_data.get(
+                    "string1_today_kwh", 0
+                )
+
+                # Aktuální hodinová prognóza
+                string1_hourly = self._last_forecast_data.get("string1_hourly", {})
+                current_hour_watts = string1_hourly.get(current_hour.isoformat(), 0)
+                attrs["current_hour_kw"] = round(current_hour_watts / 1000, 2)
+
+                # Hodinové výkony jen pro string 1 - s timestamp
+                today = datetime.now().date()
+                tomorrow = today + timedelta(days=1)
+
+                today_hours = {}
+                tomorrow_hours = {}
+                today_sum = 0
+                tomorrow_sum = 0
+
+                for hour_str, power in string1_hourly.items():
+                    try:
+                        hour_dt = datetime.fromisoformat(hour_str)
+                        power_kw = round(power / 1000, 2)
+
+                        if hour_dt.date() == today:
+                            today_hours[hour_str] = power_kw
+                            today_sum += power_kw
+                        elif hour_dt.date() == tomorrow:
+                            tomorrow_hours[hour_str] = power_kw
+                            tomorrow_sum += power_kw
+                    except:
+                        continue
+
+                attrs.update(
+                    {
+                        "today_hourly_kw": today_hours,
+                        "tomorrow_hourly_kw": tomorrow_hours,
+                        "today_sum_kw": round(today_sum, 2),
+                        "tomorrow_sum_kw": round(tomorrow_sum, 2),
+                    }
+                )
+
+            elif self._sensor_type == "solar_forecast_string2":
+                # String 2 senzor
+                attrs["today_kwh"] = self._last_forecast_data.get(
+                    "string2_today_kwh", 0
+                )
+
+                # Aktuální hodinová prognóza
+                string2_hourly = self._last_forecast_data.get("string2_hourly", {})
+                current_hour_watts = string2_hourly.get(current_hour.isoformat(), 0)
+                attrs["current_hour_kw"] = round(current_hour_watts / 1000, 2)
+
+                # Hodinové výkony jen pro string 2 - s timestamp
+                today = datetime.now().date()
+                tomorrow = today + timedelta(days=1)
+
+                today_hours = {}
+                tomorrow_hours = {}
+                today_sum = 0
+                tomorrow_sum = 0
+
+                for hour_str, power in string2_hourly.items():
+                    try:
+                        hour_dt = datetime.fromisoformat(hour_str)
+                        power_kw = round(power / 1000, 2)
+
+                        if hour_dt.date() == today:
+                            today_hours[hour_str] = power_kw
+                            today_sum += power_kw
+                        elif hour_dt.date() == tomorrow:
+                            tomorrow_hours[hour_str] = power_kw
+                            tomorrow_sum += power_kw
+                    except:
+                        continue
+
+                attrs.update(
+                    {
+                        "today_hourly_kw": today_hours,
+                        "tomorrow_hourly_kw": tomorrow_hours,
+                        "today_sum_kw": round(today_sum, 2),
+                        "tomorrow_sum_kw": round(tomorrow_sum, 2),
+                    }
+                )
+
+        except Exception as e:
+            _LOGGER.error(f"Error creating solar forecast attributes: {e}")
+            attrs["error"] = str(e)
 
         return attrs
-
-    @property
-    def device_info(self) -> Dict[str, Any]:
-        """Informace o zařízení - Solar Forecast jako součást Statistics."""
-        if self.coordinator.data:
-            box_id = list(self.coordinator.data.keys())[0]
-            return {
-                "identifiers": {("oig_cloud", f"{box_id}_statistics")},
-                "name": f"OIG {box_id} Statistics",
-                "manufacturer": "OIG",
-                "model": "Analytics & Predictions",
-                "via_device": ("oig_cloud", box_id),
-            }
-        return {
-            "identifiers": {("oig_cloud", "statistics")},
-            "name": "OIG Statistics",
-            "manufacturer": "OIG",
-            "model": "Analytics & Predictions",
-        }
-
-    @property
-    def unique_id(self) -> str:
-        """Jedinečné ID pro solar forecast senzor."""
-        if self.coordinator.data:
-            box_id = list(self.coordinator.data.keys())[0]
-            return f"{box_id}_statistics_solar_forecast"
-        return "statistics_solar_forecast"
-
-    @property
-    def should_poll(self) -> bool:
-        """Solar forecast se neaktualizuje polling - má vlastní scheduler."""
-        return False
-
-    async def async_update(self) -> None:
-        """Update senzoru - pouze při explicitním volání."""
-        self.async_write_ha_state()

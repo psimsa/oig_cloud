@@ -1,9 +1,7 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import EntityCategory
 
-
 from typing import Dict
-
 
 SENSOR_TYPES_BOILER: Dict[
     str, Dict[str, str | SensorDeviceClass | SensorStateClass]
@@ -17,6 +15,7 @@ SENSOR_TYPES_BOILER: Dict[
         "node_key": "p",
         "state_class": SensorStateClass.MEASUREMENT,
         "requires": ["boiler"],
+        "sensor_type_category": "data",
     },
     "boiler_current_w": {
         "name": "Boiler - Current Energy (Computed)",
@@ -27,6 +26,7 @@ SENSOR_TYPES_BOILER: Dict[
         "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,
         "requires": ["boiler"],
+        "sensor_type_category": "computed",
     },
     "boiler_day_w": {
         "name": "Boiler - Today Energy",
@@ -37,6 +37,7 @@ SENSOR_TYPES_BOILER: Dict[
         "node_key": "w",
         "state_class": SensorStateClass.TOTAL_INCREASING,
         "requires": ["boiler"],
+        "sensor_type_category": "data",
     },
     "boiler_manual_mode": {
         "name": "Boiler - Manual mode",
@@ -48,6 +49,7 @@ SENSOR_TYPES_BOILER: Dict[
         "entity_category": EntityCategory.DIAGNOSTIC,
         "state_class": None,
         "options": ["Vypnuto / Off", "Zapnuto / On"],
+        "sensor_type_category": "data",
     },
     "boiler_ssr1": {
         "name": "Boiler - SSR Rele 1",
@@ -59,6 +61,7 @@ SENSOR_TYPES_BOILER: Dict[
         "entity_category": EntityCategory.DIAGNOSTIC,
         "state_class": None,
         "options": ["Vypnuto / Off", "Zapnuto / On"],
+        "sensor_type_category": "data",
     },
     "boiler_ssr2": {
         "name": "Boiler - SSR Rele 2",
@@ -70,6 +73,7 @@ SENSOR_TYPES_BOILER: Dict[
         "entity_category": EntityCategory.DIAGNOSTIC,
         "state_class": None,
         "options": ["Vypnuto / Off", "Zapnuto / On"],
+        "sensor_type_category": "data",
     },
     "boiler_ssr3": {
         "name": "Boiler - SSR Rele 3",
@@ -81,6 +85,7 @@ SENSOR_TYPES_BOILER: Dict[
         "entity_category": EntityCategory.DIAGNOSTIC,
         "state_class": None,
         "options": ["Vypnuto / Off", "Zapnuto / On"],
+        "sensor_type_category": "data",
     },
     "boiler_is_use": {
         "name": "Boiler - is use",
@@ -92,6 +97,7 @@ SENSOR_TYPES_BOILER: Dict[
         "entity_category": EntityCategory.DIAGNOSTIC,
         "state_class": None,
         "options": ["Vypnuto / Off", "Zapnuto / On"],
+        "sensor_type_category": "data",
     },
     "boiler_install_power": {
         "name": "Boiler - install power",
@@ -102,5 +108,6 @@ SENSOR_TYPES_BOILER: Dict[
         "node_id": "boiler_prms",
         "node_key": "p_set",
         "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "data",
     },
 }

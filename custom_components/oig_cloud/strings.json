@@ -2,33 +2,69 @@
   "config": {
     "step": {
       "user": {
-        "title": "[%key:common::config_flow::title%]",
-        "description": "[%key:common::config_flow::description%]",
+        "title": "OIG Cloud - Čez Battery Box",
+        "description": "Nastavení připojení k OIG Cloud API",
         "data": {
-          "username": "[%key:common::config_flow::data::username%]",
-          "password": "[%key:common::config_flow::data::password%]",
-          "no_telemetry": "[%key:common::config_flow::data::no_telemetry%]"
+          "username": "Uživatelské jméno",
+          "password": "Heslo",
+          "scan_interval": "Interval aktualizace (sekundy)"
         }
+      },
+      "init": {
+        "title": "Základní konfigurace OIG Cloud",
+        "description": "Nastavte základní parametry a povolte funkce."
+      },
+      "statistics": {
+        "title": "Konfigurace statistik",
+        "description": "Nastavení parametrů pro statistické senzory a predikce."
+      },
+      "solar_basic": {
+        "title": "Solar Forecast - základní nastavení",
+        "description": "GPS souřadnice a výběr stringů pro solar forecast."
+      },
+      "solar_string1": {
+        "title": "Solar Forecast - String 1",
+        "description": "Parametry panelů na String 1."
+      },
+      "solar_string2": {
+        "title": "Solar Forecast - String 2",
+        "description": "Parametry panelů na String 2."
       }
     },
     "error": {
-      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
-      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
-      "unknown": "[%key:common::config_flow::error::unknown%]"
+      "cannot_connect": "Nepodařilo se připojit k serveru",
+      "invalid_auth": "Nesprávné přihlašovací údaje",
+      "unknown": "Neočekávaná chyba",
+      "solar_forecast_no_strings": "Musíte povolit alespoň jeden string."
     },
     "abort": {
-      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
+      "already_configured": "Toto zařízení je již nakonfigurováno"
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "[%key:common::config_flow::options::title%]",
-        "description": "[%key:common::config_flow::options::description%]",
+        "title": "Nastavení funkcí OIG Cloud",
+        "description": "Vyberte které dodatečné funkce chcete povolit. Změny se projeví po restartu integrace.",
         "data": {
-          "update_interval": "[%key:common::config_flow::options::data::update_interval%]",
-          "no_telemetry": "[%key:common::config_flow::options::data::no_telemetry%]",
-          "log_level": "[%key:common::config_flow::options::data::log_level%]"
+          "enable_statistics": "📊 Statistiky a analýzy",
+          "enable_extended_sensors": "🔧 Rozšířené senzory",
+          "enable_solar_forecast": "☀️ Solární předpověď",
+          "enable_pricing": "💰 Cenové informace"
+        },
+        "data_description": {
+          "enable_statistics": "Aktivuje senzory pro medián spotřeby, predikce baterie a analýzy spotřeby podle času",
+          "enable_extended_sensors": "Přidá podrobné informace o baterii, fotovoltaice a síti",
+          "enable_solar_forecast": "Umožní předpověď solární výroby (vyžaduje konfiguraci API)",
+          "enable_pricing": "Zobrazí aktuální ceny elektřiny na spotovém trhu"
+        }
+      },
+      "statistics": {
+        "data": {
+          "statistics_restore_data": "Obnovit data po restartu",
+          "statistics_sampling_size": "Velikost vzorků",
+          "statistics_max_age_days": "Maximální stáří dat (dny)",
+          "statistics_median_minutes": "Časové okno mediánu (min)"
         }
       }
     }

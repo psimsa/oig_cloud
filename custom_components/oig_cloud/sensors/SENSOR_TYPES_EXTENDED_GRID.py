@@ -13,6 +13,7 @@ SENSOR_TYPES_EXTENDED_GRID: Dict[
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "extended",
     },
     "extended_grid_power": {
         "name": "Extended Grid Power",
@@ -22,6 +23,7 @@ SENSOR_TYPES_EXTENDED_GRID: Dict[
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "extended",
     },
     "extended_grid_consumption": {
         "name": "Extended Grid Consumption",
@@ -31,6 +33,7 @@ SENSOR_TYPES_EXTENDED_GRID: Dict[
         "state_class": SensorStateClass.TOTAL_INCREASING,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "extended",
     },
     "extended_grid_delivery": {
         "name": "Extended Grid Delivery",
@@ -40,5 +43,6 @@ SENSOR_TYPES_EXTENDED_GRID: Dict[
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "extended",
     },
 }

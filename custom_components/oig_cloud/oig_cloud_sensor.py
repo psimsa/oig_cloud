@@ -9,6 +9,8 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DEFAULT_NAME, DOMAIN
+
+# Změníme import koordinátoru na přímý bez tracing
 from .coordinator import OigCloudDataUpdateCoordinator
 from .models import OigCloudData
 
@@ -17,7 +19,7 @@ _LOGGER = logging.getLogger(__name__)
 
 def _get_sensor_definition(sensor_type: str) -> Dict[str, Any]:
     """Získání definice senzoru ze správného zdroje."""
-    # Nejdříve zkusíme hlavní SENSOR_TYPES
+    # Pouze hlavní SENSOR_TYPES - žádné výjimky
     try:
         from .sensor_types import SENSOR_TYPES
 
@@ -30,25 +32,15 @@ def _get_sensor_definition(sensor_type: str) -> Dict[str, Any]:
     except ImportError:
         pass
 
-    # Pak zkusíme statistické senzory
-    try:
-        from .sensors.SENSOR_TYPES_STATISTICS import SENSOR_TYPES_STATISTICS
-
-        if sensor_type in SENSOR_TYPES_STATISTICS:
-            definition = SENSOR_TYPES_STATISTICS[sensor_type]
-            # Statistické senzory už používají "unit" klíč
-            return definition
-    except ImportError:
-        pass
-
-    # Fallback pro neznámé senzory
-    _LOGGER.warning(f"Unknown sensor type: {sensor_type}")
+    # Fallback pro neznámé senzory - prostě chyba
+    _LOGGER.error(f"Sensor type '{sensor_type}' not found in SENSOR_TYPES!")
     return {
         "name": sensor_type,
         "unit": None,
         "icon": "mdi:help",
         "device_class": None,
         "state_class": None,
+        "sensor_type_category": "unknown",
     }
 
 
@@ -59,13 +51,47 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
         self, coordinator: OigCloudDataUpdateCoordinator, sensor_type: str
     ) -> None:
         """Initialize the sensor."""
-        if not isinstance(sensor_type, str):
-            raise TypeError("sensor_type must be a string")
-
         super().__init__(coordinator)
-        self.coordinator: OigCloudDataUpdateCoordinator = coordinator
-        self._sensor_type: str = sensor_type
+        self._coordinator = coordinator
+        self._sensor_type = sensor_type
+
+        # Načtení konfigurace senzoru
+        try:
+            from .sensor_types import SENSOR_TYPES
+
+            self._sensor_config = SENSOR_TYPES.get(sensor_type, {})
+        except ImportError:
+            _LOGGER.warning(f"Could not import SENSOR_TYPES for {sensor_type}")
+            self._sensor_config = {}
+
+        # OPRAVA: Bezpečné získání box_id s fallback
+        try:
+            if (
+                coordinator.data
+                and isinstance(coordinator.data, dict)
+                and coordinator.data
+            ):
+                self._box_id: str = list(coordinator.data.keys())[0]
+            else:
+                # Fallback - zkusíme získat box_id z konfigurace nebo použijeme placeholder
+                _LOGGER.warning(
+                    f"No coordinator data available for {sensor_type}, using fallback box_id"
+                )
+                self._box_id = "unknown"
+        except (TypeError, IndexError, KeyError) as e:
+            _LOGGER.warning(
+                f"Error getting box_id for {sensor_type}: {e}, using fallback"
+            )
+            self._box_id = "unknown"
+
+        _LOGGER.debug(f"Initialized sensor {sensor_type} with box_id: {self._box_id}")
+
         sensor_def = _get_sensor_definition(sensor_type)
+
+        # Debug - ukažme definici
+        if sensor_type.startswith("service_shield"):
+            _LOGGER.warning(f"🔍 ServiceShield {sensor_type} definition: {sensor_def}")
+
         self._attr_name = sensor_def.get("name", sensor_type)
         # Oprava: používáme "unit" pro obě varianty
         self._attr_native_unit_of_measurement = sensor_def.get(
@@ -117,6 +143,31 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
         is_queen: bool = bool(pv_data.get("queen", False))
         model_name: str = f"{DEFAULT_NAME} {'Queen' if is_queen else 'Home'}"
 
+        # Určíme kategorii senzoru pro rozhodnutí o zařízení
+        sensor_def = _get_sensor_definition(self._sensor_type)
+        sensor_category = sensor_def.get("sensor_type_category")
+
+        # ServiceShield senzory budou v separátním Shield zařízení
+        if sensor_category == "shield":
+            return DeviceInfo(
+                identifiers={(DOMAIN, f"{self._box_id}_shield")},
+                name=f"ServiceShield {self._box_id}",
+                manufacturer="OIG",
+                model="Shield",
+                via_device=(DOMAIN, self._box_id),
+            )
+
+        # Analytics & Predictions senzory budou v samostatném propojeném zařízení
+        if sensor_category in ["statistics", "solar_forecast", "pricing"]:
+            return DeviceInfo(
+                identifiers={(DOMAIN, f"{self._box_id}_analytics")},
+                name=f"Analytics & Predictions {self._box_id}",
+                manufacturer="OIG",
+                model="Analytics Module",
+                via_device=(DOMAIN, self._box_id),  # Propojení s hlavním zařízením
+            )
+
+        # Hlavní zařízení pro data, computed a extended senzory
         return DeviceInfo(
             identifiers={(DOMAIN, self._box_id)},
             name=f"{model_name} {self._box_id}",

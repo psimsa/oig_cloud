@@ -44,12 +44,33 @@ class ServiceShield:
             self.hass, self._check_loop, timedelta(seconds=CHECK_INTERVAL_SECONDS)
         )
 
+    def get_shield_status(self) -> str:
+        """Vrací aktuální stav ServiceShield."""
+        if self.running:
+            return f"Běží: {self.running}"
+        elif self.queue:
+            return f"Ve frontě: {len(self.queue)} služeb"
+        else:
+            return "Neaktivní"
+
+    def get_queue_info(self) -> Dict[str, Any]:
+        """Vrací informace o frontě."""
+        return {
+            "running": self.running,
+            "queue_length": len(self.queue),
+            "pending_count": len(self.pending),
+            "queue_services": [item[0] for item in self.queue],
+        }
+
     def _normalize_value(self, val: Any) -> str:
         val = str(val or "").strip().lower().replace(" ", "").replace("/", "")
         mapping = {
             "vypnutoon": "vypnuto",
             "zapnutoon": "zapnuto",
             "somezenimlimited": "somezenim",
+            "manuální": "manualni",
+            "manual": "manualni",
+            "cbb": "cbb",
         }
         return mapping.get(val, val)
 
@@ -481,7 +502,7 @@ class ServiceShield:
             mode = str(data.get("mode") or "").strip()
             if mode not in ("CBB", "Manual"):
                 return {}
-            expected_value = "Zapnuto/On" if mode == "Manual" else "Vypnuto/Off"
+            expected_value = "Manuální" if mode == "Manual" else "CBB"
             entity_id = find_entity("_boiler_manual_mode")
             if entity_id:
                 self.last_checked_entity_id = entity_id
@@ -549,3 +570,112 @@ class ServiceShield:
             return {}
 
         return {}
+
+    def _check_entity_state_change(self, entity_id: str, expected_value: Any) -> bool:
+        """Zkontroluje, zda se entita změnila na očekávanou hodnotu."""
+        current_state = self.hass.states.get(entity_id)
+        if not current_state:
+            return False
+
+        current_value = current_state.state
+
+        # OPRAVA: Mapování pro nové formáty stavů
+        if "boiler_manual_mode" in entity_id:
+            # Nové mapování: CBB=0, Manuální=1
+            if expected_value == 0 and current_value == "CBB":
+                return True
+            elif expected_value == 1 and current_value == "Manuální":
+                return True
+        elif "ssr" in entity_id:
+            # SSR relé: Vypnuto/Off=0, Zapnuto/On=1
+            if expected_value == 0 and current_value in [
+                "Vypnuto/Off",
+                "Vypnuto",
+                "Off",
+            ]:
+                return True
+            elif expected_value == 1 and current_value in [
+                "Zapnuto/On",
+                "Zapnuto",
+                "On",
+            ]:
+                return True
+        elif "box_prms_mode" in entity_id:
+            # Režim Battery Box: Home 1=0, Home 2=1, Home 3=2, Home UPS=3
+            mode_mapping = {0: "Home 1", 1: "Home 2", 2: "Home 3", 3: "Home UPS"}
+            if current_value == mode_mapping.get(expected_value):
+                return True
+        elif "invertor_prms_to_grid" in entity_id:
+            # Grid delivery: složitější logika podle typu zařízení
+            # Můžeme použít přibližnou kontrolu podle textu
+            if expected_value == 0 and "Vypnuto" in current_value:
+                return True
+            elif expected_value == 1 and (
+                "Zapnuto" in current_value or "On" in current_value
+            ):
+                return True
+        else:
+            # Pro ostatní entity porovnáme přímo
+            try:
+                if float(current_value) == float(expected_value):
+                    return True
+            except (ValueError, TypeError):
+                if str(current_value) == str(expected_value):
+                    return True
+
+        return False
+
+    async def _safe_call_service(
+        self, service_name: str, service_data: Dict[str, Any]
+    ) -> bool:
+        """Bezpečné volání služby s ověřením stavu."""
+        try:
+            # Získáme původní stavy entit před voláním
+            original_states = {}
+            if "entity_id" in service_data:
+                entity_id = service_data["entity_id"]
+                original_states[entity_id] = self.hass.states.get(entity_id)
+
+            # Zavoláme službu
+            await self.hass.services.async_call("oig_cloud", service_name, service_data)
+
+            # Počkáme na změnu stavu
+            await asyncio.sleep(2)
+
+            # Ověříme změnu pro známé entity
+            if "entity_id" in service_data:
+                entity_id = service_data["entity_id"]
+
+                # Pro set_boiler_mode kontrolujeme změnu manual_mode
+                if service_name == "set_boiler_mode":
+                    mode_value = service_data.get("mode", "CBB")
+                    expected_value = 1 if mode_value == "Manual" else 0
+
+                    # Najdeme odpovídající manual_mode entitu
+                    boiler_entities = [
+                        entity_id
+                        for entity_id in self.hass.states.async_entity_ids()
+                        if "boiler_manual_mode" in entity_id
+                    ]
+
+                    for boiler_entity in boiler_entities:
+                        if self._check_entity_state_change(
+                            boiler_entity, expected_value
+                        ):
+                            self._logger.info(f"✅ Boiler mode změněn na {mode_value}")
+                            return True
+
+                # Pro ostatní služby standardní kontrola
+                elif "mode" in service_data:
+                    expected_value = service_data["mode"]
+                    if self._check_entity_state_change(entity_id, expected_value):
+                        self._logger.info(
+                            f"✅ Entita {entity_id} změněna na {expected_value}"
+                        )
+                        return True
+
+            return True  # Pokud nelze ověřit, považujeme za úspěšné
+
+        except Exception as e:
+            self._logger.error(f"❌ Chyba při volání služby {service_name}: {e}")
+            return False

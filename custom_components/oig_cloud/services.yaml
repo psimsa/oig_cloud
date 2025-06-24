@@ -137,3 +137,19 @@ set_formating_mode:
       required: true
       selector:
         boolean:
+
+# Solar forecast služby pro ladění
+update_solar_forecast:
+  name: "🌞 Aktualizovat Solar Forecast"
+  description: "Manuálně aktualizuje data solární předpovědi z forecast.solar API. Lze použít kdykoliv bez ohledu na nastavený interval."
+  fields:
+    entity_id:
+      name: "Solar Forecast Entity"
+      description: "Konkrétní solar forecast senzor k aktualizaci (volitelné - pokud neuvedete, aktualizují se všechny)"
+      required: false
+      example: "sensor.oig_2206237016_solar_forecast"
+      selector:
+        entity:
+          filter:
+            integration: oig_cloud
+            domain: sensor

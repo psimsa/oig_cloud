@@ -4,19 +4,67 @@
       "already_configured": "Zařízení je již nakonfigurováno"
     },
     "error": {
-      "cannot_connect": "Nepodařilo se připojit",
-      "invalid_auth": "Neplatné přihlašovací údaje",
+      "cannot_connect": "Nelze se připojit k OIG Cloud",
+      "invalid_auth": "Nesprávné přihlašovací údaje",
       "unknown": "Neočekávaná chyba"
     },
     "step": {
       "user": {
-        "title": "Přihlášení do OIG",
-        "description": "Zadejte své přihlašovací jméno/e-mail a heslo pro přihlášení do OIG",
+        "title": "OIG Cloud - Čez Battery Box",
+        "description": "Připojte svou Čez Battery Box k Home Assistant",
         "data": {
-          "no_telemetry": "Zakázat sběr telemetrie (funkce v aktivním vývoji mohou být omezeny)",
+          "username": "E-mail / Uživatelské jméno",
           "password": "Heslo",
-          "username": "Přihlašovací jméno nebo e-mail"
+          "scan_interval": "Jak často aktualizovat data (sekundy)"
         }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "🔧 Pokročilé funkce OIG Cloud",
+        "description": "Nastavte základní interval a povolte dodatečné funkce podle potřeb. ⚠️ Změna intervalu vyžaduje restart integrace.",
+        "data": {
+          "standard_scan_interval": "⏱️ Interval aktualizace (sekundy)",
+          "enable_statistics": "📊 Statistiky a analýzy",
+          "enable_extended_sensors": "🔧 Rozšířené senzory (vyžaduje nastavení)",
+          "enable_solar_forecast": "☀️ Solární předpověď (vyžaduje nastavení)",
+          "enable_pricing": "💰 Cenové informace (vyžaduje nastavení)",
+          "solar_forecast_mode": "🌞 Režim aktualizace"
+        },
+        "data_description": {
+          "standard_scan_interval": "Jak často aktualizovat základní data (doporučeno 30s, restart integrace po změně)",
+          "enable_statistics": "Medián spotřeby, predikce baterie, analýzy podle času",
+          "enable_extended_sensors": "Po zaškrtnutí budete vyzváni k nastavení intervalů a typů",
+          "enable_solar_forecast": "Po zaškrtnutí budete vyzváni k zadání API klíče a parametrů FVE",
+          "enable_pricing": "Po zaškrtnutí budete vyzváni k zadání vašich tarifů",
+          "solar_forecast_mode": "Jak často aktualizovat solární předpověď"
+        }
+      },
+      "extended_config": {
+        "title": "🔧 Konfigurace rozšířených senzorů",
+        "description": "Nastavte interval aktualizace a vyberte typy rozšířených senzorů. Tyto senzory poskytují detailní technické informace.",
+        "data": {
+          "extended_scan_interval": "⏱️ Interval aktualizace",
+          "enable_extended_battery_sensors": "🔋 Rozšířené údaje o baterii",
+          "enable_extended_fve_sensors": "☀️ Rozšířené údaje o FVE",
+          "enable_extended_grid_sensors": "⚡ Rozšířené údaje o síti"
+        },
+        "data_description": {
+          "extended_scan_interval": "Jak často načítat rozšířená data (doporučeno 300s)",
+          "enable_extended_battery_sensors": "Napětí, proudy, teplota a detailní stav baterie",
+          "enable_extended_fve_sensors": "Výkon a proudy jednotlivých stringů fotovoltaiky",
+          "enable_extended_grid_sensors": "Napětí, frekvence a výkon jednotlivých fází sítě"
+        }
+      },
+      "solar_forecast": {
+        "title": "☀️ Konfigurace solární předpovědi",
+        "description": "Nastavte parametry pro předpověď výroby fotovoltaiky"
+      },
+      "pricing": {
+        "title": "💰 Konfigurace cenových informací",
+        "description": "Nastavte vaše tarify pro porovnání s tržními cenami"
       }
     }
   },
@@ -67,19 +115,42 @@
       "Acknowledgement": {
         "description": "Beru na vědomí, že volání této služby povede ke změně parametrů živého systému. Přijímám plnou odpovědnost za změny a jakýkoli jejich očekávaný či neočekávaný dopad."
       }
+    },
+    "solar_forecast_mode": {
+      "options": {
+        "manual": "🔧 Pouze na vyžádání",
+        "hourly": "⏰ Každou hodinu",
+        "every_4h": "🕐 Každé 4 hodiny",
+        "daily": "📅 Jednou denně"
+      }
     }
   },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Konfigurace",
-        "description": "Nastavení integrace OIG Cloud",
-        "data": {
-          "update_interval": "Interval aktualizace (vteřiny)",
-          "no_telemetry": "Zakázat telemetrii (odhlášení ze sběru dat)",
-          "log_level": "Úroveň protokolování"
+  "services": {
+    "fetch_solar_forecast": {
+      "name": "🌞 Aktualizovat solární předpověď",
+      "description": "Manuálně načte nejnovější data solární předpovědi z API pro ladění a testování",
+      "fields": {
+        "entity_id": {
+          "name": "Solar forecast senzor",
+          "description": "Vyberte konkrétní solar forecast senzor k aktualizaci (volitelné)"
         }
       }
+    },
+    "set_box_mode": {
+      "name": "Nastavit režim Battery Box",
+      "description": "Změní provozní režim zařízení Battery Box"
+    },
+    "set_grid_delivery": {
+      "name": "Nastavit přetoky do sítě",
+      "description": "Povolí nebo zakáže přetoky energie do distribuční sítě"
+    },
+    "set_boiler_mode": {
+      "name": "Nastavit režim bojleru",
+      "description": "Změní způsob řízení nabíjení bojleru"
+    },
+    "set_formating_mode": {
+      "name": "Nabíjení baterie ze sítě",
+      "description": "Spustí okamžité nabíjení baterie ze sítě"
     }
   }
 }

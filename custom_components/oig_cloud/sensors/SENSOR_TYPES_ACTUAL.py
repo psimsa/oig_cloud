@@ -1,9 +1,7 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.helpers.entity import EntityCategory
 
-
 from typing import Dict
-
 
 SENSOR_TYPES_ACTUAL: Dict[
     str, Dict[str, str | SensorDeviceClass | SensorStateClass]
@@ -16,6 +14,7 @@ SENSOR_TYPES_ACTUAL: Dict[
         "node_id": "actual",
         "node_key": "aci_wr",
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "data",
     },
     "actual_aci_ws": {
         "name": "Grid Load Line 2 (live)",
@@ -25,6 +24,7 @@ SENSOR_TYPES_ACTUAL: Dict[
         "node_id": "actual",
         "node_key": "aci_ws",
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "data",
     },
     "actual_aci_wt": {
         "name": "Grid Load Line 3 (live)",
@@ -34,6 +34,7 @@ SENSOR_TYPES_ACTUAL: Dict[
         "node_id": "actual",
         "node_key": "aci_wt",
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "data",
     },
     "actual_aci_wtotal": {
         "name": "Grid Load Total (live)",
@@ -43,6 +44,7 @@ SENSOR_TYPES_ACTUAL: Dict[
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "computed",
     },
     "actual_aco_p": {
         "name": "Load Total (live)",
@@ -52,6 +54,7 @@ SENSOR_TYPES_ACTUAL: Dict[
         "node_id": "actual",
         "node_key": "aco_p",
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "data",
     },
     "actual_fv_p1": {
         "name": "Panels Output String 1 (live)",
@@ -61,6 +64,7 @@ SENSOR_TYPES_ACTUAL: Dict[
         "node_id": "actual",
         "node_key": "fv_p1",
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "data",
     },
     "actual_fv_p2": {
         "name": "Panels Output String 2 (live)",
@@ -70,6 +74,7 @@ SENSOR_TYPES_ACTUAL: Dict[
         "node_id": "actual",
         "node_key": "fv_p2",
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "data",
     },
     "actual_fv_total": {
         "name": "Panels Output Total (live)",
@@ -79,5 +84,6 @@ SENSOR_TYPES_ACTUAL: Dict[
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "computed",
     },
 }

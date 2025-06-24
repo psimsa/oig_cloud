@@ -13,6 +13,7 @@ SENSOR_TYPES_EXTENDED_LOAD: Dict[
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "extended",
     },
     "extended_load_l2_power": {
         "name": "Extended Load L2 Power",
@@ -22,6 +23,7 @@ SENSOR_TYPES_EXTENDED_LOAD: Dict[
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "extended",
     },
     "extended_load_l3_power": {
         "name": "Extended Load L3 Power",
@@ -31,5 +33,6 @@ SENSOR_TYPES_EXTENDED_LOAD: Dict[
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "extended",
     },
 }

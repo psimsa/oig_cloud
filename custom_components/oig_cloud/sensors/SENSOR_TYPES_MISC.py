@@ -1,11 +1,12 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import EntityCategory
 
-
 from typing import Dict
 
-
-SENSOR_TYPES_MISC: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClass]] = {
+SENSOR_TYPES_MISC: Dict[
+    str,
+    Dict[str, str | SensorDeviceClass | SensorStateClass | EntityCategory | list[str]],
+] = {
     "device_lastcall": {
         "name": "Last Call",
         "name_cs": "Poslední komunikace",
@@ -15,6 +16,16 @@ SENSOR_TYPES_MISC: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_key": "lastcall",
         "state_class": None,
         "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "data",
+    },
+    "real_data_update": {
+        "name": "Real Data Update",
+        "name_cs": "Skutečná aktualizace dat",
+        "device_class": SensorDeviceClass.TIMESTAMP,
+        "unit_of_measurement": None,
+        "state_class": None,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "computed",
     },
     "invertor_prm1_p_max_feed_grid": {
         "name": "Max Feed to Grid",
@@ -25,6 +36,7 @@ SENSOR_TYPES_MISC: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_key": "p_max_feed_grid",
         "state_class": SensorStateClass.MEASUREMENT,
         "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "data",
     },
     "invertor_prms_to_grid": {
         "name": "Grid Delivery",
@@ -34,7 +46,9 @@ SENSOR_TYPES_MISC: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": "invertor_prms",
         "node_key": "to_grid",
         "state_class": None,
+        "entity_category": EntityCategory.DIAGNOSTIC,
         "options": ["Vypnuto / Off", "Zapnuto / On", "S omezením / Limited"],
+        "sensor_type_category": "data",
     },
     "installed_battery_capacity_kwh": {
         "name": "Installed Battery Capacity",
@@ -45,6 +59,7 @@ SENSOR_TYPES_MISC: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": "box_prms",
         "node_key": "p_bat",
         "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "data",
     },
     "installed_fve_power_wp": {
         "name": "Installed FVE Power",
@@ -55,6 +70,7 @@ SENSOR_TYPES_MISC: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": "box_prms",
         "node_key": "p_fve",
         "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "data",
     },
     "box_prms_crct": {
         "name": "Distribution Emergency Control",
@@ -66,5 +82,6 @@ SENSOR_TYPES_MISC: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_key": "crct",
         "entity_category": EntityCategory.DIAGNOSTIC,
         "options": ["Vypnuto / Off", "Zapnuto / On"],
+        "sensor_type_category": "data",
     },
 }

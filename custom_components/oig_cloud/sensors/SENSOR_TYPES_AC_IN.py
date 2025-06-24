@@ -1,9 +1,7 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.helpers.entity import EntityCategory
 
-
 from typing import Dict
-
 
 SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClass]] = {
     "ac_in_ac_ad": {
@@ -14,6 +12,7 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "node_id": "ac_in",
         "node_key": "ac_ad",
         "state_class": SensorStateClass.TOTAL_INCREASING,
+        "sensor_type_category": "data",
     },
     "ac_in_ac_pd": {
         "name": "Grid Delivery Today",
@@ -23,6 +22,7 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "node_id": "ac_in",
         "node_key": "ac_pd",
         "state_class": SensorStateClass.TOTAL_INCREASING,
+        "sensor_type_category": "data",
     },
     "ac_in_aci_f": {
         "name": "Frequency",
@@ -32,6 +32,7 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "node_id": "ac_in",
         "node_key": "aci_f",
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "data",
     },
     "ac_in_aci_vr": {
         "name": "Grid Voltage Line 1",
@@ -41,6 +42,7 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "node_id": "ac_in",
         "node_key": "aci_vr",
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "data",
     },
     "ac_in_aci_vs": {
         "name": "Grid Voltage Line 2",
@@ -50,6 +52,7 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "node_id": "ac_in",
         "node_key": "aci_vs",
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "data",
     },
     "ac_in_aci_vt": {
         "name": "Grid Voltage Line 3",
@@ -59,6 +62,7 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "node_id": "ac_in",
         "node_key": "aci_vt",
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "data",
     },
     "ac_in_aci_wr": {
         "name": "Grid Load Line 1",
@@ -68,6 +72,7 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "node_id": "ac_in",
         "node_key": "aci_wr",
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "data",
     },
     "ac_in_aci_ws": {
         "name": "Grid Load Line 2",
@@ -77,6 +82,7 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "node_id": "ac_in",
         "node_key": "aci_ws",
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "data",
     },
     "ac_in_aci_wt": {
         "name": "Grid Load Line 3",
@@ -86,6 +92,7 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "node_id": "ac_in",
         "node_key": "aci_wt",
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "data",
     },
     "ac_in_aci_wtotal": {
         "name": "Grid Load Total",
@@ -95,5 +102,6 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "computed",
     },
 }

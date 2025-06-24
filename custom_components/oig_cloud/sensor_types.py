@@ -1,5 +1,9 @@
 from typing import Dict
+import logging
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
+from homeassistant.helpers.entity import EntityCategory
+
+_LOGGER = logging.getLogger(__name__)
 
 # Import původních skupin senzorů
 from custom_components.oig_cloud.sensors.SENSOR_TYPES_ACTUAL import SENSOR_TYPES_ACTUAL
@@ -12,10 +16,33 @@ from custom_components.oig_cloud.sensors.SENSOR_TYPES_DC_IN import SENSOR_TYPES_
 from custom_components.oig_cloud.sensors.SENSOR_TYPES_AC_IN import SENSOR_TYPES_AC_IN
 
 # Import rozšířených (nových) senzorů
-from custom_components.oig_cloud.sensors.SENSOR_TYPES_EXTENDED_BATT import SENSOR_TYPES_EXTENDED_BATT
-from custom_components.oig_cloud.sensors.SENSOR_TYPES_EXTENDED_FVE import SENSOR_TYPES_EXTENDED_FVE
-from custom_components.oig_cloud.sensors.SENSOR_TYPES_EXTENDED_GRID import SENSOR_TYPES_EXTENDED_GRID
-from custom_components.oig_cloud.sensors.SENSOR_TYPES_EXTENDED_LOAD import SENSOR_TYPES_EXTENDED_LOAD
+from custom_components.oig_cloud.sensors.SENSOR_TYPES_EXTENDED_BATT import (
+    SENSOR_TYPES_EXTENDED_BATT,
+)
+from custom_components.oig_cloud.sensors.SENSOR_TYPES_EXTENDED_FVE import (
+    SENSOR_TYPES_EXTENDED_FVE,
+)
+from custom_components.oig_cloud.sensors.SENSOR_TYPES_EXTENDED_GRID import (
+    SENSOR_TYPES_EXTENDED_GRID,
+)
+from custom_components.oig_cloud.sensors.SENSOR_TYPES_EXTENDED_LOAD import (
+    SENSOR_TYPES_EXTENDED_LOAD,
+)
+from custom_components.oig_cloud.sensors.SENSOR_TYPES_PRICING import (
+    SENSOR_TYPES_PRICING,
+)
+from custom_components.oig_cloud.sensors.SENSOR_TYPES_SOLAR_FORECAST import (
+    SENSOR_TYPES_SOLAR_FORECAST,
+)
+from custom_components.oig_cloud.sensors.SENSOR_TYPES_STATISTICS import (
+    SENSOR_TYPES_STATISTICS,
+)
+from custom_components.oig_cloud.sensors.SENSOR_TYPES_SPOT import (
+    SENSOR_TYPES_SPOT,
+)
+from custom_components.oig_cloud.sensors.SENSOR_TYPES_SHIELD import (
+    SENSOR_TYPES_SHIELD,
+)
 
 # Globální seznam všech typů senzorů
 SENSOR_TYPES: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClass]] = {}
@@ -35,3 +62,10 @@ SENSOR_TYPES.update(SENSOR_TYPES_EXTENDED_BATT)
 SENSOR_TYPES.update(SENSOR_TYPES_EXTENDED_FVE)
 SENSOR_TYPES.update(SENSOR_TYPES_EXTENDED_GRID)
 SENSOR_TYPES.update(SENSOR_TYPES_EXTENDED_LOAD)
+SENSOR_TYPES.update(SENSOR_TYPES_PRICING)
+SENSOR_TYPES.update(SENSOR_TYPES_SOLAR_FORECAST)
+SENSOR_TYPES.update(SENSOR_TYPES_STATISTICS)
+SENSOR_TYPES.update(SENSOR_TYPES_SPOT)
+SENSOR_TYPES.update(SENSOR_TYPES_SHIELD)
+
+_LOGGER.info(f"Loaded {len(SENSOR_TYPES)} sensor types total")

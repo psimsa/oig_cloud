@@ -13,6 +13,7 @@ SENSOR_TYPES_EXTENDED_BATT: Dict[
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "extended",
     },
     "extended_battery_current": {
         "name": "Extended Battery Current",
@@ -22,6 +23,7 @@ SENSOR_TYPES_EXTENDED_BATT: Dict[
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "extended",
     },
     "extended_battery_capacity": {
         "name": "Extended Battery Capacity",
@@ -31,6 +33,7 @@ SENSOR_TYPES_EXTENDED_BATT: Dict[
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "extended",
     },
     "extended_battery_temperature": {
         "name": "Extended Battery Temperature",
@@ -41,6 +44,7 @@ SENSOR_TYPES_EXTENDED_BATT: Dict[
         "node_id": None,
         "node_key": None,
         "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "extended",
     },
     "usable_battery_capacity": {
         "name": "Usable Battery Capacity",
@@ -50,6 +54,7 @@ SENSOR_TYPES_EXTENDED_BATT: Dict[
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "computed",
     },
     "missing_battery_kwh": {
         "name": "Missing Energy to 100%",
@@ -59,6 +64,7 @@ SENSOR_TYPES_EXTENDED_BATT: Dict[
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "computed",
     },
     "remaining_usable_capacity": {
         "name": "Remaining Usable Capacity",
@@ -68,6 +74,7 @@ SENSOR_TYPES_EXTENDED_BATT: Dict[
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "computed",
     },
     "time_to_full": {
         "name": "Time to Full",
@@ -77,6 +84,7 @@ SENSOR_TYPES_EXTENDED_BATT: Dict[
         "state_class": None,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "computed",
     },
     "time_to_empty": {
         "name": "Time to Empty",
@@ -86,5 +94,6 @@ SENSOR_TYPES_EXTENDED_BATT: Dict[
         "state_class": None,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "computed",
     },
 }

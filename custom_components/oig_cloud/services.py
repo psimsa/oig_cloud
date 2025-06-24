@@ -1,7 +1,70 @@
+"""Služby pro integraci OIG Cloud."""
+
+import logging
+import voluptuous as vol
+from typing import Dict, Any
+
+from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import entity_registry as er
+
+from .const import DOMAIN
+
+_LOGGER = logging.getLogger(__name__)
+
+# Schema pro update solární předpovědi
+SOLAR_FORECAST_UPDATE_SCHEMA = vol.Schema({})
+
+
+async def async_setup_services(hass: HomeAssistant) -> None:
+    """Nastavení služeb pro OIG Cloud."""
+
+    # Získat všechny config entries pro integraci
+    async def handle_update_solar_forecast(call: ServiceCall) -> None:
+        """Zpracování služby pro manuální aktualizaci solární předpovědi."""
+        # Procházíme všechny config entries
+        for entry_id in hass.data.get(DOMAIN, {}):
+            entry_data = hass.data[DOMAIN][entry_id]
+
+            # Kontrolujeme, zda má coordinator a solar_forecast
+            if "coordinator" in entry_data and hasattr(
+                entry_data["coordinator"], "solar_forecast"
+            ):
+                try:
+                    solar_forecast = entry_data["coordinator"].solar_forecast
+                    # Spustit update
+                    await solar_forecast.async_update()
+                    _LOGGER.info(
+                        f"Manuálně aktualizována solární předpověď pro {entry_id}"
+                    )
+                except Exception as e:
+                    _LOGGER.error(f"Chyba při aktualizaci solární předpovědi: {e}")
+            else:
+                _LOGGER.debug(f"Config entry {entry_id} nemá solární předpověď")
+
+    # Registrace služby
+    hass.services.async_register(
+        DOMAIN,
+        "update_solar_forecast",
+        handle_update_solar_forecast,
+        schema=SOLAR_FORECAST_UPDATE_SCHEMA,
+    )
+
+    _LOGGER.debug(f"Zaregistrovány služby pro {DOMAIN}")
+
+
+async def async_unload_services(hass: HomeAssistant) -> None:
+    """Odregistrace služeb při unload integrace."""
+    # Odregistrace služby
+    if hass.services.has_service(DOMAIN, "update_solar_forecast"):
+        hass.services.async_remove(DOMAIN, "update_solar_forecast")
+
+
 import voluptuous as vol
 from opentelemetry import trace
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant, callback, ServiceCall, Context
+from typing import Any, Dict, Optional, Callable, Awaitable
 from .const import DOMAIN
 from .api.oig_cloud_api import OigCloudApi
 
@@ -24,9 +87,11 @@ tracer = trace.get_tracer(__name__)
 async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) -> None:
     shield = hass.data[DOMAIN].get("shield")
 
-    def wrap_with_shield(service_name, handler_func):
-        async def wrapper(call):
-            data = dict(call.data)
+    def wrap_with_shield(
+        service_name: str, handler_func: Callable
+    ) -> Callable[[ServiceCall], Awaitable[None]]:
+        async def wrapper(call: ServiceCall) -> None:
+            data: Dict[str, Any] = dict(call.data)
             await shield.intercept_service_call(
                 DOMAIN,
                 service_name,
@@ -44,19 +109,30 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
         return wrapper
 
     @callback
-    async def real_call_set_box_mode(domain, service, service_data, blocking, context):
+    async def real_call_set_box_mode(
+        domain: str,
+        service: str,
+        service_data: Dict[str, Any],
+        blocking: bool,
+        context: Optional[Context],
+    ) -> None:
         with tracer.start_as_current_span("async_set_box_mode"):
-            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]["api"]
-            mode = service_data.get("mode")
-            mode_value = MODES.get(mode)
+            coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+            client: OigCloudApi = coordinator.api
+            mode: Optional[str] = service_data.get("mode")
+            mode_value: Optional[str] = MODES.get(mode) if mode else None
             await client.set_box_mode(mode_value)
 
     @callback
     async def real_call_set_grid_delivery(
-        domain, service, service_data, blocking, context
-    ):
-        grid_mode = service_data.get("mode")
-        limit = service_data.get("limit")
+        domain: str,
+        service: str,
+        service_data: Dict[str, Any],
+        blocking: bool,
+        context: Optional[Context],
+    ) -> None:
+        grid_mode: Optional[str] = service_data.get("mode")
+        limit: Optional[int] = service_data.get("limit")
 
         if (grid_mode is None and limit is None) or (
             grid_mode is not None and limit is not None
@@ -69,37 +145,48 @@ async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) ->
             raise vol.Invalid("Limit musí být v rozmezí 1–9999")
 
         with tracer.start_as_current_span("async_set_grid_delivery"):
-            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]["api"]
+            coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+            client: OigCloudApi = coordinator.api
             if grid_mode is not None:
-                mode = GRID_DELIVERY.get(grid_mode)
+                mode: Optional[int] = GRID_DELIVERY.get(grid_mode)
                 await client.set_grid_delivery(mode)
             if limit is not None:
-                success = await client.set_grid_delivery_limit(int(limit))
+                success: bool = await client.set_grid_delivery_limit(int(limit))
                 if not success:
                     raise vol.Invalid("Limit se nepodařilo nastavit.")
 
     @callback
     async def real_call_set_boiler_mode(
-        domain, service, service_data, blocking, context
-    ):
+        domain: str,
+        service: str,
+        service_data: Dict[str, Any],
+        blocking: bool,
+        context: Optional[Context],
+    ) -> None:
         with tracer.start_as_current_span("async_set_boiler_mode"):
-            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]["api"]
-            mode = service_data.get("mode")
-            mode_value = BOILER_MODE.get(mode)
+            coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+            client: OigCloudApi = coordinator.api
+            mode: Optional[str] = service_data.get("mode")
+            mode_value: Optional[int] = BOILER_MODE.get(mode) if mode else None
             await client.set_boiler_mode(mode_value)
 
     @callback
     async def real_call_set_formating_mode(
-        domain, service, service_data, blocking, context
-    ):
-        limit = service_data.get("limit")
+        domain: str,
+        service: str,
+        service_data: Dict[str, Any],
+        blocking: bool,
+        context: Optional[Context],
+    ) -> None:
+        limit: Optional[int] = service_data.get("limit")
         if limit is not None and (limit > 100 or limit < 20):
             raise vol.Invalid("Limit musí být v rozmezí 20–100")
 
         with tracer.start_as_current_span("async_set_formating_mode"):
-            client: OigCloudApi = hass.data[DOMAIN][entry.entry_id]["api"]
-            mode = service_data.get("mode")
-            mode_value = FORMAT_BATTERY.get(mode)
+            coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+            client: OigCloudApi = coordinator.api
+            mode: Optional[str] = service_data.get("mode")
+            mode_value: Optional[int] = FORMAT_BATTERY.get(mode) if mode else None
             await client.set_formating_mode(limit)
 
     # Registrace služeb se schématem, které striktně vyžaduje potvrzení

@@ -7,6 +7,12 @@ from typing import Any, Dict, Optional, Union, cast
 import re
 
 import aiohttp
+from aiohttp import (
+    ClientTimeout,
+    ClientConnectorError,
+    ClientResponseError,
+    ServerTimeoutError,
+)
 
 # Conditional import of opentelemetry
 _logger = logging.getLogger(__name__)
@@ -26,6 +32,7 @@ except ImportError:
     _has_opentelemetry = False
 
 from homeassistant import core
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from ..models import OigCloudData, OigCloudDeviceData
 
@@ -39,6 +46,14 @@ class OigCloudApiError(Exception):
 
 class OigCloudAuthError(OigCloudApiError):
     """Exception for authentication errors."""
+
+
+class OigCloudConnectionError(OigCloudApiError):
+    """Exception for connection errors."""
+
+
+class OigCloudTimeoutError(OigCloudApiError):
+    """Exception for timeout errors."""
 
 
 class OigCloudApi:
@@ -59,116 +74,77 @@ class OigCloudApi:
         no_telemetry: bool,
         hass: core.HomeAssistant,
         standard_scan_interval: int = 30,
+        timeout: int = 30,
     ) -> None:
         """Initialize the API client."""
-        if _has_opentelemetry and tracer and not no_telemetry:
-            with tracer.start_as_current_span("initialize") as span:
-                self._no_telemetry: bool = no_telemetry
-                self._logger: logging.Logger = logging.getLogger(__name__)
-                self._username: str = username
-                self._password: str = password
-                self._phpsessid: Optional[str] = None
+        self._no_telemetry: bool = no_telemetry
+        self._logger: logging.Logger = logging.getLogger(__name__)
+        self._username: str = username
+        self._password: str = password
+        self._phpsessid: Optional[str] = None
+        self._timeout: ClientTimeout = ClientTimeout(total=timeout)
 
-                self._last_update: datetime.datetime = datetime.datetime(1, 1, 1, 0, 0)
-                self._standard_scan_interval: int = standard_scan_interval
-                self.box_id: Optional[str] = None
-                self.last_state: Optional[Dict[str, Any]] = None
-                self.last_parsed_state: Optional[OigCloudData] = None
-                self._logger.debug("OigCloud initialized")
-        else:
-            self._no_telemetry: bool = no_telemetry
-            self._logger: logging.Logger = logging.getLogger(__name__)
-            self._username: str = username
-            self._password: str = password
-            self._phpsessid: Optional[str] = None
-
-            self._last_update: datetime.datetime = datetime.datetime(1, 1, 1, 0, 0)
-            self._standard_scan_interval: int = standard_scan_interval
-            self.box_id: Optional[str] = None
-            self.last_state: Optional[Dict[str, Any]] = None
-            self.last_parsed_state: Optional[OigCloudData] = None
-            self._logger.debug("OigCloud initialized")
+        self._last_update: datetime.datetime = datetime.datetime(1, 1, 1, 0, 0)
+        self._standard_scan_interval: int = standard_scan_interval
+        self.box_id: Optional[str] = None
+        self.last_state: Optional[Dict[str, Any]] = None
+        self.last_parsed_state: Optional[OigCloudData] = None
+        self._logger.debug("OigCloud initialized")
 
     async def authenticate(self) -> bool:
         """Authenticate with the OIG Cloud API."""
         if _has_opentelemetry and tracer:
             with tracer.start_as_current_span("authenticate") as span:
-                try:
-                    login_command: Dict[str, str] = {
-                        "email": self._username,
-                        "password": self._password,
-                    }
-                    self._logger.debug("Authenticating with OIG Cloud")
-
-                    async with aiohttp.ClientSession() as session:
-                        url: str = self._base_url + self._login_url
-                        data: str = json.dumps(login_command)
-                        headers: Dict[str, str] = {"Content-Type": "application/json"}
-
-                        async with session.post(
-                            url, data=data, headers=headers
-                        ) as response:
-                            responsecontent: str = await response.text()
-                            if response.status == 200:
-                                if responsecontent == '[[2,"",false]]':
-                                    self._phpsessid = (
-                                        session.cookie_jar.filter_cookies(
-                                            self._base_url
-                                        )
-                                        .get("PHPSESSID")
-                                        .value
-                                    )
-                                    return True
-                            raise OigCloudAuthError("Authentication failed")
-                except OigCloudAuthError as e:
-                    self._logger.error(f"Authentication error: {e}", stack_info=True)
-                    raise
-                except Exception as e:
-                    self._logger.error(
-                        f"Unexpected error during authentication: {e}", stack_info=True
-                    )
-                    raise OigCloudAuthError(f"Authentication failed: {e}") from e
+                return await self._authenticate_internal()
         else:
-            try:
-                login_command: Dict[str, str] = {
-                    "email": self._username,
-                    "password": self._password,
-                }
-                self._logger.debug("Authenticating with OIG Cloud")
+            return await self._authenticate_internal()
 
-                async with aiohttp.ClientSession() as session:
-                    url: str = self._base_url + self._login_url
-                    data: str = json.dumps(login_command)
-                    headers: Dict[str, str] = {"Content-Type": "application/json"}
+    async def _authenticate_internal(self) -> bool:
+        """Internal authentication method with proper error handling."""
+        try:
+            login_command: Dict[str, str] = {
+                "email": self._username,
+                "password": self._password,
+            }
+            self._logger.debug("Authenticating with OIG Cloud")
 
-                    async with session.post(
-                        url, data=data, headers=headers
-                    ) as response:
-                        responsecontent: str = await response.text()
-                        if response.status == 200:
-                            if responsecontent == '[[2,"",false]]':
-                                self._phpsessid = (
-                                    session.cookie_jar.filter_cookies(self._base_url)
-                                    .get("PHPSESSID")
-                                    .value
-                                )
-                                return True
-                        raise OigCloudAuthError("Authentication failed")
-            except OigCloudAuthError as e:
-                self._logger.error(f"Authentication error: {e}", stack_info=True)
-                raise
-            except Exception as e:
-                self._logger.error(
-                    f"Unexpected error during authentication: {e}", stack_info=True
-                )
-                raise OigCloudAuthError(f"Authentication failed: {e}") from e
+            async with aiohttp.ClientSession(timeout=self._timeout) as session:
+                url: str = self._base_url + self._login_url
+                data: str = json.dumps(login_command)
+                headers: Dict[str, str] = {"Content-Type": "application/json"}
+
+                async with session.post(url, data=data, headers=headers) as response:
+                    responsecontent: str = await response.text()
+                    if response.status == 200:
+                        if responsecontent == '[[2,"",false]]':
+                            self._phpsessid = (
+                                session.cookie_jar.filter_cookies(self._base_url)
+                                .get("PHPSESSID")
+                                .value
+                            )
+                            return True
+                    raise OigCloudAuthError("Authentication failed")
+
+        except (asyncio.TimeoutError, ServerTimeoutError) as e:
+            self._logger.error(f"Authentication timeout: {e}")
+            raise OigCloudTimeoutError(f"Authentication timeout: {e}") from e
+        except ClientConnectorError as e:
+            self._logger.error(f"Connection error during authentication: {e}")
+            raise OigCloudConnectionError(f"Connection error: {e}") from e
+        except OigCloudAuthError:
+            raise
+        except Exception as e:
+            self._logger.error(f"Unexpected error during authentication: {e}")
+            raise OigCloudAuthError(f"Authentication failed: {e}") from e
 
     def get_session(self) -> aiohttp.ClientSession:
         """Get a session with authentication cookies."""
         if not self._phpsessid:
             raise OigCloudAuthError("Not authenticated, call authenticate() first")
 
-        return aiohttp.ClientSession(headers={"Cookie": f"PHPSESSID={self._phpsessid}"})
+        return aiohttp.ClientSession(
+            headers={"Cookie": f"PHPSESSID={self._phpsessid}"}, timeout=self._timeout
+        )
 
     async def get_stats(self) -> Optional[Dict[str, Any]]:
         """Get stats from the OIG Cloud API with caching."""
@@ -182,49 +158,43 @@ class OigCloudApi:
 
             if _has_opentelemetry and tracer:
                 with tracer.start_as_current_span("get_stats") as span:
-                    try:
-                        to_return = await self._try_get_stats()
-                        self._logger.debug("Retrieved stats")
-                        if self.box_id is None and to_return:
-                            self.box_id = list(to_return.keys())[0]
-                        self._last_update = datetime.datetime.now()
-                        self.last_state = to_return
-                        return to_return
-                    except Exception as e:
-                        self._logger.error(f"Unexpected error: {e}", stack_info=True)
-                        raise OigCloudApiError(f"Failed to get stats: {e}") from e
+                    return await self._get_stats_internal()
             else:
-                try:
-                    to_return = await self._try_get_stats()
-                    self._logger.debug("Retrieved stats")
-                    if self.box_id is None and to_return:
-                        self.box_id = list(to_return.keys())[0]
-                    self._last_update = datetime.datetime.now()
-                    self.last_state = to_return
-                    return to_return
-                except Exception as e:
-                    self._logger.error(f"Unexpected error: {e}", stack_info=True)
-                    raise OigCloudApiError(f"Failed to get stats: {e}") from e
+                return await self._get_stats_internal()
+
+    async def _get_stats_internal(self) -> Optional[Dict[str, Any]]:
+        """Internal get stats method with proper error handling."""
+        try:
+            to_return = await self._try_get_stats()
+            self._logger.debug("Retrieved stats")
+            if self.box_id is None and to_return:
+                self.box_id = list(to_return.keys())[0]
+            self._last_update = datetime.datetime.now()
+            self.last_state = to_return
+            return to_return
+        except (asyncio.TimeoutError, ServerTimeoutError) as e:
+            self._logger.warning(f"Timeout while getting stats: {e}")
+            # Return cached data if available
+            if self.last_state is not None:
+                self._logger.info("Returning cached data due to timeout")
+                return self.last_state
+            raise OigCloudTimeoutError(f"API timeout: {e}") from e
+        except ClientConnectorError as e:
+            self._logger.warning(f"Connection error while getting stats: {e}")
+            if self.last_state is not None:
+                self._logger.info("Returning cached data due to connection error")
+                return self.last_state
+            raise OigCloudConnectionError(f"Connection error: {e}") from e
+        except Exception as e:
+            self._logger.error(f"Unexpected error: {e}")
+            if self.last_state is not None:
+                self._logger.info("Returning cached data due to unexpected error")
+                return self.last_state
+            raise OigCloudApiError(f"Failed to get stats: {e}") from e
 
     async def _try_get_stats(self, dependent: bool = False) -> Optional[Dict[str, Any]]:
-        if _has_opentelemetry and tracer:
-            with tracer.start_as_current_span("get_stats_internal"):
-                async with self.get_session() as session:
-                    url = self._base_url + self._get_stats_url
-                    self._logger.debug(f"Getting stats from {url}")
-                    async with session.get(url) as response:
-                        if response.status == 200:
-                            result = await response.json()
-                            if not isinstance(result, dict) and not dependent:
-                                self._logger.info("Retrying authentication")
-                                if await self.authenticate():
-                                    return await self._try_get_stats(True)
-                            return result
-                        else:
-                            raise Exception(
-                                f"Failed to fetch stats, status {response.status}"
-                            )
-        else:
+        """Try to get stats with proper error handling."""
+        try:
             async with self.get_session() as session:
                 url = self._base_url + self._get_stats_url
                 self._logger.debug(f"Getting stats from {url}")
@@ -237,9 +207,18 @@ class OigCloudApi:
                                 return await self._try_get_stats(True)
                         return result
                     else:
-                        raise Exception(
-                            f"Failed to fetch stats, status {response.status}"
+                        raise ClientResponseError(
+                            request_info=response.request_info,
+                            history=response.history,
+                            status=response.status,
+                            message=f"Failed to fetch stats, status {response.status}",
                         )
+        except (asyncio.TimeoutError, ServerTimeoutError) as e:
+            self._logger.warning(f"Timeout getting stats from {url}: {e}")
+            raise
+        except ClientConnectorError as e:
+            self._logger.warning(f"Connection error getting stats from {url}: {e}")
+            raise
 
     async def set_box_mode(self, mode: str) -> bool:
         """Set box mode (Home 1, Home 2, etc.)."""
@@ -610,57 +589,148 @@ class OigCloudApi:
                 self._logger.error(f"Error: {e}", stack_info=True)
                 raise
 
-    async def get_extended_stats(self, name: str, from_date: str, to_date: str) -> Any:
-        if _has_opentelemetry and tracer:
-            with tracer.start_as_current_span("get_extended_stats") as span:
-                try:
-                    async with self.get_session() as session:
-                        url = self._base_url + "json2.php"
-                        self._logger.debug(f"Requesting extended stats from {url}")
+    async def get_extended_stats(
+        self, stat_type: str, date_from: str, date_to: str
+    ) -> Dict[str, Any]:
+        """Fetch extended statistics for specified type and date range with proper error handling."""
+        try:
+            self._logger.debug(
+                f"Requesting extended stats for type '{stat_type}' from {date_from} to {date_to}"
+            )
 
-                        payload = {"name": name, "range": f"{from_date},{to_date},0"}
-                        headers = {"Content-Type": "application/json"}
+            url = f"{self.base_url}/json2.php"
+            data = {
+                "device_id": self.device_id,
+                "type": stat_type,
+                "date_from": date_from,
+                "date_to": date_to,
+            }
 
-                        async with session.post(
-                            url, json=payload, headers=headers
-                        ) as response:
-                            if response.status == 200:
-                                result = await response.json()
-                                self._logger.debug(
-                                    f"Extended stats '{name}' retrieved successfully"
-                                )
-                                return result
-                            else:
-                                raise Exception(
-                                    f"Error fetching extended stats: {response.status}"
-                                )
-                except Exception as e:
+            headers = {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "User-Agent": "HomeAssistant-OIG-Cloud",
+            }
+
+            if not self._session:
+                self._session = async_get_clientsession(self.hass)
+
+            self._logger.debug(f"Making POST request to {url} with data: {data}")
+
+            async with self._session.post(
+                url, data=data, headers=headers, timeout=aiohttp.ClientTimeout(total=30)
+            ) as response:
+
+                self._logger.debug(f"Response status: {response.status}")
+
+                if response.status == 200:
+                    try:
+                        result = await response.json()
+                        self._logger.debug(
+                            f"Extended stats '{stat_type}' retrieved successfully, data size: {len(str(result))}"
+                        )
+                        return result
+                    except aiohttp.ContentTypeError as e:
+                        self._logger.error(
+                            f"Invalid JSON response for {stat_type}: {e}"
+                        )
+                        text_response = await response.text()
+                        self._logger.debug(
+                            f"Raw response text: {text_response[:500]}..."
+                        )
+                        return {}
+                elif response.status == 401:
                     self._logger.error(
-                        f"Error in get_extended_stats: {e}", stack_info=True
+                        f"Authentication failed for extended stats {stat_type}"
                     )
-                    raise e
-        else:
-            try:
-                async with self.get_session() as session:
-                    url = self._base_url + "json2.php"
-                    self._logger.debug(f"Requesting extended stats from {url}")
+                    raise aiohttp.ClientResponseError(
+                        request_info=response.request_info,
+                        history=response.history,
+                        status=401,
+                        message="Authentication required",
+                    )
+                elif response.status == 429:
+                    self._logger.warning(
+                        f"Rate limit exceeded for extended stats {stat_type}"
+                    )
+                    return {}
+                else:
+                    self._logger.error(
+                        f"HTTP {response.status} error fetching extended stats for {stat_type}"
+                    )
+                    error_text = await response.text()
+                    self._logger.debug(f"Error response: {error_text[:200]}...")
+                    return {}
 
-                    payload = {"name": name, "range": f"{from_date},{to_date},0"}
-                    headers = {"Content-Type": "application/json"}
+        except aiohttp.ClientConnectorError as e:
+            self._logger.error(
+                f"Connection error fetching extended stats for {stat_type}: {e}"
+            )
+            return {}
+        except aiohttp.ClientTimeout as e:
+            self._logger.warning(
+                f"Timeout fetching extended stats for {stat_type}: {e}"
+            )
+            return {}
+        except aiohttp.ClientError as e:
+            self._logger.error(
+                f"Client error fetching extended stats for {stat_type}: {e}"
+            )
+            return {}
+        except Exception as e:
+            self._logger.error(
+                f"Unexpected error fetching extended stats for {stat_type}: {e}",
+                exc_info=True,
+            )
+            return {}
 
-                    async with session.post(
-                        url, json=payload, headers=headers
-                    ) as response:
-                        if response.status == 200:
-                            result = await response.json()
-                            self._logger.debug(
-                                f"Extended stats '{name}' retrieved successfully"
-                            )
-                            return result
-                        else:
-                            raise Exception(
-                                f"Error fetching extended stats: {response.status}"
-                            )
-            except Exception as e:
-                self._logger.error(f"Error in get_extended_stats: {e}", stack_info=True)
-                raise e
+    async def get_stats(self) -> Optional[Dict[str, Any]]:
+        """Fetch standard statistics with improved error handling."""
+        try:
+            self._logger.debug(f"Getting stats from {self.base_url}/json.php")
+
+            if not self._session:
+                self._session = async_get_clientsession(self.hass)
+
+            headers = {"User-Agent": "HomeAssistant-OIG-Cloud"}
+
+            async with self._session.get(
+                f"{self.base_url}/json.php",
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=30),
+            ) as response:
+
+                if response.status == 200:
+                    try:
+                        result = await response.json()
+                        self._logger.debug("Retrieved stats successfully")
+                        return result
+                    except aiohttp.ContentTypeError as e:
+                        self._logger.error(
+                            f"Invalid JSON response for standard stats: {e}"
+                        )
+                        return None
+                elif response.status == 401:
+                    self._logger.error("Authentication failed for standard stats")
+                    raise aiohttp.ClientResponseError(
+                        request_info=response.request_info,
+                        history=response.history,
+                        status=401,
+                        message="Authentication required",
+                    )
+                else:
+                    self._logger.error(
+                        f"HTTP {response.status} error fetching standard stats"
+                    )
+                    return None
+
+        except aiohttp.ClientConnectorError as e:
+            self._logger.error(f"Connection error fetching standard stats: {e}")
+            raise
+        except aiohttp.ClientTimeout as e:
+            self._logger.warning(f"Timeout fetching standard stats: {e}")
+            raise
+        except Exception as e:
+            self._logger.error(
+                f"Unexpected error fetching standard stats: {e}", exc_info=True
+            )
+            raise

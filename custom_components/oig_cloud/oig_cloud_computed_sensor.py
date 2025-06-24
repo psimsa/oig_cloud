@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional, Union
 
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.util import dt as dt_util
 from .oig_cloud_sensor import OigCloudSensor
 
 _LOGGER = logging.getLogger(__name__)
@@ -38,6 +39,16 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
             "charge_grid_month": 0.0,
             "charge_grid_year": 0.0,
         }
+
+        self._last_update_time: Optional[datetime] = None
+        self._monitored_sensors: Dict[str, Any] = {}
+
+        # Speciální handling pro real_data_update senzor
+        if sensor_type == "real_data_update":
+            self._is_real_update_sensor = True
+            self._initialize_monitored_sensors()
+        else:
+            self._is_real_update_sensor = False
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -81,6 +92,19 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
         data = self.coordinator.data
         pv_data = list(data.values())[0]
 
+        # Speciální handling pro real_data_update senzor
+        if self._sensor_type == "real_data_update":
+            if self._check_for_real_data_changes(pv_data):
+                # Používáme lokální čas místo UTC
+                self._last_update_time = dt_util.now()
+                _LOGGER.debug(
+                    f"[{self.entity_id}] Real data update detected at {self._last_update_time}"
+                )
+
+            return (
+                self._last_update_time.isoformat() if self._last_update_time else None
+            )
+
         if self._sensor_type == "ac_in_aci_wtotal":
             return float(
                 pv_data["ac_in"]["aci_wr"]
@@ -117,8 +141,9 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
 
         try:
             bat_p = float(pv_data["box_prms"]["p_bat"])
-            bat_c = float(pv_data["actual"]["bat_c"])
-            bat_power = float(pv_data["actual"].get("bat_p", 0))
+            bat_c = float(pv_data["actual"]["bat_c"])  # Battery charge percentage
+            bat_power = float(pv_data["actual"]["bat_p"])  # Battery power
+
             # 1. Využitelná kapacita baterie
             if self._sensor_type == "usable_battery_capacity":
                 value = round((bat_p * 0.8) / 1000, 2)
@@ -341,3 +366,51 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
     @property
     def extra_state_attributes(self) -> Dict[str, Any]:
         return getattr(self, "_attr_extra_state_attributes", {})
+
+    def _initialize_monitored_sensors(self) -> None:
+        """Inicializuje sledované senzory pro real data update."""
+        # Klíčové senzory pro sledování změn
+        self._key_sensors = [
+            "bat_p",
+            "bat_c",
+            "fv_p1",
+            "fv_p2",
+            "aco_p",
+            "aci_wr",
+            "aci_ws",
+            "aci_wt",
+        ]
+
+    def _check_for_real_data_changes(self, pv_data: Dict[str, Any]) -> bool:
+        """Zkontroluje, zda došlo ke skutečné změně v datech."""
+        try:
+            current_values = {}
+
+            # Získej aktuální hodnoty klíčových senzorů
+            for sensor_key in self._key_sensors:
+                if sensor_key.startswith(("bat_", "fv_", "aco_")):
+                    current_values[sensor_key] = pv_data["actual"].get(sensor_key, 0)
+                elif sensor_key.startswith("aci_"):
+                    current_values[sensor_key] = pv_data["actual"].get(sensor_key, 0)
+
+            # Porovnej s předchozími hodnotami
+            has_changes = False
+            for key, current_value in current_values.items():
+                previous_value = self._monitored_sensors.get(key)
+                if (
+                    previous_value is None
+                    or abs(float(current_value) - float(previous_value)) > 0.1
+                ):
+                    has_changes = True
+                    _LOGGER.debug(
+                        f"[{self.entity_id}] Real data change detected: {key} {previous_value} -> {current_value}"
+                    )
+
+            # Ulož aktuální hodnoty pro příští porovnání
+            self._monitored_sensors = current_values.copy()
+
+            return has_changes
+
+        except Exception as e:
+            _LOGGER.error(f"[{self.entity_id}] Error checking data changes: {e}")
+            return False

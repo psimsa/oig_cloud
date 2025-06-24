@@ -13,6 +13,7 @@ SENSOR_TYPES_EXTENDED_FVE: Dict[
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "extended",
     },
     "extended_fve_voltage_2": {
         "name": "Extended FVE Voltage 2",
@@ -22,15 +23,7 @@ SENSOR_TYPES_EXTENDED_FVE: Dict[
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
         "node_key": None,
-    },
-    "extended_fve_current": {
-        "name": "Extended FVE Current",
-        "name_cs": "Proud FV",
-        "unit_of_measurement": "A",
-        "device_class": SensorDeviceClass.CURRENT,
-        "state_class": SensorStateClass.MEASUREMENT,
-        "node_id": None,
-        "node_key": None,
+        "sensor_type_category": "extended",
     },
     "extended_fve_power_1": {
         "name": "Extended FVE Power 1",
@@ -40,6 +33,7 @@ SENSOR_TYPES_EXTENDED_FVE: Dict[
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "extended",
     },
     "extended_fve_power_2": {
         "name": "Extended FVE Power 2",
@@ -49,6 +43,7 @@ SENSOR_TYPES_EXTENDED_FVE: Dict[
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "extended",
     },
     "extended_fve_current_1": {
         "name": "Extended FVE Curren FV 1",
@@ -58,6 +53,7 @@ SENSOR_TYPES_EXTENDED_FVE: Dict[
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "extended",
     },
     "extended_fve_current_2": {
         "name": "Extended FVE Curren FV 2",
@@ -67,5 +63,6 @@ SENSOR_TYPES_EXTENDED_FVE: Dict[
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
         "node_key": None,
+        "sensor_type_category": "extended",
     },
 }

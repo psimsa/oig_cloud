@@ -1,21 +1,28 @@
-"""Statistické senzory pro OIG Cloud integraci."""
+"""Definice statistických senzorů pro OIG Cloud."""
 
-from typing import Dict, Any
+from typing import List, Dict, Any
+from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
+from homeassistant.helpers.entity import EntityCategory
 
+# Seznam statistických senzorů s jejich konfigurací
 SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
-    # Základní spotřeba - medián za posledních 10 minut
+    # Základní odběr - medián za posledních 10 minut
     "battery_load_median": {
-        "name": "Aktuální medián spotřeby",
+        "name": "Load Median 10 Minutes",
+        "name_cs": "Medián odběru za 10 minut",
         "unit": "W",
         "icon": "mdi:chart-line",
         "device_class": "power",
         "state_class": "measurement",
         "sampling_minutes": 10,
-        "statistic": "median",
+        "sampling_size": 1000,
+        "sensor_type_category": "statistics",
+        "description": "Medián celkového odběru domácnosti za posledních 10 minut",
     },
-    # Víkend vs všední den spotřeba po časových úsecích
+    # Víkend vs všední den odběr po časových úsecích
     "load_avg_6_8_weekday": {
-        "name": "Průměrná spotřeba 6-8h (všední dny)",
+        "name": "Průměrný odběr 6-8h (všední dny)",
+        "name_cs": "Průměrný odběr 6-8h (všední dny)",
         "unit": "W",
         "icon": "mdi:chart-timeline-variant",
         "device_class": "power",
@@ -25,9 +32,11 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "statistic": "median",
         "max_age_days": 30,
         "sampling_size": 1000,
+        "sensor_type_category": "statistics",
     },
     "load_avg_8_12_weekday": {
-        "name": "Průměrná spotřeba 8-12h (všední dny)",
+        "name": "Průměrný odběr 8-12h (všední dny)",
+        "name_cs": "Průměrný odběr 8-12h (všední dny)",
         "unit": "W",
         "icon": "mdi:chart-timeline-variant",
         "device_class": "power",
@@ -37,9 +46,11 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "statistic": "median",
         "max_age_days": 30,
         "sampling_size": 1000,
+        "sensor_type_category": "statistics",
     },
     "load_avg_12_16_weekday": {
-        "name": "Průměrná spotřeba 12-16h (všední dny)",
+        "name": "Průměrný odběr 12-16h (všední dny)",
+        "name_cs": "Průměrný odběr 12-16h (všední dny)",
         "unit": "W",
         "icon": "mdi:chart-timeline-variant",
         "device_class": "power",
@@ -49,9 +60,11 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "statistic": "median",
         "max_age_days": 30,
         "sampling_size": 1000,
+        "sensor_type_category": "statistics",
     },
     "load_avg_16_22_weekday": {
-        "name": "Průměrná spotřeba 16-22h (všední dny)",
+        "name": "Průměrný odběr 16-22h (všední dny)",
+        "name_cs": "Průměrný odběr 16-22h (všední dny)",
         "unit": "W",
         "icon": "mdi:chart-timeline-variant",
         "device_class": "power",
@@ -61,9 +74,11 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "statistic": "median",
         "max_age_days": 30,
         "sampling_size": 1000,
+        "sensor_type_category": "statistics",
     },
     "load_avg_22_6_weekday": {
-        "name": "Průměrná spotřeba 22-6h (všední dny)",
+        "name": "Průměrný odběr 22-6h (všední dny)",
+        "name_cs": "Průměrný odběr 22-6h (všední dny)",
         "unit": "W",
         "icon": "mdi:chart-timeline-variant",
         "device_class": "power",
@@ -73,10 +88,12 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "statistic": "median",
         "max_age_days": 30,
         "sampling_size": 1000,
+        "sensor_type_category": "statistics",
     },
     # Víkendové varianty
     "load_avg_6_8_weekend": {
-        "name": "Průměrná spotřeba 6-8h (víkendy)",
+        "name": "Průměrný odběr 6-8h (víkendy)",
+        "name_cs": "Průměrný odběr 6-8h (víkendy)",
         "unit": "W",
         "icon": "mdi:chart-timeline-variant",
         "device_class": "power",
@@ -86,9 +103,11 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "statistic": "median",
         "max_age_days": 30,
         "sampling_size": 1000,
+        "sensor_type_category": "statistics",
     },
     "load_avg_8_12_weekend": {
-        "name": "Průměrná spotřeba 8-12h (víkendy)",
+        "name": "Průměrný odběr 8-12h (víkendy)",
+        "name_cs": "Průměrný odběr 8-12h (víkendy)",
         "unit": "W",
         "icon": "mdi:chart-timeline-variant",
         "device_class": "power",
@@ -98,9 +117,11 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "statistic": "median",
         "max_age_days": 30,
         "sampling_size": 1000,
+        "sensor_type_category": "statistics",
     },
     "load_avg_12_16_weekend": {
-        "name": "Průměrná spotřeba 12-16h (víkendy)",
+        "name": "Průměrný odběr 12-16h (víkendy)",
+        "name_cs": "Průměrný odběr 12-16h (víkendy)",
         "unit": "W",
         "icon": "mdi:chart-timeline-variant",
         "device_class": "power",
@@ -109,10 +130,12 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "day_type": "weekend",
         "statistic": "median",
         "max_age_days": 30,
-        "sampling_size": 1000,
+        "sampling_size": 500,
+        "sensor_type_category": "statistics",
     },
     "load_avg_16_22_weekend": {
-        "name": "Průměrná spotřeba 16-22h (víkendy)",
+        "name": "Průměrný odběr 16-22h (víkendy)",
+        "name_cs": "Průměrný odběr 16-22h (víkendy)",
         "unit": "W",
         "icon": "mdi:chart-timeline-variant",
         "device_class": "power",
@@ -122,9 +145,11 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "statistic": "median",
         "max_age_days": 30,
         "sampling_size": 1000,
+        "sensor_type_category": "statistics",
     },
     "load_avg_22_6_weekend": {
-        "name": "Průměrná spotřeba 22-6h (víkendy)",
+        "name": "Průměrný odběr 22-6h (víkendy)",
+        "name_cs": "Průměrný odběr 22-6h (víkendy)",
         "unit": "W",
         "icon": "mdi:chart-timeline-variant",
         "device_class": "power",
@@ -134,36 +159,23 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "statistic": "median",
         "max_age_days": 30,
         "sampling_size": 1000,
-    },
-    # Solar Forecast senzor
-    "solar_forecast": {
-        "name": "Solar Forecast",
-        "unit": "W",
-        "icon": "mdi:solar-power",
-        "device_class": "power",
-        "state_class": "measurement",
-    },
-    "solar_forecast_info": {
-        "name": "Solar Forecast Info",
-        "unit": None,
-        "icon": "mdi:information",
-        "device_class": None,
-        "state_class": None,
+        "sensor_type_category": "statistics",
     },
     # Predikční senzory
     "battery_prediction_discharge_time": {
         "name": "Predikce - doba vybití baterie",
         "unit": "h",
         "icon": "mdi:battery-clock",
-        "device_class": None,
-        "state_class": "measurement",
+        "device_class": "duration",
+        "sensor_type_category": "statistics",
     },
     "battery_prediction_needed_capacity": {
         "name": "Predikce - potřebná kapacita baterie",
         "unit": "kWh",
         "icon": "mdi:battery-plus",
         "device_class": "energy",
-        "state_class": "measurement",
+        "state_class": "total",  # Oprava: energy device_class vyžaduje total nebo total_increasing
+        "sensor_type_category": "statistics",
     },
     "battery_prediction_morning_soc": {
         "name": "Predikce - stav baterie ráno",
@@ -171,5 +183,99 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "icon": "mdi:battery-clock-outline",
         "device_class": "battery",
         "state_class": "measurement",
+        "sensor_type_category": "statistics",
+    },
+    # Hodinové reálné senzory - používají existující computed energy senzory
+    "hourly_real_battery_charge_kwh": {
+        "name": "Hourly Battery Charge",
+        "name_cs": "Hodinové nabíjení baterie",
+        "unit": "kWh",
+        "icon": "mdi:battery-plus",
+        "device_class": SensorDeviceClass.ENERGY,
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "statistics",
+        "hourly_data_type": "energy_diff",
+        "source_sensor": "computed_batt_charge_energy_today",
+        "description": "Reálné nabíjení baterie za poslední hodinu",
+    },
+    "hourly_real_battery_discharge_kwh": {
+        "name": "Hourly Battery Discharge",
+        "name_cs": "Hodinové vybíjení baterie",
+        "unit": "kWh",
+        "icon": "mdi:battery-minus",
+        "device_class": SensorDeviceClass.ENERGY,
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "statistics",
+        "hourly_data_type": "energy_diff",
+        "source_sensor": "computed_batt_discharge_energy_today",
+        "description": "Reálné vybíjení baterie za poslední hodinu",
+    },
+    "hourly_real_fve_total_kwh": {
+        "name": "Hourly FVE Production",
+        "name_cs": "Hodinová výroba FVE",
+        "unit": "kWh",
+        "icon": "mdi:solar-power",
+        "device_class": SensorDeviceClass.ENERGY,
+        "state_class": SensorStateClass.TOTAL,  # Oprava: energy device_class s total pro hodinové hodnoty
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "statistics",
+        "hourly_data_type": "power_integral",
+        "source_sensor": "actual_fv_total",
+        "description": "Reálná celková výroba FVE za poslední hodinu",
+    },
+    "hourly_real_load_kwh": {
+        "name": "Hourly Load Consumption",
+        "name_cs": "Hodinová spotřeba zátěže",
+        "unit": "kWh",
+        "icon": "mdi:home-lightning-bolt",
+        "device_class": SensorDeviceClass.ENERGY,
+        "state_class": SensorStateClass.TOTAL,  # Oprava: energy device_class s total pro hodinové hodnoty
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "statistics",
+        "hourly_data_type": "power_integral",
+        "source_sensor": "actual_aco_p",
+        "description": "Reálná spotřeba za poslední hodinu",
+    },
+    "hourly_real_boiler_kwh": {
+        "name": "Hourly Boiler Consumption",
+        "name_cs": "Hodinová spotřeba bojleru",
+        "unit": "kWh",
+        "icon": "mdi:water-boiler",
+        "device_class": SensorDeviceClass.ENERGY,
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "statistics",
+        "hourly_data_type": "energy_diff",
+        "source_sensor": "boiler_day_w",
+        "description": "Reálná spotřeba bojleru za poslední hodinu",
+    },
+    # Hodinové FVE stringy
+    "hourly_real_fve_string_1_kwh": {
+        "name": "Hourly FVE String 1 Production",
+        "name_cs": "Hodinová výroba FVE string 1",
+        "unit": "kWh",
+        "icon": "mdi:solar-panel",
+        "device_class": SensorDeviceClass.ENERGY,
+        "state_class": SensorStateClass.TOTAL,  # Oprava: energy device_class s total pro hodinové hodnoty
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "statistics",
+        "hourly_data_type": "power_integral",
+        "source_sensor": "actual_fv_p1",
+        "description": "Reálná výroba FVE string 1 za poslední hodinu",
+    },
+    "hourly_real_fve_string_2_kwh": {
+        "name": "Hourly FVE String 2 Production",
+        "name_cs": "Hodinová výroba FVE string 2",
+        "unit": "kWh",
+        "icon": "mdi:solar-panel",
+        "device_class": SensorDeviceClass.ENERGY,
+        "state_class": SensorStateClass.TOTAL,  # Oprava: energy device_class s total pro hodinové hodnoty
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "statistics",
+        "hourly_data_type": "power_integral",
+        "source_sensor": "actual_fv_p2",
+        "description": "Reálná výroba FVE string 2 za poslední hodinu",
     },
 }

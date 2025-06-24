@@ -12,6 +12,7 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": "actual",
         "node_key": "bat_c",
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "data",  # ✅ Správná kategorie pro data senzory
     },
     "batt_batt_comp_p": {
         "name": "Battery Power",
@@ -21,6 +22,7 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": "actual",
         "node_key": "bat_p",
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "data",  # ✅ Správná kategorie pro data senzory
     },
     # Výkon oddělený na nabíjení a vybíjení
     "batt_batt_comp_p_charge": {
@@ -31,6 +33,7 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "computed",  # ✅ Computed senzory
     },
     "batt_batt_comp_p_discharge": {
         "name": "Battery Discharge Power",
@@ -40,6 +43,7 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "computed",  # ✅ Computed senzory
     },
     # Energie nabíjení/vybíjení CELKEM
     "computed_batt_charge_energy_today": {
@@ -50,6 +54,7 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.TOTAL,
+        "sensor_type_category": "computed",
     },
     "computed_batt_discharge_energy_today": {
         "name": "Battery Discharge Energy Today",
@@ -59,6 +64,7 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.TOTAL,
+        "sensor_type_category": "computed",
     },
     "computed_batt_charge_energy_month": {
         "name": "Battery Charge Energy This Month",
@@ -68,6 +74,7 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.TOTAL,
+        "sensor_type_category": "computed",
     },
     "computed_batt_discharge_energy_month": {
         "name": "Battery Discharge Energy This Month",
@@ -77,6 +84,7 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.TOTAL,
+        "sensor_type_category": "computed",
     },
     "computed_batt_charge_energy_year": {
         "name": "Battery Charge Energy This Year",
@@ -86,6 +94,7 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.TOTAL,
+        "sensor_type_category": "computed",
     },
     "computed_batt_discharge_energy_year": {
         "name": "Battery Discharge Energy This Year",
@@ -95,6 +104,7 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.TOTAL,
+        "sensor_type_category": "computed",
     },
     # Energie nabíjení Z FVE
     "computed_batt_charge_fve_energy_today": {
@@ -105,6 +115,7 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.TOTAL,
+        "sensor_type_category": "computed",
     },
     "computed_batt_charge_fve_energy_month": {
         "name": "Battery Charge Energy from Solar This Month",
@@ -114,6 +125,7 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.TOTAL,
+        "sensor_type_category": "computed",
     },
     "computed_batt_charge_fve_energy_year": {
         "name": "Battery Charge Energy from Solar This Year",
@@ -123,6 +135,7 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.TOTAL,
+        "sensor_type_category": "computed",
     },
     # Energie nabíjení ZE SÍTĚ
     "computed_batt_charge_grid_energy_today": {
@@ -133,6 +146,7 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.TOTAL,
+        "sensor_type_category": "computed",
     },
     "computed_batt_charge_grid_energy_month": {
         "name": "Battery Charge Energy from Grid This Month",
@@ -142,6 +156,7 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.TOTAL,
+        "sensor_type_category": "computed",
     },
     "computed_batt_charge_grid_energy_year": {
         "name": "Battery Charge Energy from Grid This Year",
@@ -151,5 +166,6 @@ SENSOR_TYPES_BATT: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.TOTAL,
+        "sensor_type_category": "computed",
     },
 }

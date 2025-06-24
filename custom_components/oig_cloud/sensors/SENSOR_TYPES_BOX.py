@@ -1,9 +1,7 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import EntityCategory
 
-
 from typing import Dict
-
 
 SENSOR_TYPES_BOX: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClass]] = {
     "box_humid": {
@@ -15,6 +13,7 @@ SENSOR_TYPES_BOX: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClass
         "node_key": "humid",
         "state_class": SensorStateClass.MEASUREMENT,
         "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "data",
     },
     "box_prms_mode": {
         "name": "Operation Mode",
@@ -25,6 +24,7 @@ SENSOR_TYPES_BOX: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClass
         "node_key": "mode",
         "state_class": None,
         "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "data",
     },
     "box_temp": {
         "name": "Temperature",
@@ -35,5 +35,6 @@ SENSOR_TYPES_BOX: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClass
         "node_key": "temp",
         "state_class": SensorStateClass.MEASUREMENT,
         "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "data",
     },
 }
