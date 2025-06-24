@@ -32,7 +32,6 @@ except ImportError:
     _has_opentelemetry = False
 
 from homeassistant import core
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from ..models import OigCloudData, OigCloudDeviceData
 
@@ -589,82 +588,57 @@ class OigCloudApi:
                 self._logger.error(f"Error: {e}", stack_info=True)
                 raise
 
-    async def get_extended_stats(
-        self, stat_type: str, date_from: str, date_to: str
-    ) -> Dict[str, Any]:
-        """Fetch extended statistics for specified type and date range with proper error handling."""
-        try:
-            self._logger.debug(
-                f"Requesting extended stats for type '{stat_type}' from {date_from} to {date_to}"
-            )
+    async def get_extended_stats(self, name: str, from_date: str, to_date: str) -> Any:
+        if _has_opentelemetry and tracer:
+            with tracer.start_as_current_span("get_extended_stats") as span:
+                try:
+                    async with self.get_session() as session:
+                        url = self._base_url + "json2.php"
+                        self._logger.debug(f"Requesting extended stats from {url}")
 
-            url = f"{self._base_url}/json2.php"
-            data = {
-                "device_id": self.box_id,
-                "type": stat_type,
-                "date_from": date_from,
-                "date_to": date_to,
-            }
+                        payload = {"name": name, "range": f"{from_date},{to_date},0"}
+                        headers = {"Content-Type": "application/json"}
 
-            headers = {
-                "Content-Type": "application/x-www-form-urlencoded",
-                "User-Agent": "HomeAssistant-OIG-Cloud",
-            }
+                        async with session.post(
+                            url, json=payload, headers=headers
+                        ) as response:
+                            if response.status == 200:
+                                result = await response.json()
+                                self._logger.debug(
+                                    f"Extended stats '{name}' retrieved successfully"
+                                )
+                                return result
+                            else:
+                                raise Exception(
+                                    f"Error fetching extended stats: {response.status}"
+                                )
+                except Exception as e:
+                    self._logger.error(
+                        f"Error in get_extended_stats: {e}", stack_info=True
+                    )
+                    raise e
+        else:
+            try:
+                async with self.get_session() as session:
+                    url = self._base_url + "json2.php"
+                    self._logger.debug(f"Requesting extended stats from {url}")
 
-            async with self.get_session() as session:
-                self._logger.debug(f"Making POST request to {url} with data: {data}")
+                    payload = {"name": name, "range": f"{from_date},{to_date},0"}
+                    headers = {"Content-Type": "application/json"}
 
-                async with session.post(url, data=data, headers=headers) as response:
-
-                    self._logger.debug(f"Response status: {response.status}")
-
-                    if response.status == 200:
-                        try:
+                    async with session.post(
+                        url, json=payload, headers=headers
+                    ) as response:
+                        if response.status == 200:
                             result = await response.json()
                             self._logger.debug(
-                                f"Extended stats '{stat_type}' retrieved successfully, data size: {len(str(result))}"
+                                f"Extended stats '{name}' retrieved successfully"
                             )
                             return result
-                        except aiohttp.ContentTypeError as e:
-                            self._logger.error(
-                                f"Invalid JSON response for {stat_type}: {e}"
+                        else:
+                            raise Exception(
+                                f"Error fetching extended stats: {response.status}"
                             )
-                            text_response = await response.text()
-                            self._logger.debug(
-                                f"Raw response text: {text_response[:500]}..."
-                            )
-                            return {}
-                    elif response.status == 401:
-                        self._logger.error(
-                            f"Authentication failed for extended stats {stat_type}"
-                        )
-                        raise ClientResponseError(
-                            request_info=response.request_info,
-                            history=response.history,
-                            status=401,
-                            message="Authentication required",
-                        )
-                    elif response.status == 429:
-                        self._logger.warning(
-                            f"Rate limit exceeded for extended stats {stat_type}"
-                        )
-                        return {}
-                    else:
-                        self._logger.error(
-                            f"HTTP {response.status} error fetching extended stats for {stat_type}"
-                        )
-                        error_text = await response.text()
-                        self._logger.debug(f"Error response: {error_text[:200]}...")
-                        return {}
-
-        except (ClientConnectorError, ClientTimeout, ClientResponseError) as e:
-            self._logger.error(
-                f"Client error fetching extended stats for {stat_type}: {e}"
-            )
-            return {}
-        except Exception as e:
-            self._logger.error(
-                f"Unexpected error fetching extended stats for {stat_type}: {e}",
-                exc_info=True,
-            )
-            return {}
+            except Exception as e:
+                self._logger.error(f"Error in get_extended_stats: {e}", stack_info=True)
+                raise e
