@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Union, List, Tuple
 from statistics import median
 import json
@@ -207,9 +207,31 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
                 if "interval_data" in data:
                     self._interval_data = data["interval_data"]
 
-                # Načtení hodinových dat
+                # Načtení hodinových dat s bezpečným parsing
                 if "hourly_data" in data:
-                    self._hourly_data = data["hourly_data"]
+                    safe_hourly_data = []
+                    for record in data["hourly_data"]:
+                        try:
+                            # Validace struktury záznamu
+                            if (
+                                isinstance(record, dict)
+                                and "datetime" in record
+                                and "value" in record
+                            ):
+                                # Test parsování datetime - neukládáme ho, jen validujeme
+                                test_dt = datetime.fromisoformat(record["datetime"])
+                                safe_hourly_data.append(record)
+                            else:
+                                _LOGGER.warning(
+                                    f"[{self.entity_id}] Invalid hourly record structure: {record}"
+                                )
+                        except (ValueError, TypeError, KeyError) as e:
+                            _LOGGER.warning(
+                                f"[{self.entity_id}] Skipping invalid hourly record: {record} - {e}"
+                            )
+                            continue
+
+                    self._hourly_data = safe_hourly_data
 
                 # Načtení aktuální hodinové hodnoty
                 if "current_hourly_value" in data:
@@ -219,7 +241,7 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
                 if "last_source_value" in data:
                     self._last_source_value = data["last_source_value"]
 
-                if "last_hour_reset" in data:
+                if "last_hour_reset" in data and data["last_hour_reset"]:
                     try:
                         self._last_hour_reset = datetime.fromisoformat(
                             data["last_hour_reset"]
@@ -228,10 +250,13 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
                             self._last_hour_reset = self._last_hour_reset.replace(
                                 tzinfo=None
                             )
-                    except (ValueError, TypeError):
+                    except (ValueError, TypeError) as e:
+                        _LOGGER.warning(
+                            f"[{self.entity_id}] Invalid last_hour_reset format: {e}"
+                        )
                         self._last_hour_reset = None
 
-                # Vyčištění starých dat
+                # Vyčištění starých dat po načtení
                 await self._cleanup_old_data()
 
                 _LOGGER.debug(
@@ -265,7 +290,7 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
         try:
             store = Store(self.hass, version=1, key=self._storage_key)
 
-            # Příprava dat k uložení - zajistit naive datetime
+            # Příprava dat k uložení - zajistir naive datetime
             sampling_data_serializable = []
             for dt, value in self._sampling_data:
                 # Ujistit se, že ukládáme naive datetime
@@ -273,10 +298,28 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
                     dt = dt.replace(tzinfo=None)
                 sampling_data_serializable.append((dt.isoformat(), value))
 
+            # Oprava: Ujistit se, že hodinová data používají naive datetime (bez timestamp)
+            safe_hourly_data = []
+            for record in self._hourly_data:
+                safe_record = {"datetime": "", "value": 0.0}
+                try:
+                    # Převést datetime na naive pokud je timezone-aware
+                    if "datetime" in record:
+                        dt = datetime.fromisoformat(record["datetime"])
+                        if dt.tzinfo is not None:
+                            dt = dt.replace(tzinfo=None)
+                        safe_record["datetime"] = dt.isoformat()
+
+                    if "value" in record:
+                        safe_record["value"] = float(record["value"])
+                except (ValueError, TypeError):
+                    continue
+                safe_hourly_data.append(safe_record)
+
             save_data = {
                 "sampling_data": sampling_data_serializable,
                 "interval_data": self._interval_data,
-                "hourly_data": self._hourly_data,
+                "hourly_data": safe_hourly_data,
                 "current_hourly_value": self._current_hourly_value,
                 "last_source_value": self._last_source_value,
                 "last_hour_reset": (
@@ -325,11 +368,27 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
         # Vyčištění hodinových dat - ponechat jen posledních 48 hodin
         if self._hourly_data:
             cutoff_time = now - timedelta(hours=48)
-            self._hourly_data = [
-                record
-                for record in self._hourly_data
-                if datetime.fromisoformat(record["datetime"]) > cutoff_time
-            ]
+            cleaned_hourly_data = []
+            for record in self._hourly_data:
+                try:
+                    # Bezpečné parsování datetime z uloženého záznamu
+                    record_dt = datetime.fromisoformat(record["datetime"])
+                    # Převod na naive datetime pro konzistentní porovnání
+                    record_dt_naive = (
+                        record_dt.replace(tzinfo=None)
+                        if record_dt.tzinfo is not None
+                        else record_dt
+                    )
+
+                    if record_dt_naive > cutoff_time:
+                        cleaned_hourly_data.append(record)
+                except (ValueError, TypeError, KeyError) as e:
+                    _LOGGER.warning(
+                        f"[{self.entity_id}] Invalid hourly record format: {record} - {e}"
+                    )
+                    continue
+
+            self._hourly_data = cleaned_hourly_data
 
     async def _update_sampling_data(self, now: datetime) -> None:
         """Aktualizuje sampling data pro základní mediánový senzor."""
@@ -391,7 +450,20 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
                 current_hour = now.replace(minute=0, second=0, microsecond=0)
 
                 # Kontrola zda jsme už v této hodině neaktualizovali
-                if self._last_hour_reset != current_hour:
+                # Převod na naive datetime pro porovnání
+                current_hour_naive = (
+                    current_hour.replace(tzinfo=None)
+                    if current_hour.tzinfo is not None
+                    else current_hour
+                )
+                last_reset_naive = (
+                    self._last_hour_reset.replace(tzinfo=None)
+                    if self._last_hour_reset
+                    and self._last_hour_reset.tzinfo is not None
+                    else self._last_hour_reset
+                )
+
+                if last_reset_naive != current_hour_naive:
                     # Výpočet za uplynulou hodinu
                     hourly_value = await self._calculate_hourly_energy()
 
@@ -399,26 +471,48 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
                         # Uložení hodnoty pro současný stav
                         self._current_hourly_value = hourly_value
 
-                        # Přidání do historických dat
+                        # Přidání do historických dat - OPRAVA: odstranění timestamp
                         previous_hour = current_hour - timedelta(hours=1)
+                        # Použití lokálního času pro uložení (naive datetime)
+                        previous_hour_naive = (
+                            previous_hour.replace(tzinfo=None)
+                            if previous_hour.tzinfo is not None
+                            else previous_hour
+                        )
+
                         hourly_record = {
-                            "datetime": previous_hour.isoformat(),
+                            "datetime": previous_hour_naive.isoformat(),
                             "value": hourly_value,
-                            "timestamp": previous_hour.timestamp(),
                         }
 
                         self._hourly_data.append(hourly_record)
 
                         # Omezení na posledních 48 hodin (včera + dnes)
                         cutoff_time = now - timedelta(hours=48)
-                        self._hourly_data = [
-                            record
-                            for record in self._hourly_data
-                            if datetime.fromisoformat(record["datetime"]) > cutoff_time
-                        ]
+                        cleaned_hourly_data = []
+                        for record in self._hourly_data:
+                            try:
+                                record_dt = datetime.fromisoformat(record["datetime"])
+                                record_dt_naive = (
+                                    record_dt.replace(tzinfo=None)
+                                    if record_dt.tzinfo is not None
+                                    else record_dt
+                                )
+                                cutoff_time_naive = (
+                                    cutoff_time.replace(tzinfo=None)
+                                    if cutoff_time.tzinfo is not None
+                                    else cutoff_time
+                                )
 
-                        # Uložení hodnoty do historie
-                        self._last_hour_reset = current_hour
+                                if record_dt_naive > cutoff_time_naive:
+                                    cleaned_hourly_data.append(record)
+                            except (ValueError, TypeError, KeyError):
+                                continue
+
+                        self._hourly_data = cleaned_hourly_data
+
+                        # Uložení hodnoty do historie - použití naive datetime
+                        self._last_hour_reset = current_hour_naive
 
                         # Uložení dat
                         await self._save_statistics_data()
@@ -427,7 +521,7 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
                         self.async_write_ha_state()
 
                         _LOGGER.info(
-                            f"[{self.entity_id}] Hourly update: {hourly_value:.3f} kWh for hour ending at {previous_hour.strftime('%H:%M')}"
+                            f"[{self.entity_id}] Hourly update: {hourly_value:.3f} kWh for hour ending at {previous_hour_naive.strftime('%H:%M')}"
                         )
 
         except Exception as e:
@@ -570,6 +664,10 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
                 return None
 
             current_value = float(source_entity.state)
+
+            # Získání jednotky ze source senzoru
+            source_unit = source_entity.attributes.get("unit_of_measurement", "")
+
             hourly_data_type = self._sensor_config.get(
                 "hourly_data_type", "energy_diff"
             )
@@ -589,25 +687,52 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
 
                 self._last_source_value = current_value
 
-                # Kontrola jednotek podle source_sensor
-                source_sensor = self._sensor_config.get("source_sensor", "")
-                kwh_sensors = [
-                    "computed_batt_charge_energy_today",
-                    "computed_batt_discharge_energy_today",
-                ]
-
-                if source_sensor in kwh_sensors:
-                    # Už je v kWh
-                    return round(energy_diff, 3)
-                else:
+                # Konverze podle jednotky source senzoru
+                if source_unit.lower() in ["kwh", "kwh"]:
+                    # Už je v kWh - nekonvertovat
+                    result = round(energy_diff, 3)
+                    _LOGGER.debug(
+                        f"[{self.entity_id}] Energy diff: {energy_diff:.3f} kWh (source: {source_unit})"
+                    )
+                elif source_unit.lower() in ["wh", "wh"]:
                     # Je v Wh, převést na kWh
-                    return round(energy_diff / 1000, 3)
+                    result = round(energy_diff / 1000, 3)
+                    _LOGGER.debug(
+                        f"[{self.entity_id}] Energy diff: {energy_diff} Wh -> {result:.3f} kWh (source: {source_unit})"
+                    )
+                else:
+                    # Neznámá jednotka - logování a předpokládáme Wh
+                    result = round(energy_diff / 1000, 3)
+                    _LOGGER.warning(
+                        f"[{self.entity_id}] Unknown source unit '{source_unit}', assuming Wh. Value: {energy_diff} -> {result:.3f} kWh"
+                    )
+
+                return result
 
             elif hourly_data_type == "power_integral":
                 # Průměrný výkon za hodinu * 1 hodina
                 # Pro zjednodušení použijeme aktuální výkon jako reprezentativní
-                # Výkon v W * 1h = Wh, pak / 1000 = kWh
-                return round(current_value / 1000, 3)
+
+                if source_unit.lower() in ["w", "w", "watt"]:
+                    # Výkon v W * 1h = Wh, pak / 1000 = kWh
+                    result = round(current_value / 1000, 3)
+                    _LOGGER.debug(
+                        f"[{self.entity_id}] Power integral: {current_value}W -> {result} kWh (source: {source_unit})"
+                    )
+                elif source_unit.lower() in ["kw", "kw", "kilowatt"]:
+                    # Výkon už v kW * 1h = kWh
+                    result = round(current_value, 3)
+                    _LOGGER.debug(
+                        f"[{self.entity_id}] Power integral: {current_value}kW -> {result} kWh (source: {source_unit})"
+                    )
+                else:
+                    # Neznámá jednotka - předpokládáme W
+                    result = round(current_value / 1000, 3)
+                    _LOGGER.warning(
+                        f"[{self.entity_id}] Unknown power unit '{source_unit}', assuming W. Value: {current_value}W -> {result:.3f} kWh"
+                    )
+
+                return result
 
             return None
 
@@ -748,10 +873,10 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
                     }
                 )
 
-                # Přidání historických hodinových dat
+                # Přidání historických hodinových dat s bezpečným datetime handling
                 if self._hourly_data:
-                    # Rozdělení na včerejší a dnešní data
-                    now = datetime.now()
+                    # Rozdělení na včerejší a dnešní data - použití naive datetime
+                    now = datetime.now()  # Naive datetime
                     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
                     yesterday_start = today_start - timedelta(days=1)
 
@@ -759,11 +884,24 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
                     yesterday_data = []
 
                     for record in self._hourly_data:
-                        record_time = datetime.fromisoformat(record["datetime"])
-                        if record_time >= today_start:
-                            today_data.append(record)
-                        elif record_time >= yesterday_start:
-                            yesterday_data.append(record)
+                        try:
+                            record_time = datetime.fromisoformat(record["datetime"])
+                            # Převod na naive datetime pro konzistentní porovnání
+                            record_time_naive = (
+                                record_time.replace(tzinfo=None)
+                                if record_time.tzinfo is not None
+                                else record_time
+                            )
+
+                            if record_time_naive >= today_start:
+                                today_data.append(record)
+                            elif record_time_naive >= yesterday_start:
+                                yesterday_data.append(record)
+                        except (ValueError, TypeError, KeyError) as e:
+                            _LOGGER.warning(
+                                f"[{self.entity_id}] Invalid record datetime format: {record} - {e}"
+                            )
+                            continue
 
                     if today_data:
                         attributes["today_hourly"] = today_data
@@ -771,8 +909,16 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
                         attributes["yesterday_hourly"] = yesterday_data
 
                     # Celkem za dnes a včera
-                    today_total = sum(record["value"] for record in today_data)
-                    yesterday_total = sum(record["value"] for record in yesterday_data)
+                    today_total = sum(
+                        record.get("value", 0.0)
+                        for record in today_data
+                        if isinstance(record.get("value"), (int, float))
+                    )
+                    yesterday_total = sum(
+                        record.get("value", 0.0)
+                        for record in yesterday_data
+                        if isinstance(record.get("value"), (int, float))
+                    )
 
                     attributes["today_total"] = round(today_total, 3)
                     attributes["yesterday_total"] = round(yesterday_total, 3)
@@ -809,3 +955,145 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
             attributes["error"] = str(e)
 
         return attributes
+
+
+def ensure_timezone_aware(dt: datetime) -> datetime:
+    """Ensure datetime object is timezone aware."""
+    if dt.tzinfo is None:
+        # If naive, assume it's in the local timezone
+        return dt_util.as_local(dt)
+    return dt
+
+
+def safe_datetime_compare(dt1: datetime, dt2: datetime) -> bool:
+    """Safely compare two datetime objects by ensuring both are timezone aware."""
+    try:
+        dt1_aware = ensure_timezone_aware(dt1)
+        dt2_aware = ensure_timezone_aware(dt2)
+        return dt1_aware < dt2_aware
+    except Exception as e:
+        _LOGGER.warning(f"Error comparing datetimes: {e}")
+        return False
+
+
+def create_hourly_attributes(
+    sensor_name: str,
+    data_points: List[Dict[str, Any]],
+    current_time: Optional[datetime] = None,
+) -> Dict[str, Any]:
+    """Create attributes for hourly sensors with proper timezone handling."""
+    try:
+        if current_time is None:
+            current_time = dt_util.now()
+
+        # Ensure current_time is timezone aware
+        current_time = ensure_timezone_aware(current_time)
+
+        attributes = {}
+
+        # Process data points with timezone-aware datetime handling
+        filtered_data = []
+        for point in data_points:
+            if isinstance(point.get("timestamp"), datetime):
+                point_time = ensure_timezone_aware(point["timestamp"])
+                point["timestamp"] = point_time
+                filtered_data.append(point)
+            elif isinstance(point.get("time"), datetime):
+                point_time = ensure_timezone_aware(point["time"])
+                point["time"] = point_time
+                filtered_data.append(point)
+
+        # Add processed data to attributes
+        attributes["data_points"] = len(filtered_data)
+        attributes["last_updated"] = current_time.isoformat()
+
+        if filtered_data:
+            # Find latest data point safely
+            latest_point = max(
+                filtered_data,
+                key=lambda x: x.get("timestamp") or x.get("time") or current_time,
+            )
+            latest_time = latest_point.get("timestamp") or latest_point.get("time")
+            if latest_time:
+                attributes["latest_data_time"] = ensure_timezone_aware(
+                    latest_time
+                ).isoformat()
+
+        return attributes
+
+    except Exception as e:
+        _LOGGER.error(f"[{sensor_name}] Error creating attributes: {e}")
+        return {
+            "error": str(e),
+            "last_updated": dt_util.now().isoformat(),
+            "data_points": 0,
+        }
+
+
+class StatisticsProcessor:
+    """Process statistics with proper timezone handling."""
+
+    def __init__(self, hass: HomeAssistant) -> None:
+        """Initialize statistics processor."""
+        self.hass = hass
+
+    def process_hourly_data(
+        self, sensor_name: str, raw_data: List[Dict[str, Any]], value_key: str = "value"
+    ) -> Dict[str, Any]:
+        """Process hourly data with timezone-aware datetime handling."""
+        try:
+            current_time = dt_util.now()
+
+            # Filter and process data points
+            processed_data = []
+            for point in raw_data:
+                processed_point = dict(point)
+
+                # Handle timestamp field
+                if "timestamp" in processed_point:
+                    ts = processed_point["timestamp"]
+                    if isinstance(ts, str):
+                        try:
+                            ts = dt_util.parse_datetime(ts)
+                        except ValueError:
+                            continue
+                    elif isinstance(ts, datetime):
+                        ts = ensure_timezone_aware(ts)
+                    processed_point["timestamp"] = ts
+
+                # Handle time field
+                elif "time" in processed_point:
+                    ts = processed_point["time"]
+                    if isinstance(ts, str):
+                        try:
+                            ts = dt_util.parse_datetime(ts)
+                        except ValueError:
+                            continue
+                    elif isinstance(ts, datetime):
+                        ts = ensure_timezone_aware(ts)
+                    processed_point["time"] = ts
+
+                processed_data.append(processed_point)
+
+            # Create attributes safely
+            attributes = create_hourly_attributes(
+                sensor_name, processed_data, current_time
+            )
+
+            # Calculate current value
+            current_value = 0.0
+            if processed_data:
+                latest_point = processed_data[-1]
+                current_value = float(latest_point.get(value_key, 0.0))
+
+            return {"value": current_value, "attributes": attributes}
+
+        except Exception as e:
+            _LOGGER.error(f"[{sensor_name}] Error processing hourly data: {e}")
+            return {
+                "value": 0.0,
+                "attributes": {
+                    "error": str(e),
+                    "last_updated": dt_util.now().isoformat(),
+                },
+            }

@@ -146,6 +146,47 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 )
 
 
+class OigCloudOptionsFlowHandler(config_entries.OptionsFlow):
+    """Handle options flow for OIG Cloud integration."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Manage the options."""
+        if user_input is not None:
+            # Reload integration after options change
+            await self.hass.config_entries.async_reload(self.config_entry.entry_id)
+            return self.async_create_entry(title="", data=user_input)
+
+        # Get current configuration values - oprava chybějících konstant
+        current_interval = self.config_entry.data.get("standard_scan_interval", 30)
+        current_extended_sensors = self.config_entry.options.get(
+            "reconfigure_extended_sensors", False
+        )
+        current_solar_forecast = self.config_entry.options.get(
+            "reconfigure_solar_forecast", False
+        )
+        current_pricing = self.config_entry.options.get("pricing_info", False)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        "standard_scan_interval", default=current_interval
+                    ): vol.All(vol.Coerce(int), vol.Range(min=10, max=300)),
+                    vol.Optional(
+                        "reconfigure_extended_sensors", default=current_extended_sensors
+                    ): bool,
+                    vol.Optional(
+                        "reconfigure_solar_forecast", default=current_solar_forecast
+                    ): bool,
+                    vol.Optional("pricing_info", default=current_pricing): bool,
+                }
+            ),
+        )
+
+
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for OIG Cloud."""
 
@@ -256,9 +297,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(
         config_entry: config_entries.ConfigEntry,
-    ) -> config_entries.OptionsFlow:
+    ) -> OigCloudOptionsFlowHandler:
         """Create the options flow."""
-        return OptionsFlowHandler(config_entry)
+        return OigCloudOptionsFlowHandler(config_entry)
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
@@ -266,7 +307,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
-        self.config_entry = config_entry
+        # Úplně odstraníme - base třída to už poskytuje
+        super().__init__()
         self._user_data: Dict[str, Any] = {}
 
     async def async_step_init(
