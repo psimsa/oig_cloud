@@ -429,6 +429,12 @@ class OigCloudOptionsFlowHandler(config_entries.OptionsFlow):
                 default=current_options.get("extended_scan_interval", 300),
                 description="⏱️ Interval aktualizace rozšířených senzorů (sekundy)",
             ): vol.All(int, vol.Range(min=60, max=3600)),
+            # **OPRAVA: Přidat možnost vypnout extended stats API volání**
+            vol.Optional(
+                "disable_extended_stats_api",
+                default=current_options.get("disable_extended_stats_api", False),
+                description="🚫 Vypnout API volání extended stats (pokud způsobují HTTP 500 chyby)",
+            ): bool,
             vol.Optional(
                 "enable_extended_battery_sensors",
                 default=current_options.get("enable_extended_battery_sensors", True),
@@ -455,6 +461,7 @@ class OigCloudOptionsFlowHandler(config_entries.OptionsFlow):
                 "battery_info": "🔋 Monitoruje: napětí článků, nabíjecí/vybíjecí proudy, teplotu, stav zdraví baterie",
                 "fve_info": "☀️ Monitoruje: výkon každého stringu samostatně, proudy DC, efektivitu konverze",
                 "grid_info": "⚡ Monitoruje: napětí L1/L2/L3, frekvenci sítě, výkon na každé fázi, cos φ",
+                "troubleshoot_info": "🚫 Pokud máte problémy s HTTP 500 chybami, vypněte extended stats API",
             },
         )
 

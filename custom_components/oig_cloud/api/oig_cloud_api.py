@@ -589,56 +589,151 @@ class OigCloudApi:
                 raise
 
     async def get_extended_stats(self, name: str, from_date: str, to_date: str) -> Any:
-        if _has_opentelemetry and tracer:
-            with tracer.start_as_current_span("get_extended_stats") as span:
-                try:
-                    async with self.get_session() as session:
-                        url = self._base_url + "json2.php"
-                        self._logger.debug(f"Requesting extended stats from {url}")
+        """Get extended statistics from OIG Cloud API with detailed debugging."""
+        try:
+            self._logger.info(f"=== EXTENDED STATS DEBUG START ===")
+            self._logger.info(
+                f"Requesting extended stats: name='{name}', from_date='{from_date}', to_date='{to_date}'"
+            )
+            self._logger.info(f"Box ID: {self.box_id}")
+            self._logger.info(f"PHP Session ID present: {bool(self._phpsessid)}")
 
-                        payload = {"name": name, "range": f"{from_date},{to_date},0"}
-                        headers = {"Content-Type": "application/json"}
+            async with self.get_session() as session:
+                url = self._base_url + "json2.php"
+                self._logger.info(f"Request URL: {url}")
 
-                        async with session.post(
-                            url, json=payload, headers=headers
-                        ) as response:
-                            if response.status == 200:
-                                result = await response.json()
-                                self._logger.debug(
-                                    f"Extended stats '{name}' retrieved successfully"
-                                )
-                                return result
-                            else:
-                                raise Exception(
-                                    f"Error fetching extended stats: {response.status}"
-                                )
-                except Exception as e:
-                    self._logger.error(
-                        f"Error in get_extended_stats: {e}", stack_info=True
-                    )
-                    raise e
-        else:
-            try:
-                async with self.get_session() as session:
-                    url = self._base_url + "json2.php"
-                    self._logger.debug(f"Requesting extended stats from {url}")
+                # Zkusíme různé formáty payload
+                payloads_to_try = [
+                    # Původní formát
+                    {"name": name, "range": f"{from_date},{to_date},0"},
+                    # Alternativní formáty
+                    {"type": name, "date_from": from_date, "date_to": to_date},
+                    {"stat_type": name, "from": from_date, "to": to_date},
+                    {"name": name, "from_date": from_date, "to_date": to_date},
+                ]
 
-                    payload = {"name": name, "range": f"{from_date},{to_date},0"}
+                for i, payload in enumerate(payloads_to_try):
+                    self._logger.info(f"Trying payload format {i+1}: {payload}")
+
                     headers = {"Content-Type": "application/json"}
 
                     async with session.post(
                         url, json=payload, headers=headers
                     ) as response:
+                        self._logger.info(f"Response status: {response.status}")
+                        self._logger.info(f"Response headers: {dict(response.headers)}")
+
+                        # Přečteme response text pro debugging
+                        response_text = await response.text()
+                        self._logger.info(
+                            f"Response text (first 500 chars): {response_text[:500]}"
+                        )
+
                         if response.status == 200:
-                            result = await response.json()
-                            self._logger.debug(
-                                f"Extended stats '{name}' retrieved successfully"
+                            try:
+                                # Pokusíme se parsovat jako JSON
+                                result = (
+                                    json.loads(response_text) if response_text else {}
+                                )
+                                self._logger.info(
+                                    f"Successfully parsed JSON with payload format {i+1}"
+                                )
+                                self._logger.info(
+                                    f"Result type: {type(result)}, length: {len(str(result))}"
+                                )
+                                return result
+                            except json.JSONDecodeError as e:
+                                self._logger.warning(
+                                    f"Failed to parse JSON with payload {i+1}: {e}"
+                                )
+                                continue
+
+                        elif response.status == 500:
+                            self._logger.error(f"HTTP 500 with payload {i+1}")
+                            self._logger.error(
+                                f"Server error response: {response_text}"
                             )
-                            return result
+
+                            # Pokračujeme s dalším formátem
+                            continue
+
+                        elif response.status == 401:
+                            self._logger.warning(
+                                f"Authentication failed, attempting re-auth"
+                            )
+                            if await self.authenticate():
+                                self._logger.info("Re-authentication successful")
+                                # Rekurzivní volání po re-auth
+                                return await self.get_extended_stats(
+                                    name, from_date, to_date
+                                )
+                            else:
+                                self._logger.error("Re-authentication failed")
+                                return {}
+
                         else:
-                            raise Exception(
-                                f"Error fetching extended stats: {response.status}"
+                            self._logger.error(
+                                f"Unexpected status {response.status} with payload {i+1}"
                             )
-            except Exception as e:
-                self._logger.error(f"Error in get_extended_stats: {e}", stack_info=True)
-                raise e
+
+                # Pokud žádný formát nefungoval
+                self._logger.error(
+                    f"All payload formats failed for extended stats '{name}'"
+                )
+                return {}
+
+        except Exception as e:
+            self._logger.error(
+                f"Exception in get_extended_stats for '{name}': {e}", exc_info=True
+            )
+            return {}
+        finally:
+            self._logger.info(f"=== EXTENDED STATS DEBUG END ===")
+
+    async def debug_extended_stats_api(self) -> Dict[str, Any]:
+        """Debug method to test extended stats API endpoints."""
+        try:
+            self._logger.info("=== DEBUGGING EXTENDED STATS API ===")
+
+            async with self.get_session() as session:
+                base_url = self._base_url + "json2.php"
+
+                # Test 1: Prázdný POST request
+                self._logger.info("Test 1: Empty POST request")
+                async with session.post(base_url) as response:
+                    text = await response.text()
+                    self._logger.info(
+                        f"Empty POST: Status {response.status}, Response: {text[:200]}"
+                    )
+
+                # Test 2: GET request
+                self._logger.info("Test 2: GET request")
+                async with session.get(base_url) as response:
+                    text = await response.text()
+                    self._logger.info(
+                        f"GET: Status {response.status}, Response: {text[:200]}"
+                    )
+
+                # Test 3: Minimální payload
+                self._logger.info("Test 3: Minimal payload")
+                minimal_payload = {"test": "true"}
+                async with session.post(base_url, json=minimal_payload) as response:
+                    text = await response.text()
+                    self._logger.info(
+                        f"Minimal: Status {response.status}, Response: {text[:200]}"
+                    )
+
+                # Test 4: Zkusit hlavní JSON endpoint
+                main_url = self._base_url + "json.php"
+                self._logger.info("Test 4: Main JSON endpoint")
+                async with session.get(main_url) as response:
+                    text = await response.text()
+                    self._logger.info(
+                        f"Main JSON: Status {response.status}, Response: {text[:200]}"
+                    )
+
+                return {"debug": "completed"}
+
+        except Exception as e:
+            self._logger.error(f"Debug extended stats failed: {e}", exc_info=True)
+            return {}
