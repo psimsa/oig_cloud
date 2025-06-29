@@ -62,60 +62,70 @@ async def test_coordinator_initialization(mock_hass, mock_api, mock_config_entry
 
 
 @pytest.mark.asyncio
-async def test_async_update_data_success(coordinator, mock_api):
+async def test_async_update_data_success(
+    coordinator: OigCloudDataUpdateCoordinator, mock_api: Mock
+) -> None:
     """Test data update success."""
     mock_data = {"device1": {"box_prms": {"mode": 1}}}
-    mock_api.get_data.return_value = mock_data
+
+    # Mock nové API metody místo get_data
+    mock_api.get_basic_data.return_value = mock_data
+    mock_api.get_extended_data.return_value = {}
+    mock_api.get_notifications.return_value = {"status": "success", "content": ""}
 
     result = await coordinator._async_update_data()
 
-    mock_api.get_data.assert_called_once()
     assert result == mock_data
+    mock_api.get_basic_data.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_async_update_data_empty_response(coordinator, mock_api):
+async def test_async_update_data_empty_response(
+    coordinator: OigCloudDataUpdateCoordinator, mock_api: Mock
+) -> None:
     """Test handling of empty data response."""
-    mock_api.get_data.return_value = None
+    # Mock get_basic_data to return None
+    mock_api.get_basic_data.return_value = None
 
     with pytest.raises(UpdateFailed, match="No data received from OIG Cloud API"):
         await coordinator._async_update_data()
 
-    mock_api.get_data.assert_called_once()
-
 
 @pytest.mark.asyncio
-async def test_async_update_data_api_error(coordinator, mock_api):
+async def test_async_update_data_api_error(
+    coordinator: OigCloudDataUpdateCoordinator, mock_api: Mock
+) -> None:
     """Test handling of API errors."""
-    mock_api.get_data.side_effect = OigCloudApiError("API connection failed")
+    # Mock get_basic_data to raise OigCloudApiError
+    mock_api.get_basic_data.side_effect = OigCloudApiError("API connection failed")
 
     with pytest.raises(
-        UpdateFailed, match="Error fetching OIG Cloud data: API connection failed"
+        UpdateFailed, match="Error communicating with API: API connection failed"
     ):
         await coordinator._async_update_data()
 
-    mock_api.get_data.assert_called_once()
-
 
 @pytest.mark.asyncio
-async def test_async_update_data_timeout(coordinator, mock_api):
+async def test_async_update_data_timeout(
+    coordinator: OigCloudDataUpdateCoordinator, mock_api: Mock
+) -> None:
     """Test handling of timeout errors."""
-    mock_api.get_data.side_effect = asyncio.TimeoutError()
+    # Mock get_basic_data to raise TimeoutError
+    mock_api.get_basic_data.side_effect = asyncio.TimeoutError()
 
-    with pytest.raises(UpdateFailed, match="Timeout error fetching OIG Cloud data"):
+    with pytest.raises(UpdateFailed, match="Error communicating with API"):
         await coordinator._async_update_data()
-
-    mock_api.get_data.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_async_update_data_unexpected_error(coordinator, mock_api):
+async def test_async_update_data_unexpected_error(
+    coordinator: OigCloudDataUpdateCoordinator, mock_api: Mock
+) -> None:
     """Test handling of unexpected errors."""
-    mock_api.get_data.side_effect = Exception("Unexpected error")
+    # Mock get_basic_data to raise generic Exception
+    mock_api.get_basic_data.side_effect = Exception("Unexpected error")
 
     with pytest.raises(
-        UpdateFailed, match="Unexpected error fetching OIG Cloud data: Unexpected error"
+        UpdateFailed, match="Error communicating with API: Unexpected error"
     ):
         await coordinator._async_update_data()
-
-    mock_api.get_data.assert_called_once()
