@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock, AsyncMock
-from custom_components.oig_cloud.api import OigCloudApi
+from custom_components.oig_cloud.oig_cloud_api import OigCloudApi
 
 
 @pytest.fixture
