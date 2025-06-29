@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import Any, Dict, Optional, Union
 
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -28,12 +29,20 @@ _LANGS: Dict[str, Dict[str, str]] = {
 
 
 class OigCloudDataSensor(CoordinatorEntity, SensorEntity):
+    """Representation of an OIG Cloud sensor."""
+
     def __init__(
-        self, coordinator: Any, sensor_type: str, extended: bool = False
+        self,
+        coordinator: Any,
+        sensor_type: str,
+        extended: bool = False,
+        notification: bool = False,
     ) -> None:
+        """Initialize the sensor."""
         super().__init__(coordinator)
-        self._extended = extended
         self._sensor_type = sensor_type
+        self._extended = extended
+        self._notification = notification
         self._last_state: Optional[Union[float, str]] = None  # Uložíme si poslední stav
 
         # Načteme sensor config
@@ -103,9 +112,59 @@ class OigCloudDataSensor(CoordinatorEntity, SensorEntity):
         pass
 
     @property
-    def state(self) -> Optional[Union[float, str]]:
+    def state(self) -> Any:
         """Return the state of the sensor."""
         try:
+            # Notification sensors - OPRAVA: Debug logování + lepší diagnostika
+            if self._sensor_type == "latest_notification":
+                notification_manager = getattr(
+                    self.coordinator, "notification_manager", None
+                )
+                _LOGGER.debug(
+                    f"[{self.entity_id}] Notification manager check: {notification_manager is not None}"
+                )
+                if notification_manager is None:
+                    _LOGGER.warning(
+                        f"[{self.entity_id}] Notification manager is None - notifications not initialized"
+                    )
+                    return None
+                return notification_manager.get_latest_notification_message()
+
+            elif self._sensor_type == "bypass_status":
+                notification_manager = getattr(
+                    self.coordinator, "notification_manager", None
+                )
+                if notification_manager is None:
+                    _LOGGER.debug(
+                        f"[{self.entity_id}] Notification manager is None for bypass status"
+                    )
+                    return None
+                return notification_manager.get_bypass_status()
+
+            elif self._sensor_type == "notification_count_error":
+                notification_manager = getattr(
+                    self.coordinator, "notification_manager", None
+                )
+                if notification_manager is None:
+                    return None
+                return notification_manager.get_notification_count("error")
+
+            elif self._sensor_type == "notification_count_warning":
+                notification_manager = getattr(
+                    self.coordinator, "notification_manager", None
+                )
+                if notification_manager is None:
+                    return None
+                return notification_manager.get_notification_count("warning")
+
+            elif self._sensor_type == "notification_count_unread":
+                notification_manager = getattr(
+                    self.coordinator, "notification_manager", None
+                )
+                if notification_manager is None:
+                    return None
+                return notification_manager.get_unread_count()
+
             if self.coordinator.data is None:
                 return None
 
@@ -159,6 +218,59 @@ class OigCloudDataSensor(CoordinatorEntity, SensorEntity):
                 f"Error getting state for {self.entity_id}: {e}", exc_info=True
             )
             return None
+
+    @property
+    def extra_state_attributes(self) -> Dict[str, Any]:
+        """Return extra state attributes."""
+        attributes = {}
+
+        # Notification sensors - OPRAVA: Kontrola existence notification_manager
+        if self._sensor_type == "latest_notification":
+            notification_manager = getattr(
+                self.coordinator, "notification_manager", None
+            )
+            if notification_manager is not None:
+                latest = notification_manager.get_latest_notification()
+                if latest:
+                    attributes.update(
+                        {
+                            "notification_id": latest.id,
+                            "notification_type": latest.type,
+                            "timestamp": latest.timestamp.isoformat(),
+                            "device_id": latest.device_id,
+                            "severity": latest.severity,
+                            "read": latest.read,
+                        }
+                    )
+
+        elif self._sensor_type == "bypass_status":
+            notification_manager = getattr(
+                self.coordinator, "notification_manager", None
+            )
+            if notification_manager is not None:
+                attributes["last_check"] = datetime.now().isoformat()
+
+        elif self._sensor_type.startswith("notification_count_"):
+            notification_manager = getattr(
+                self.coordinator, "notification_manager", None
+            )
+            if notification_manager is not None:
+                attributes.update(
+                    {
+                        "total_notifications": len(notification_manager._notifications),
+                        "last_update": datetime.now().isoformat(),
+                    }
+                )
+
+        # Společné atributy pro notifikační senzory
+        attributes.update(
+            {
+                "sensor_category": "notification",
+                "integration": "oig_cloud",
+            }
+        )
+
+        return attributes
 
     def _get_extended_value_for_sensor(self) -> Optional[float]:
         """Získá hodnotu pro extended senzor podle typu."""

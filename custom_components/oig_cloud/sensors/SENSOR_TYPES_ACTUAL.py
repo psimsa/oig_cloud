@@ -1,16 +1,14 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.helpers.entity import EntityCategory
+from homeassistant.const import UnitOfPower
+from typing import Dict, Any
 
-from typing import Dict
-
-SENSOR_TYPES_ACTUAL: Dict[
-    str, Dict[str, str | SensorDeviceClass | SensorStateClass]
-] = {
+SENSOR_TYPES_ACTUAL: Dict[str, Dict[str, Any]] = {
     "actual_aci_wr": {
         "name": "Grid Load Line 1 (live)",
         "name_cs": "Síť - zátěž fáze 1 (live)",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,
         "node_id": "actual",
         "node_key": "aci_wr",
         "state_class": SensorStateClass.MEASUREMENT,
@@ -20,7 +18,7 @@ SENSOR_TYPES_ACTUAL: Dict[
         "name": "Grid Load Line 2 (live)",
         "name_cs": "Síť - zátěž fáze 2 (live)",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,
         "node_id": "actual",
         "node_key": "aci_ws",
         "state_class": SensorStateClass.MEASUREMENT,
@@ -30,7 +28,7 @@ SENSOR_TYPES_ACTUAL: Dict[
         "name": "Grid Load Line 3 (live)",
         "name_cs": "Síť - zátěž fáze 3 (live)",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,
         "node_id": "actual",
         "node_key": "aci_wt",
         "state_class": SensorStateClass.MEASUREMENT,
@@ -40,7 +38,7 @@ SENSOR_TYPES_ACTUAL: Dict[
         "name": "Grid Load Total (live)",
         "name_cs": "Síť - Zátěž celkem (live)",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,
@@ -50,7 +48,7 @@ SENSOR_TYPES_ACTUAL: Dict[
         "name": "Load Total (live)",
         "name_cs": "Zátěž celkem (live)",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,
         "node_id": "actual",
         "node_key": "aco_p",
         "state_class": SensorStateClass.MEASUREMENT,
@@ -60,7 +58,7 @@ SENSOR_TYPES_ACTUAL: Dict[
         "name": "Panels Output String 1 (live)",
         "name_cs": "Výkon panelů string 1 (live)",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,
         "node_id": "actual",
         "node_key": "fv_p1",
         "state_class": SensorStateClass.MEASUREMENT,
@@ -70,7 +68,7 @@ SENSOR_TYPES_ACTUAL: Dict[
         "name": "Panels Output String 2 (live)",
         "name_cs": "Výkon panelů string 2 (live)",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,
         "node_id": "actual",
         "node_key": "fv_p2",
         "state_class": SensorStateClass.MEASUREMENT,
@@ -80,7 +78,7 @@ SENSOR_TYPES_ACTUAL: Dict[
         "name": "Panels Output Total (live)",
         "name_cs": "Výkon panelů celkem (live)",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,

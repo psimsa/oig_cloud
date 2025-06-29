@@ -1,15 +1,16 @@
 """Definice typů senzorů pro cenové kalkulace."""
 
 from typing import Dict, Any
+from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 
 # Typy senzorů pro cenové kalkulace
 SENSOR_TYPES_PRICING: Dict[str, Dict[str, Any]] = {
     "electricity_buy_price_current": {
         "name": "Aktuální nákupní cena elektřiny",
         "icon": "mdi:currency-eur",
-        "unit_of_measurement": "CZK/kWh",
-        "device_class": "monetary",
-        "state_class": "measurement",
+        "unit_of_measurement": "CZK/kWh",  # Pro cenové jednotky zatím zůstává string
+        "device_class": SensorDeviceClass.MONETARY,
+        "state_class": SensorStateClass.MEASUREMENT,
         "category": "pricing",
         "sensor_type_category": "pricing",
         "description": "Aktuální cena za nákup elektřiny včetně všech poplatků",
@@ -18,8 +19,8 @@ SENSOR_TYPES_PRICING: Dict[str, Dict[str, Any]] = {
         "name": "Aktuální prodejní cena elektřiny",
         "icon": "mdi:currency-eur",
         "unit_of_measurement": "CZK/kWh",
-        "device_class": "monetary",
-        "state_class": "measurement",
+        "device_class": SensorDeviceClass.MONETARY,
+        "state_class": SensorStateClass.MEASUREMENT,
         "category": "pricing",
         "sensor_type_category": "pricing",
         "description": "Aktuální cena za prodej elektřiny po odečtení poplatků",
@@ -28,8 +29,8 @@ SENSOR_TYPES_PRICING: Dict[str, Dict[str, Any]] = {
         "name": "Měsíční fixní náklady",
         "icon": "mdi:calendar-month",
         "unit_of_measurement": "CZK/měsíc",
-        "device_class": "monetary",
-        "state_class": "total",
+        "device_class": SensorDeviceClass.MONETARY,
+        "state_class": SensorStateClass.TOTAL,
         "category": "pricing",
         "sensor_type_category": "pricing",
         "description": "Měsíční fixní poplatky za distribuci a jistič",

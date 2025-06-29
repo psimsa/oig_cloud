@@ -1,11 +1,17 @@
 from datetime import datetime, timedelta
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.core import callback, HomeAssistant, Context
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.components import logbook
 from homeassistant.util.dt import now as dt_now
 import logging
 import uuid
+import time
+import asyncio
+import voluptuous as vol
 from typing import Dict, List, Tuple, Optional, Any, Callable
+
+from .shared.logging import setup_otel_logging
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -14,24 +20,170 @@ CHECK_INTERVAL_SECONDS = 15
 
 
 class ServiceShield:
-    def __init__(self, hass: HomeAssistant) -> None:
+    """OIG Cloud Service Shield - ochrana před neočekávanými změnami."""
+
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.hass: HomeAssistant = hass
+        self.entry: ConfigEntry = entry
+        self._logger: logging.Logger = logging.getLogger(__name__)
+        self._active_tasks: Dict[str, Dict[str, Any]] = {}
+        self._telemetry_handler: Optional[Any] = None
+
+        # Inicializace základních atributů
         self.pending: Dict[str, Dict[str, Any]] = {}
         self.queue: List[
             Tuple[
-                str,
-                Dict[str, Any],
-                Dict[str, str],
-                Callable,
-                str,
-                str,
-                bool,
-                Optional[Context],
+                str,  # service_name
+                Dict[str, Any],  # params
+                Dict[str, str],  # expected_entities
+                Callable,  # original_call
+                str,  # domain
+                str,  # service
+                bool,  # blocking
+                Optional[Context],  # context
             ]
         ] = []
-        self.running: Optional[str] = None
         self.queue_metadata: Dict[Tuple[str, str], str] = {}
+        self.running: Optional[str] = None
         self.last_checked_entity_id: Optional[str] = None
+
+        # Atributy pro telemetrii (pro zpětnou kompatibilitu)
+        self.telemetry_handler: Optional[Any] = None
+        self.telemetry_logger: Optional[Any] = None
+
+        # Setup telemetrie pouze pro ServiceShield
+        if not entry.options.get("no_telemetry", False):
+            self._setup_telemetry()
+
+    def _setup_telemetry(self) -> None:
+        """Nastavit telemetrii pouze pro ServiceShield."""
+        try:
+            from .shared.logging import setup_otel_logging
+            import hashlib
+
+            username = self.entry.data.get("username", "")
+            email_hash = hashlib.sha256(username.encode("utf-8")).hexdigest()
+            hass_id = hashlib.sha256(
+                self.hass.data["core.uuid"].encode("utf-8")
+            ).hexdigest()
+
+            self._telemetry_handler = setup_otel_logging(email_hash, hass_id)
+
+            # Nastavit i pro zpětnou kompatibilitu s _log_telemetry metodou
+            self.telemetry_handler = self._telemetry_handler
+
+            # Připojit handler k ServiceShield loggeru
+            shield_logger = logging.getLogger(
+                "custom_components.oig_cloud.service_shield"
+            )
+            shield_logger.addHandler(self._telemetry_handler)
+            shield_logger.setLevel(logging.INFO)
+
+            # Vytvoříme i telemetry_logger pro zpětnou kompatibilitu
+            self.telemetry_logger = logging.getLogger(
+                "custom_components.oig_cloud.service_shield.telemetry"
+            )
+            self.telemetry_logger.addHandler(self._telemetry_handler)
+            self.telemetry_logger.setLevel(logging.INFO)
+
+            self._logger.info("ServiceShield telemetry initialized successfully")
+
+        except Exception as e:
+            self._logger.debug(f"Failed to setup ServiceShield telemetry: {e}")
+            # Pokud telemetrie selže, pokračujeme bez ní
+            self.telemetry_handler = None
+            self.telemetry_logger = None
+
+    def _log_security_event(self, event_type: str, details: Dict[str, Any]) -> None:
+        """Zalogovat bezpečnostní událost do telemetrie."""
+        if self._telemetry_handler:
+            security_logger = logging.getLogger(
+                "custom_components.oig_cloud.service_shield.security"
+            )
+            security_logger.info(
+                f"SHIELD_SECURITY: {event_type}",
+                extra={
+                    "shield_event_type": event_type,
+                    "task_id": details.get("task_id"),
+                    "service": details.get("service"),
+                    "entity": details.get("entity"),
+                    "expected_value": details.get("expected_value"),
+                    "actual_value": details.get("actual_value"),
+                    "status": details.get("status"),
+                    "timestamp": dt_now().isoformat(),
+                },
+            )
+
+    def _log_telemetry(
+        self, event_type: str, service_name: str, data: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """Log telemetry event."""
+        try:
+            _LOGGER.debug(
+                f"[TELEMETRY DEBUG] Starting telemetry log: {event_type} for {service_name}"
+            )
+            _LOGGER.debug(
+                f"[TELEMETRY DEBUG] Handler available: {self._telemetry_handler is not None}"
+            )
+
+            if self._telemetry_handler:
+                # Příprava shield_data pro extra field
+                shield_data: Dict[str, Any] = {
+                    "event_type": event_type,
+                    "service_name": service_name,
+                    "timestamp": dt_now().isoformat(),
+                    "component": "service_shield",
+                }
+
+                if data:
+                    shield_data.update(data)
+
+                _LOGGER.debug(f"[TELEMETRY DEBUG] Shield data prepared: {shield_data}")
+
+                # OPRAVA: Vytvoříme LogRecord a pošleme přímo do handleru
+                message = f"ServiceShield {event_type}: {service_name}"
+
+                # Vytvoření custom log record
+                record = logging.LogRecord(
+                    name="custom_components.oig_cloud.telemetry",
+                    level=logging.INFO,
+                    pathname="",
+                    lineno=0,
+                    msg=message,
+                    args=(),
+                    exc_info=None,
+                )
+
+                # Přidání shield_data jako extra attribute
+                record.shield_data = shield_data
+
+                _LOGGER.debug(f"[TELEMETRY DEBUG] About to emit record to handler")
+
+                # OPRAVA: Pošleme přímo do handleru
+                self._telemetry_handler.emit(record)
+
+                _LOGGER.debug(f"[TELEMETRY DEBUG] Record emitted successfully")
+            else:
+                _LOGGER.debug(f"[TELEMETRY DEBUG] No telemetry handler available!")
+
+        except Exception as e:
+            # OPRAVA: Logujeme chybu místo tichého selhání
+            _LOGGER.error(
+                f"[TELEMETRY DEBUG ERROR] Failed to log telemetry: {e}", exc_info=True
+            )
+
+    def _values_match(self, current_value: Any, expected_value: Any) -> bool:
+        """Porovná dvě hodnoty s normalizací."""
+        try:
+            # Pro číselné hodnoty
+            if str(expected_value).replace(".", "").replace("-", "").isdigit():
+                return float(current_value or 0) == float(expected_value)
+            # Pro textové hodnoty
+            return self._normalize_value(current_value) == self._normalize_value(
+                expected_value
+            )
+        except (ValueError, TypeError):
+            return str(current_value) == str(expected_value)
 
     async def start(self) -> None:
         _LOGGER.debug("[OIG Shield] Inicializace – čištění fronty")
@@ -40,8 +192,67 @@ class ServiceShield:
         self.queue_metadata.clear()
         self.running = None
 
+        # Registrace shield services
+        await self.register_services()
+
+        # OPRAVA: Přidání debug logování pro ověření, že se check_loop spouští
+        _LOGGER.info(
+            f"[OIG Shield] Spouštím check_loop každých {CHECK_INTERVAL_SECONDS} sekund"
+        )
+
         async_track_time_interval(
             self.hass, self._check_loop, timedelta(seconds=CHECK_INTERVAL_SECONDS)
+        )
+
+    async def register_services(self) -> None:
+        """Registruje služby ServiceShield."""
+        _LOGGER.info("[OIG Shield] Registering ServiceShield services")
+
+        try:
+            # Registrace služby pro status ServiceShield
+            self.hass.services.async_register(
+                "oig_cloud",
+                "shield_status",
+                self._handle_shield_status,
+                schema=vol.Schema({}),
+            )
+
+            # Registrace služby pro queue info
+            self.hass.services.async_register(
+                "oig_cloud",
+                "shield_queue_info",
+                self._handle_queue_info,
+                schema=vol.Schema({}),
+            )
+
+            _LOGGER.info("[OIG Shield] ServiceShield services registered successfully")
+
+        except Exception as e:
+            _LOGGER.error(
+                f"[OIG Shield] Failed to register services: {e}", exc_info=True
+            )
+            raise
+
+    async def _handle_shield_status(self, call: Any) -> None:
+        """Handle shield status service call."""
+        status = self.get_shield_status()
+        _LOGGER.info(f"[OIG Shield] Current status: {status}")
+
+        # Emit event with status
+        self.hass.bus.async_fire(
+            "oig_cloud_shield_status",
+            {"status": status, "timestamp": dt_now().isoformat()},
+        )
+
+    async def _handle_queue_info(self, call: Any) -> None:
+        """Handle queue info service call."""
+        queue_info = self.get_queue_info()
+        _LOGGER.info(f"[OIG Shield] Queue info: {queue_info}")
+
+        # Emit event with queue info
+        self.hass.bus.async_fire(
+            "oig_cloud_shield_queue_info",
+            {**queue_info, "timestamp": dt_now().isoformat()},
         )
 
     def get_shield_status(self) -> str:
@@ -78,6 +289,50 @@ class ServiceShield:
         state = self.hass.states.get(entity_id)
         return state.state if state else None
 
+    def _extract_api_info(
+        self, service_name: str, params: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Extract API call information from service parameters."""
+        api_info = {}
+
+        if service_name == "oig_cloud.set_boiler_mode":
+            mode = params.get("mode")
+            api_info = {
+                "api_endpoint": "Device.Set.Value.php",
+                "api_table": "boiler_prms",
+                "api_column": "manual",
+                "api_value": 1 if mode == "Manual" else 0,
+                "api_description": f"Set boiler mode to {mode}",
+            }
+        elif service_name == "oig_cloud.set_box_mode":
+            mode = params.get("mode")
+            api_info = {
+                "api_endpoint": "Device.Set.Value.php",
+                "api_table": "box_prms",
+                "api_column": "mode",
+                "api_value": mode,
+                "api_description": f"Set box mode to {mode}",
+            }
+        elif service_name == "oig_cloud.set_grid_delivery":
+            if "limit" in params:
+                api_info = {
+                    "api_endpoint": "Device.Set.Value.php",
+                    "api_table": "invertor_prm1",
+                    "api_column": "p_max_feed_grid",
+                    "api_value": params["limit"],
+                    "api_description": f"Set grid delivery limit to {params['limit']}W",
+                }
+            elif "mode" in params:
+                api_info = {
+                    "api_endpoint": "Device.Set.Value.php",
+                    "api_table": "invertor_prms",
+                    "api_column": "to_grid",
+                    "api_value": params["mode"],
+                    "api_description": f"Set grid delivery mode to {params['mode']}",
+                }
+
+        return api_info
+
     async def intercept_service_call(
         self,
         domain: str,
@@ -92,27 +347,30 @@ class ServiceShield:
         trace_id = str(uuid.uuid4())[:8]
 
         expected_entities = self.extract_expected_entities(service_name, params)
+        api_info = self._extract_api_info(service_name, params)
 
-        _LOGGER.debug(
-            "[OIG Shield] [%s] Intercepting %s – params: %s, expected_entities: %s",
-            trace_id,
-            service_name,
-            params,
-            expected_entities,
+        _LOGGER.info(f"[INTERCEPT DEBUG] Service: {service_name}")
+        _LOGGER.info(f"[INTERCEPT DEBUG] Expected entities: {expected_entities}")
+        _LOGGER.info(f"[INTERCEPT DEBUG] Queue length: {len(self.queue)}")
+        _LOGGER.info(f"[INTERCEPT DEBUG] Running: {self.running}")
+
+        # OPRAVA: Pouze security event, ne telemetrie na začátku
+        self._log_security_event(
+            "SERVICE_INTERCEPTED",
+            {
+                "task_id": trace_id,
+                "service": service_name,
+                "params": str(params),
+                "expected_entities": str(expected_entities),
+            },
         )
 
         if not expected_entities:
-            fallback_entity = self.last_checked_entity_id
-            fallback_entities = (
-                {fallback_entity: self._get_entity_state(fallback_entity)}
-                if fallback_entity
-                else {}
-            )
-
+            _LOGGER.info(f"[INTERCEPT DEBUG] No expected entities - returning early")
             await self._log_event(
                 "skipped",
                 service_name,
-                {"params": params, "entities": fallback_entities},
+                {"params": params, "entities": {}},
                 reason="Není co měnit – požadované hodnoty již nastaveny",
                 context=context,
             )
@@ -125,6 +383,9 @@ class ServiceShield:
             q[0] == service_name and frozenset(q[2].items()) == new_expected_set
             for q in self.queue
         ):
+            _LOGGER.info(
+                f"[INTERCEPT DEBUG] Service already in queue - returning early"
+            )
             await self._log_event(
                 "ignored",
                 service_name,
@@ -132,70 +393,14 @@ class ServiceShield:
                 reason="Ignorováno – služba se stejným efektem je již ve frontě",
                 context=context,
             )
-            return
-
-        # 🚫 Běží aktuálně stejná služba se stejným parametrem?
-        if self.running == service_name:
-            pending = self.pending.get(service_name)
-            if pending and frozenset(pending["entities"].items()) == new_expected_set:
-                await self._log_event(
-                    "ignored",
-                    service_name,
-                    {"params": params, "entities": expected_entities},
-                    reason="Ignorováno – požadavek již běží",
-                    context=context,
-                )
-                return
-
-            # 🔍 Možná už běžící služba plní tento cíl
-            all_ok = True
-            for entity_id, expected_value in expected_entities.items():
-                state = self.hass.states.get(entity_id)
-                try:
-                    if "limit" in params:
-                        current = round(float(state.state))
-                        expected = round(float(expected_value))
-                    else:
-                        current = self._normalize_value(state.state)
-                        expected = self._normalize_value(expected_value)
-                except Exception:
-                    all_ok = False
-                    break
-
-                if current != expected:
-                    all_ok = False
-                    break
-
-            if all_ok:
-                await self._log_event(
-                    "skipped",
-                    service_name,
-                    {"params": params, "entities": expected_entities},
-                    reason="Změna již bude provedena aktuálně běžící službou",
-                    context=context,
-                )
-                return
-
-            # ⏳ Není ještě splněno → přidat do fronty
-            self.queue.append(
-                (
-                    service_name,
-                    params,
-                    expected_entities,
-                    original_call,
-                    domain,
-                    service,
-                    blocking,
-                    context,
-                )
-            )
-            self.queue_metadata[(service_name, str(params))] = dt_now().isoformat()
-            await self._log_event(
-                "queued",
+            self._log_telemetry(
+                "ignored",
                 service_name,
-                {"params": params, "entities": expected_entities},
-                reason="Přidáno do fronty – čeká na předchozí službu",
-                context=context,
+                {
+                    "params": params,
+                    "entities": expected_entities,
+                    "reason": "duplicate_in_queue",
+                },
             )
             return
 
@@ -205,11 +410,29 @@ class ServiceShield:
             state = self.hass.states.get(entity_id)
             current = self._normalize_value(state.state if state else None)
             expected = self._normalize_value(expected_value)
+            _LOGGER.info(
+                f"[INTERCEPT DEBUG] Entity {entity_id}: current='{current}' expected='{expected}'"
+            )
             if current != expected:
                 all_ok = False
                 break
 
         if all_ok:
+            _LOGGER.info(
+                f"[INTERCEPT DEBUG] All entities already match - returning early"
+            )
+            # OPRAVA: Logujeme telemetrii i pro skipped požadavky
+            self._log_telemetry(
+                "skipped",
+                service_name,
+                {
+                    "trace_id": trace_id,
+                    "params": params,
+                    "entities": expected_entities,
+                    "reason": "already_completed",
+                    **api_info,
+                },
+            )
             await self._log_event(
                 "skipped",
                 service_name,
@@ -220,6 +443,18 @@ class ServiceShield:
             return
 
         # 🚀 Spustíme hned
+        _LOGGER.info(f"[INTERCEPT DEBUG] Will execute service - logging telemetry")
+        self._log_telemetry(
+            "change_requested",
+            service_name,
+            {
+                "trace_id": trace_id,
+                "params": params,
+                "entities": expected_entities,
+                **api_info,  # Přidáme API informace
+            },
+        )
+
         await self._start_call(
             service_name,
             params,
@@ -280,11 +515,29 @@ class ServiceShield:
 
     @callback
     async def _check_loop(self, _now: datetime) -> None:
+        # OPRAVA: Explicitní debug log na začátku každé kontroly
+        _LOGGER.debug(
+            f"[OIG Shield] Check loop tick - pending: {len(self.pending)}, queue: {len(self.queue)}, running: {self.running}"
+        )
+
+        if not self.pending and not self.queue and not self.running:
+            _LOGGER.debug("[OIG Shield] Check loop - vše prázdné, žádná akce")
+            return
+
         finished = []
 
         for service_name, info in self.pending.items():
+            _LOGGER.debug(f"[OIG Shield] Kontroluji pending službu: {service_name}")
+
             if datetime.now() - info["called_at"] > timedelta(minutes=TIMEOUT_MINUTES):
+                _LOGGER.warning(f"[OIG Shield] Timeout pro službu {service_name}")
                 await self._log_event("timeout", service_name, info["params"])
+                # 📡 Telemetrie pro timeout
+                self._log_telemetry(
+                    "timeout",
+                    service_name,
+                    {"params": info["params"], "entities": info["entities"]},
+                )
                 finished.append(service_name)
                 continue
 
@@ -319,9 +572,15 @@ class ServiceShield:
 
                 if norm_current != norm_expected:
                     all_ok = False
+                    _LOGGER.debug(
+                        f"[OIG Shield] Entity {entity_id} ještě není v požadovaném stavu"
+                    )
                     break
 
             if all_ok:
+                _LOGGER.info(
+                    f"[OIG Shield] Služba {service_name} byla úspěšně dokončena"
+                )
                 await self._log_event(
                     "completed",
                     service_name,
@@ -331,6 +590,12 @@ class ServiceShield:
                         "original_states": info.get("original_states", {}),
                     },
                     reason="Změna provedena",
+                )
+                # 📡 Telemetrie pro dokončené požadavky
+                self._log_telemetry(
+                    "completed",
+                    service_name,
+                    {"params": info["params"], "entities": info["entities"]},
                 )
                 await self._log_event(
                     "released",
@@ -344,12 +609,19 @@ class ServiceShield:
                 )
                 finished.append(service_name)
 
+        # OPRAVA: Explicitní logování při odstraňování dokončených služeb
         for svc in finished:
+            _LOGGER.info(f"[OIG Shield] Odstraňuji dokončenou službu: {svc}")
             del self.pending[svc]
             if svc == self.running:
+                _LOGGER.info(f"[OIG Shield] Uvolňuji running slot: {svc}")
                 self.running = None
 
+        # OPRAVA: Explicitní logování při spouštění dalších služeb z fronty
         if self.running is None and self.queue:
+            _LOGGER.info(
+                f"[OIG Shield] Spouštím další službu z fronty (fronta má {len(self.queue)} položek)"
+            )
             (
                 next_svc,
                 data,
@@ -373,6 +645,10 @@ class ServiceShield:
             )
         elif self.running is None:
             _LOGGER.debug("[OIG Shield] Fronta prázdná, shield neaktivní.")
+        else:
+            _LOGGER.debug(
+                f"[OIG Shield] Čekám na dokončení běžící služby: {self.running}"
+            )
 
     async def _log_event(
         self,
@@ -679,3 +955,146 @@ class ServiceShield:
         except Exception as e:
             self._logger.error(f"❌ Chyba při volání služby {service_name}: {e}")
             return False
+
+    def _start_monitoring_task(
+        self, task_id: str, expected_entities: Dict[str, str], timeout: int
+    ) -> None:
+        """Spustí úlohu monitorování."""
+        self._active_tasks[task_id] = {
+            "expected_entities": expected_entities,
+            "timeout": timeout,
+            "start_time": time.time(),
+            "status": "monitoring",
+        }
+
+        # Log monitoring start
+        self._log_security_event(
+            "MONITORING_STARTED",
+            {
+                "task_id": task_id,
+                "expected_entities": str(expected_entities),
+                "timeout": timeout,
+                "status": "started",
+            },
+        )
+
+    async def _check_entities_periodically(self, task_id: str) -> None:
+        """Periodicky kontroluje entity dokud nejsou splněny podmínky nebo nevyprší timeout."""
+        while task_id in self._active_tasks:
+            task_info = self._active_tasks[task_id]
+            expected_entities = task_info["expected_entities"]
+
+            all_conditions_met = True
+            for entity_id, expected_value in expected_entities.items():
+                current_value = self._get_entity_state(entity_id)
+                if not self._values_match(current_value, expected_value):
+                    all_conditions_met = False
+                    # Log verification failure
+                    self._log_security_event(
+                        "VERIFICATION_FAILED",
+                        {
+                            "task_id": task_id,
+                            "entity": entity_id,
+                            "expected_value": expected_value,
+                            "actual_value": current_value,
+                            "status": "mismatch",
+                        },
+                    )
+
+            if all_conditions_met:
+                # Log successful completion
+                self._log_security_event(
+                    "MONITORING_SUCCESS",
+                    {
+                        "task_id": task_id,
+                        "status": "completed",
+                        "duration": time.time() - task_info["start_time"],
+                    },
+                )
+                # ...existing code...
+
+            # Check timeout
+            if time.time() - task_info["start_time"] > task_info["timeout"]:
+                # Log timeout
+                self._log_security_event(
+                    "MONITORING_TIMEOUT",
+                    {
+                        "task_id": task_id,
+                        "status": "timeout",
+                        "duration": task_info["timeout"],
+                    },
+                )
+                # ...existing code...
+
+    async def cleanup(self) -> None:
+        """Vyčistí ServiceShield při ukončení."""
+        if self._telemetry_handler:
+            try:
+                # Odeslat závěrečnou telemetrii
+                if self.telemetry_logger:
+                    self.telemetry_logger.info(
+                        "ServiceShield cleanup initiated",
+                        extra={
+                            "shield_data": {
+                                "event": "cleanup",
+                                "final_queue_length": len(self.queue),
+                                "final_pending_count": len(self.pending),
+                                "timestamp": dt_now().isoformat(),
+                            }
+                        },
+                    )
+
+                # Zavřít handler
+                if hasattr(self._telemetry_handler, "close"):
+                    await self._telemetry_handler.close()
+
+                # Odstranit handler z loggerů
+                shield_logger = logging.getLogger(
+                    "custom_components.oig_cloud.service_shield"
+                )
+                if self._telemetry_handler in shield_logger.handlers:
+                    shield_logger.removeHandler(self._telemetry_handler)
+
+            except Exception as e:
+                self._logger.debug(f"Error cleaning up telemetry: {e}")
+
+        self._logger.debug("[OIG Shield] ServiceShield cleaned up")
+
+    def start_monitoring(self) -> None:
+        """Spustí monitoring task pro zpracování služeb."""
+        if self.check_task is None or self.check_task.done():
+            _LOGGER.info("[OIG Shield] Spouštím monitoring task")
+
+            # OPRAVA: Debug informace o task
+            if self.check_task and self.check_task.done():
+                _LOGGER.warning(
+                    f"[OIG Shield] Předchozí task byl dokončen: {self.check_task}"
+                )
+
+            self.check_task = asyncio.create_task(self._async_check_loop())
+
+            # OPRAVA: Ověření, že task skutečně běží
+            _LOGGER.info(f"[OIG Shield] Task vytvořen: {self.check_task}")
+            _LOGGER.info(f"[OIG Shield] Task done: {self.check_task.done()}")
+            _LOGGER.info(f"[OIG Shield] Task cancelled: {self.check_task.cancelled()}")
+        else:
+            _LOGGER.debug("[OIG Shield] Monitoring task již běží")
+
+    async def _async_check_loop(self) -> None:
+        """Asynchronní smyčka pro kontrolu a zpracování služeb."""
+        _LOGGER.debug("[OIG Shield] Monitoring loop spuštěn")
+
+        while True:
+            try:
+                # Hlavní logika smyčky pro zpracování služeb
+                await self._check_loop(datetime.now())
+
+                # OPRAVA: Přidání krátkého spánku, aby se předešlo přetížení CPU
+                await asyncio.sleep(1)
+
+            except Exception as e:
+                _LOGGER.error(
+                    f"[OIG Shield] Chyba v monitoring smyčce: {e}", exc_info=True
+                )
+                # OPRAVA: Přidání spánku při chybě, aby se předešlo opakovanému selhání
+                await asyncio.sleep(5)

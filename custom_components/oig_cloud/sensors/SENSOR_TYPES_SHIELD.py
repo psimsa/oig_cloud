@@ -2,12 +2,10 @@
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import EntityCategory
-from typing import Dict
+from typing import Dict, Any
 
 # Typy senzorů pro ServiceShield monitoring
-SENSOR_TYPES_SHIELD: Dict[
-    str, Dict[str, str | SensorDeviceClass | SensorStateClass | EntityCategory]
-] = {
+SENSOR_TYPES_SHIELD: Dict[str, Dict[str, Any]] = {
     "service_shield_status": {
         "name": "ServiceShield Status",
         "name_cs": "Stav ServiceShield",

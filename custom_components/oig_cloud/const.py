@@ -1,5 +1,7 @@
 """Constants for the OIG Cloud integration."""
 
+from .release_const import COMPONENT_VERSION, SERVICE_NAME
+
 DOMAIN = "oig_cloud"
 
 # Configuration constants
@@ -10,6 +12,7 @@ CONF_PASSWORD = "password"
 CONF_NO_TELEMETRY = "no_telemetry"
 CONF_STANDARD_SCAN_INTERVAL = "standard_scan_interval"
 CONF_EXTENDED_SCAN_INTERVAL = "extended_scan_interval"
+CONF_LOG_LEVEL = "log_level"
 
 # Default values
 DEFAULT_UPDATE_INTERVAL = 20
@@ -37,8 +40,13 @@ SERVICE_FORCE_UPDATE = "force_update"
 SERVICE_RESET_STATISTICS = "reset_statistics"
 
 # OpenTelemetry constants
-OT_ENDPOINT = "https://otel.oigpower.cz:4317"
-OT_HEADERS = {"x-api-key": "oig-cloud-telemetry"}
+OT_ENDPOINT = "https://log-api.eu.newrelic.com"
+OT_HEADERS = [
+    (
+        "Api-Key",  # OPRAVA: Správný header pro New Relic
+        "eu01xxefc1a87820b35d1becb5efd5c5FFFFNRAL",
+    )
+]
 OT_INSECURE = False
 
 # Základní definice pro sensor types - pokud není definována jinde

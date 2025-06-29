@@ -633,3 +633,84 @@ class OigCloudApi:
         except Exception as e:
             self._logger.error(f"Error in get_extended_stats for '{name}': {e}")
             return {}
+
+    async def get_notifications(
+        self, device_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Get notifications from OIG Cloud - similar to get_extended_stats."""
+        try:
+            if device_id is None:
+                device_id = self.box_id
+
+            if not device_id:
+                self._logger.warning("No device ID available for notifications")
+                return {"notifications": [], "bypass_status": False}
+
+            self._logger.debug(f"Getting notifications for device {device_id}")
+
+            async with self.get_session() as session:
+                nonce = int(time.time() * 1000)
+                url = f"{self._base_url}inc/php/scripts/Controller.Call.php?id=2&selector_id=ctrl-notifs&_nonce={nonce}"
+
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (compatible; OIG-HA-Integration)",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "Accept-Language": "cs,en;q=0.5",
+                    "Referer": f"{self._base_url}",
+                    "X-Requested-With": "XMLHttpRequest",
+                }
+
+                async with session.get(url, headers=headers) as response:
+                    if response.status == 200:
+                        content = await response.text()
+                        self._logger.debug(
+                            f"Notifications content length: {len(content)}"
+                        )
+
+                        # Check for empty response (authentication failed)
+                        if (
+                            '"folder-list">  </div>' in content
+                            or '<div class="folder-list">  </div>' in content
+                        ):
+                            self._logger.warning(
+                                "Empty notification list - authentication may have failed"
+                            )
+                            return {"notifications": [], "bypass_status": False}
+
+                        # Return raw content for parsing by notification manager
+                        return {
+                            "content": content,
+                            "status": "success",
+                            "device_id": device_id,
+                        }
+
+                    elif response.status == 401:
+                        self._logger.warning(
+                            "Authentication failed for notifications, retrying authentication"
+                        )
+                        if await self.authenticate():
+                            return await self.get_notifications(device_id)
+                        return {
+                            "notifications": [],
+                            "bypass_status": False,
+                            "error": "auth_failed",
+                        }
+                    else:
+                        self._logger.warning(
+                            f"HTTP {response.status} error fetching notifications"
+                        )
+                        return {
+                            "notifications": [],
+                            "bypass_status": False,
+                            "error": f"http_{response.status}",
+                        }
+
+        except (asyncio.TimeoutError, ServerTimeoutError) as e:
+            self._logger.warning(f"Timeout while getting notifications: {e}")
+            return {"notifications": [], "bypass_status": False, "error": "timeout"}
+        except ClientConnectorError as e:
+            self._logger.warning(f"Connection error while getting notifications: {e}")
+            return {"notifications": [], "bypass_status": False, "error": "connection"}
+        except Exception as e:
+            self._logger.error(f"Error in get_notifications: {e}")
+            return {"notifications": [], "bypass_status": False, "error": str(e)}

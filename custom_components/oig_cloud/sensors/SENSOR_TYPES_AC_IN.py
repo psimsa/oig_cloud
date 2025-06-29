@@ -1,14 +1,19 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.helpers.entity import EntityCategory
+from homeassistant.const import (
+    UnitOfEnergy,
+    UnitOfPower,
+    UnitOfElectricPotential,
+    UnitOfFrequency,
+)
+from typing import Dict, Any
 
-from typing import Dict
-
-SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClass]] = {
+SENSOR_TYPES_AC_IN: Dict[str, Dict[str, Any]] = {
     "ac_in_ac_ad": {
         "name": "Grid Consumption Today",
         "name_cs": "Dnešní odběr ze sítě",
         "device_class": SensorDeviceClass.ENERGY,
-        "unit_of_measurement": "Wh",
+        "unit_of_measurement": UnitOfEnergy.WATT_HOUR,
         "node_id": "ac_in",
         "node_key": "ac_ad",
         "state_class": SensorStateClass.TOTAL_INCREASING,
@@ -18,7 +23,7 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "name": "Grid Delivery Today",
         "name_cs": "Dnešní dodávka do sítě",
         "device_class": SensorDeviceClass.ENERGY,
-        "unit_of_measurement": "Wh",
+        "unit_of_measurement": UnitOfEnergy.WATT_HOUR,
         "node_id": "ac_in",
         "node_key": "ac_pd",
         "state_class": SensorStateClass.TOTAL_INCREASING,
@@ -28,7 +33,7 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "name": "Frequency",
         "name_cs": "Frekvence sítě",
         "device_class": SensorDeviceClass.FREQUENCY,
-        "unit_of_measurement": "Hz",
+        "unit_of_measurement": UnitOfFrequency.HERTZ,
         "node_id": "ac_in",
         "node_key": "aci_f",
         "state_class": SensorStateClass.MEASUREMENT,
@@ -38,7 +43,7 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "name": "Grid Voltage Line 1",
         "name_cs": "Síť - Napětí fáze 1",
         "device_class": SensorDeviceClass.VOLTAGE,
-        "unit_of_measurement": "V",
+        "unit_of_measurement": UnitOfElectricPotential.VOLT,
         "node_id": "ac_in",
         "node_key": "aci_vr",
         "state_class": SensorStateClass.MEASUREMENT,
@@ -48,7 +53,7 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "name": "Grid Voltage Line 2",
         "name_cs": "Síť - Napětí fáze 2",
         "device_class": SensorDeviceClass.VOLTAGE,
-        "unit_of_measurement": "V",
+        "unit_of_measurement": UnitOfElectricPotential.VOLT,
         "node_id": "ac_in",
         "node_key": "aci_vs",
         "state_class": SensorStateClass.MEASUREMENT,
@@ -58,7 +63,7 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "name": "Grid Voltage Line 3",
         "name_cs": "Síť - Napětí fáze 3",
         "device_class": SensorDeviceClass.VOLTAGE,
-        "unit_of_measurement": "V",
+        "unit_of_measurement": UnitOfElectricPotential.VOLT,
         "node_id": "ac_in",
         "node_key": "aci_vt",
         "state_class": SensorStateClass.MEASUREMENT,
@@ -68,7 +73,7 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "name": "Grid Load Line 1",
         "name_cs": "Síť - zátěž fáze 1",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,
         "node_id": "ac_in",
         "node_key": "aci_wr",
         "state_class": SensorStateClass.MEASUREMENT,
@@ -78,7 +83,7 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "name": "Grid Load Line 2",
         "name_cs": "Síť - zátěž fáze 2",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,
         "node_id": "ac_in",
         "node_key": "aci_ws",
         "state_class": SensorStateClass.MEASUREMENT,
@@ -88,7 +93,7 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "name": "Grid Load Line 3",
         "name_cs": "Síť - zátěž fáze 3",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,
         "node_id": "ac_in",
         "node_key": "aci_wt",
         "state_class": SensorStateClass.MEASUREMENT,
@@ -98,7 +103,7 @@ SENSOR_TYPES_AC_IN: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateCla
         "name": "Grid Load Total",
         "name_cs": "Síť - Zátěž celkem",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,

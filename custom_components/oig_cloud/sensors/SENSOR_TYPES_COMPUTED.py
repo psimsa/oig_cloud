@@ -1,9 +1,8 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
-from homeassistant.const import UnitOfPower, UnitOfEnergy, PERCENTAGE
+from homeassistant.const import UnitOfEnergy, UnitOfPower, PERCENTAGE
 from typing import Dict, Any
-from homeassistant.helpers.entity import EntityCategory
 
-SENSOR_TYPES_BATT: Dict[str, Dict[str, Any]] = {
+SENSOR_TYPES_COMPUTED: Dict[str, Dict[str, Any]] = {
     # Live hodnoty
     "batt_bat_c": {
         "name": "Battery Percent",

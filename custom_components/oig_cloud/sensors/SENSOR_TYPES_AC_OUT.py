@@ -1,16 +1,15 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.helpers.entity import EntityCategory
-from typing import Dict
+from homeassistant.const import UnitOfEnergy, UnitOfPower
+from typing import Dict, Any
 
 
-SENSOR_TYPES_AC_OUT: Dict[
-    str, Dict[str, str | SensorDeviceClass | SensorStateClass]
-] = {
+SENSOR_TYPES_AC_OUT: Dict[str, Dict[str, Any]] = {  # Oprava: Any místo union type
     "ac_out_aco_p": {
         "name": "Load Total",
         "name_cs": "Zátěž celkem",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,  # Konstanta místo stringu
         "node_id": "ac_out",
         "node_key": "aco_p",
         "state_class": SensorStateClass.MEASUREMENT,
@@ -20,7 +19,7 @@ SENSOR_TYPES_AC_OUT: Dict[
         "name": "Load Line 1",
         "name_cs": "Zátěž fáze 1",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,  # Konstanta místo stringu
         "node_id": "ac_out",
         "node_key": "aco_pr",
         "state_class": SensorStateClass.MEASUREMENT,
@@ -30,7 +29,7 @@ SENSOR_TYPES_AC_OUT: Dict[
         "name": "Load Line 2",
         "name_cs": "Zátěž fáze 2",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,  # Konstanta místo stringu
         "node_id": "ac_out",
         "node_key": "aco_ps",
         "state_class": SensorStateClass.MEASUREMENT,
@@ -40,7 +39,7 @@ SENSOR_TYPES_AC_OUT: Dict[
         "name": "Load Line 3",
         "name_cs": "Zátěž fáze 3",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,  # Konstanta místo stringu
         "node_id": "ac_out",
         "node_key": "aco_pt",
         "state_class": SensorStateClass.MEASUREMENT,
@@ -50,7 +49,7 @@ SENSOR_TYPES_AC_OUT: Dict[
         "name": "Consumption Today",
         "name_cs": "Dnešní spotřeba",
         "device_class": SensorDeviceClass.ENERGY,
-        "unit_of_measurement": "Wh",
+        "unit_of_measurement": UnitOfEnergy.WATT_HOUR,
         "node_id": "ac_out",
         "node_key": "en_day",
         "state_class": SensorStateClass.TOTAL_INCREASING,

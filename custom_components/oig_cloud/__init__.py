@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import hashlib
+import re
 from typing import Any, Dict
 
 from homeassistant import config_entries, core
@@ -23,7 +24,7 @@ from .const import (
     CONF_STANDARD_SCAN_INTERVAL,
     CONF_EXTENDED_SCAN_INTERVAL,
 )
-from .oig_cloud_coordinator import OigCloudCoordinator  # Přidáme správný import
+from .oig_cloud_coordinator import OigCloudCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,22 +40,21 @@ analytics_device_info: Dict[str, Any] = {
 }
 
 
-async def async_setup(hass: HomeAssistant, config: Dict[str, Any]) -> bool:
-    """Set up the OIG Cloud component."""
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up OIG Cloud integration."""
+    # OPRAVA: Debug setup telemetrie
+    print("[OIG SETUP] Starting OIG Cloud setup")
+
+    # OPRAVA: Odstraníme neexistující import setup_telemetry
+    # Initialize telemetry - telemetrie se inicializuje přímo v ServiceShield
+    print("[OIG SETUP] Telemetry will be initialized in ServiceShield")
+
+    # OPRAVA: ServiceShield se inicializuje pouze v async_setup_entry, ne zde
+    # V async_setup pouze připravíme globální strukturu
     hass.data.setdefault(DOMAIN, {})
+    print("[OIG SETUP] Global data structure prepared")
 
-    # 🛡️ Inicializace ServiceShieldu (ochrana volání služeb) - async import
-    try:
-        from .service_shield import ServiceShield
-
-        shield = ServiceShield(hass)
-        await shield.start()
-
-        # Uložení pro použití ve services.py
-        hass.data[DOMAIN]["shield"] = shield
-    except ImportError:
-        _LOGGER.warning("ServiceShield není dostupný")
-
+    print("[OIG SETUP] OIG Cloud setup completed")
     return True
 
 
@@ -64,10 +64,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.debug(f"Config data keys: {list(entry.data.keys())}")
     _LOGGER.debug(f"Config options keys: {list(entry.options.keys())}")
 
-    try:
-        # Async importy pro vyhnání se blokování event loopu
-        from .services import async_setup_entry_services
+    # Inicializace hass.data struktury pro tento entry PŘED použitím
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN].setdefault(entry.entry_id, {})
 
+    # OPRAVA: Inicializujeme service_shield jako None před try blokem
+    service_shield = None
+
+    try:
+        # Inicializujeme ServiceShield s entry parametrem
+        from .service_shield import ServiceShield
+
+        service_shield = ServiceShield(hass, entry)
+        await service_shield.start()
+
+        hass.data[DOMAIN][entry.entry_id]["service_shield"] = service_shield
+
+        _LOGGER.info("ServiceShield inicializován a spuštěn")
+    except Exception as e:
+        _LOGGER.error(f"ServiceShield není dostupný - obecná chyba: {e}")
+        # Pokračujeme bez ServiceShield
+        hass.data[DOMAIN][entry.entry_id]["service_shield"] = None
+        # OPRAVA: Ujistíme se, že service_shield je None
+        service_shield = None
+
+    try:
         # Načtení konfigurace z entry.data nebo entry.options
         username = entry.data.get(CONF_USERNAME) or entry.options.get(CONF_USERNAME)
         password = entry.data.get(CONF_PASSWORD) or entry.options.get(CONF_PASSWORD)
@@ -96,8 +117,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             f"Using intervals: standard={standard_scan_interval}s, extended={extended_scan_interval}s"
         )
 
-        # Dočasně vypnout telemetrii kvůli blokujícím voláním
-        # await _setup_telemetry(hass, username)
+        # DEBUG: DOČASNĚ ZAKÁZAT telemetrii kvůli problémům s výkonem
+        # OPRAVA: Telemetrie způsobovala nekonečnou smyčku
+        # if not no_telemetry:
+        #     _LOGGER.debug("Telemetry enabled, setting up...")
+        #     await _setup_telemetry(hass, username)
+        # else:
+        #     _LOGGER.debug("Telemetry disabled by configuration")
+
+        _LOGGER.debug("Telemetry handled only by ServiceShield, not main module")
 
         # Vytvoření OIG API instance
         oig_api = OigCloudApi(username, password, no_telemetry, hass)
@@ -107,7 +135,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         # Inicializace koordinátoru
         coordinator = OigCloudCoordinator(
-            hass, oig_api, standard_scan_interval, extended_scan_interval
+            hass, oig_api, standard_scan_interval, extended_scan_interval, entry
         )
 
         # OPRAVA: Počkej na první data před vytvořením senzorů
@@ -119,6 +147,58 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             raise ConfigEntryNotReady("No data received from OIG Cloud API")
 
         _LOGGER.debug(f"Coordinator data received: {len(coordinator.data)} devices")
+
+        # OPRAVA: Inicializace notification manageru se správným error handling
+        notification_manager = None
+        try:
+            _LOGGER.debug("Initializing notification manager...")
+            from .oig_cloud_notification import OigNotificationManager
+
+            # PROBLÉM: Ověříme, že používáme správný objekt
+            _LOGGER.debug(f"Using API object: {type(oig_api)}")
+            _LOGGER.debug(
+                f"API has get_notifications: {hasattr(oig_api, 'get_notifications')}"
+            )
+
+            # OPRAVA: Použít oig_api objekt (OigCloudApi) místo jakéhokoliv jiného
+            notification_manager = OigNotificationManager(
+                hass, oig_api, "https://www.oigpower.cz/cez/"
+            )
+
+            # Nastavíme device_id z prvního dostupného zařízení v coordinator.data
+            if coordinator.data:
+                device_id = next(iter(coordinator.data.keys()))
+                notification_manager.set_device_id(device_id)
+                _LOGGER.debug(f"Set notification manager device_id to: {device_id}")
+
+                # OPRAVA: Použít nový API přístup místo fetch_notifications_and_status
+                try:
+                    await notification_manager.update_from_api()
+                    _LOGGER.debug("Initial notification data loaded successfully")
+                except Exception as fetch_error:
+                    _LOGGER.warning(
+                        f"Failed to fetch initial notifications (API endpoint may not exist): {fetch_error}"
+                    )
+                    # Pokračujeme bez počátečních notifikací - API endpoint možná neexistuje
+
+                # Připoj notification manager ke koordinátoru i když fetch selhal
+                # Manager může fungovat později pokud se API opraví
+                coordinator.notification_manager = notification_manager
+                _LOGGER.info(
+                    "Notification manager created and attached to coordinator (may not have data yet)"
+                )
+            else:
+                _LOGGER.warning(
+                    "No device data available, notification manager not initialized"
+                )
+                notification_manager = None
+
+        except Exception as e:
+            _LOGGER.warning(
+                f"Failed to setup notification manager (API may not be available): {e}"
+            )
+            # Pokračujeme bez notification manageru - API endpoint možná neexistuje nebo je nedostupný
+            notification_manager = None
 
         # Inicializace solar forecast (pokud je povolená)
         solar_forecast = None
@@ -147,10 +227,33 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Uložení dat do hass.data
         hass.data[DOMAIN][entry.entry_id] = {
             "coordinator": coordinator,
+            "notification_manager": notification_manager,
             "solar_forecast": solar_forecast,
             "statistics_enabled": statistics_enabled,
             "analytics_device_info": analytics_device_info,
+            "service_shield": service_shield,
         }
+
+        # OPRAVA: Přidání ServiceShield dat do globálního úložiště pro senzory
+        if service_shield:
+            # Vytvoříme globální odkaz na ServiceShield pro senzory
+            hass.data[DOMAIN]["shield"] = service_shield
+
+            # Vytvoříme device info pro ServiceShield
+            shield_device_info = {
+                "identifiers": {(DOMAIN, f"{entry.entry_id}_shield")},
+                "name": "ServiceShield",
+                "manufacturer": "OIG Cloud",
+                "model": "Service Protection",
+                "sw_version": "2.0",
+            }
+            hass.data[DOMAIN][entry.entry_id]["shield_device_info"] = shield_device_info
+
+            _LOGGER.debug("ServiceShield data prepared for sensors")
+
+            # OPRAVA: Přidání debug logování pro ServiceShield stav
+            _LOGGER.info(f"ServiceShield status: {service_shield.get_shield_status()}")
+            _LOGGER.info(f"ServiceShield queue info: {service_shield.get_queue_info()}")
 
         # Vyčištění starých/nepoužívaných zařízení před registrací nových
         await _cleanup_unused_devices(hass, entry)
@@ -158,10 +261,68 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Vždy registrovat sensor platform
         await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
 
-        await async_setup_entry_services(hass, entry)
-
         # Přidáme listener pro změny konfigurace - OPRAVEN callback na async funkci
         entry.async_on_unload(entry.add_update_listener(async_update_options))
+
+        # Async importy pro vyhnání se blokování event loopu
+        from .services import (
+            async_setup_services,
+            async_setup_entry_services_with_shield,
+        )
+
+        # Setup základních služeb (pouze jednou pro celou integraci)
+        if len([k for k in hass.data[DOMAIN].keys() if k != "shield"]) == 1:
+            await async_setup_services(hass)
+
+        # Setup entry-specific služeb s shield ochranou
+        # OPRAVA: Předání service_shield přímo, ne z hass.data
+        await async_setup_entry_services_with_shield(hass, entry, service_shield)
+
+        # OPRAVA: Zajistit, že ServiceShield je připojený k volání služeb
+        if service_shield:
+            _LOGGER.info(
+                "ServiceShield je aktivní a připravený na interceptování služeb"
+            )
+            # Test interceptu - simulace volání pro debug
+            _LOGGER.debug(f"ServiceShield pending: {len(service_shield.pending)}")
+            _LOGGER.debug(f"ServiceShield queue: {len(service_shield.queue)}")
+            _LOGGER.debug(f"ServiceShield running: {service_shield.running}")
+
+            # OPRAVA: Explicitní spuštění monitorování
+            _LOGGER.debug("Ověřuji, že ServiceShield monitoring běží...")
+
+            # Přidáme test callback pro ověření funkčnosti
+            async def test_shield_monitoring(_now: Any) -> None:
+                status = service_shield.get_shield_status()
+                queue_info = service_shield.get_queue_info()
+                _LOGGER.debug(
+                    f"[OIG Shield] Test monitoring tick - pending: {len(service_shield.pending)}, queue: {len(service_shield.queue)}, running: {service_shield.running}"
+                )
+                _LOGGER.debug(f"[OIG Shield] Status: {status}")
+                _LOGGER.debug(f"[OIG Shield] Queue info: {queue_info}")
+
+                # OPRAVA: Debug telemetrie - ukážeme co by se odesílalo
+                if service_shield.telemetry_handler:
+                    _LOGGER.debug("[OIG Shield] Telemetry handler je aktivní")
+                    if hasattr(service_shield, "_log_telemetry"):
+                        _LOGGER.debug(
+                            "[OIG Shield] Telemetry logging metoda je dostupná"
+                        )
+                else:
+                    _LOGGER.debug("[OIG Shield] Telemetry handler není aktivní")
+
+            # Registrujeme test callback na kratší interval pro debug
+            from homeassistant.helpers.event import async_track_time_interval
+            from datetime import timedelta
+
+            entry.async_on_unload(
+                async_track_time_interval(
+                    hass, test_shield_monitoring, timedelta(seconds=30)
+                )
+            )
+
+        else:
+            _LOGGER.warning("ServiceShield není dostupný - služby nebudou chráněny")
 
         _LOGGER.debug("OIG Cloud integration setup complete")
         return True
@@ -174,18 +335,47 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def _setup_telemetry(hass: core.HomeAssistant, username: str) -> None:
     """Setup telemetry if enabled."""
     try:
+        _LOGGER.debug("Starting telemetry setup...")
+
         email_hash = hashlib.sha256(username.encode("utf-8")).hexdigest()
         hass_id = hashlib.sha256(hass.data["core.uuid"].encode("utf-8")).hexdigest()
 
+        _LOGGER.debug(
+            f"Telemetry identifiers - Email hash: {email_hash[:16]}..., HASS ID: {hass_id[:16]}..."
+        )
+
         # Přesuneme import do async executor aby neblokoval event loop
-        def _import_and_setup_telemetry() -> None:
-            from .shared.tracing import setup_tracing
+        def _import_and_setup_telemetry() -> Any:
+            try:
+                _LOGGER.debug("Importing REST telemetry modules...")
+                from .shared.logging import setup_otel_logging
 
-            setup_tracing(email_hash, hass_id)
+                _LOGGER.debug("Setting up REST telemetry logging...")
+                handler = setup_otel_logging(email_hash, hass_id)
 
-        await hass.async_add_executor_job(_import_and_setup_telemetry)
+                # Přidáme handler do root loggeru pro OIG Cloud
+                oig_logger = logging.getLogger("custom_components.oig_cloud")
+                oig_logger.addHandler(handler)
+                oig_logger.setLevel(logging.DEBUG)
+
+                _LOGGER.debug(
+                    f"Telemetry handler attached to logger: {oig_logger.name}"
+                )
+                _LOGGER.info("REST telemetry successfully initialized")
+
+                return handler
+            except Exception as e:
+                _LOGGER.error(f"Error in telemetry setup executor: {e}", exc_info=True)
+                raise
+
+        handler = await hass.async_add_executor_job(_import_and_setup_telemetry)
+        _LOGGER.debug("REST telemetry setup completed via executor")
+
+        # Test log pro ověření funkčnosti
+        _LOGGER.info("TEST: Telemetry test message - this should appear in New Relic")
+
     except Exception as e:
-        _LOGGER.warning(f"Failed to setup telemetry: {e}")
+        _LOGGER.warning(f"Failed to setup telemetry: {e}", exc_info=True)
         # Pokračujeme bez telemetrie
 
 
@@ -196,19 +386,12 @@ async def async_unload_entry(
     unload_ok = await hass.config_entries.async_unload_platforms(entry, ["sensor"])
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
-
-    # Odstranění služeb
-    from .services import async_unload_services
-
-    await async_unload_services(hass)
-
     return unload_ok
 
 
-async def async_reload_entry(
-    hass: HomeAssistant, config_entry: config_entries.ConfigEntry
-) -> None:
+async def async_reload_entry(config_entry: config_entries.ConfigEntry) -> None:
     """Reload config entry."""
+    hass = config_entry.hass
     await async_unload_entry(hass, config_entry)
     await async_setup_entry(hass, config_entry)
 
@@ -222,12 +405,12 @@ async def async_update_options(
         # Odstraň _needs_reload flag a reload
         new_options = dict(config_entry.options)
         new_options.pop("_needs_reload", None)
-
-        # Aktualizuj options bez _needs_reload
         hass.config_entries.async_update_entry(config_entry, options=new_options)
-
         # Naplánuj reload
         hass.async_create_task(hass.config_entries.async_reload(config_entry.entry_id))
+    else:
+        new_options = dict(config_entry.options)
+        hass.config_entries.async_update_entry(config_entry, options=new_options)
 
 
 async def _cleanup_unused_devices(
@@ -245,53 +428,47 @@ async def _cleanup_unused_devices(
         devices = dr.async_entries_for_config_entry(device_registry, entry.entry_id)
 
         devices_to_remove = []
-
         for device in devices:
             device_name = device.name or ""
             should_keep = True
 
             # Definujeme pravidla pro zachování zařízení
             keep_patterns = [
+                "OIG.*Statistics",  # Staré statistiky (regex pattern)
                 "ČEZ Battery Box",
                 "OIG Cloud Home",
                 "Analytics & Predictions",
                 "ServiceShield",
             ]
-
-            # Definujeme pravidla pro odstranění zařízení
-            remove_patterns = [
-                "OIG Cloud Shield",  # Staré duplicity
-                "OIG.*Statistics",  # Staré statistiky (regex pattern)
-            ]
-
-            # Zkontrolujeme, jestli zařízení odpovídá keep patterns
             for pattern in keep_patterns:
                 if pattern in device_name:
                     should_keep = True
                     break
             else:
                 # Pokud neodpovídá keep patterns, zkontrolujeme remove patterns
-                import re
+                remove_patterns = [
+                    "OIG Cloud Shield",  # Staré duplicity
+                    "OIG.*Statistics",  # Staré statistiky (regex pattern)
+                ]
 
-                for pattern in remove_patterns:
+                # Zkontrolujeme, jestli zařízení odpovídá keep patterns
+                for pattern in keep_patterns:
                     if re.search(pattern, device_name):
                         should_keep = False
                         break
+                else:
+                    # Pokud nemá žádné entity, můžeme smazat
+                    device_entities = er.async_entries_for_device(
+                        entity_registry, device.id
+                    )
+                    if not device_entities:
+                        should_keep = False
 
             if not should_keep:
-                # Zkontrolujeme, jestli zařízení nemá žádné entity
-                device_entities = er.async_entries_for_device(
-                    entity_registry, device.id
+                devices_to_remove.append(device)
+                _LOGGER.info(
+                    f"Marking device for removal: {device.name} (ID: {device.id})"
                 )
-                if not device_entities:  # Žádné entity = můžeme smazat
-                    devices_to_remove.append(device)
-                    _LOGGER.info(
-                        f"Marking device for removal: {device.name} (ID: {device.id})"
-                    )
-                else:
-                    _LOGGER.debug(
-                        f"Device {device.name} has {len(device_entities)} entities, keeping"
-                    )
             else:
                 _LOGGER.debug(f"Keeping device: {device.name} (ID: {device.id})")
 
@@ -307,98 +484,5 @@ async def _cleanup_unused_devices(
             _LOGGER.info(f"Removed {len(devices_to_remove)} unused devices")
         else:
             _LOGGER.debug("No unused devices found to remove")
-
     except Exception as e:
         _LOGGER.warning(f"Error cleaning up devices: {e}")
-
-
-async def _register_services(hass: HomeAssistant) -> None:
-    """Registrace služeb pro OIG Cloud."""
-    import voluptuous as vol
-    from homeassistant.helpers import config_validation as cv
-
-    async def handle_update_solar_forecast(call: ServiceCall) -> None:
-        """Handle update solar forecast service call."""
-        entity_id = call.data.get("entity_id")
-
-        updated_count = 0
-
-        try:
-            if entity_id:
-                # Update specific sensor
-                entity = hass.states.get(entity_id)
-                if entity and entity.attributes.get("integration") == DOMAIN:
-                    # Najdeme odpovídající senzor a spustíme manuální update
-                    for entry_id, entry_data in hass.data[DOMAIN].items():
-                        if entry_id == "shield":  # Skip shield data
-                            continue
-                        # Najdeme solar forecast senzory pro tento entry
-                        solar_sensors = entry_data.get("solar_forecast_sensors", [])
-                        for sensor in solar_sensors:
-                            if (
-                                hasattr(sensor, "entity_id")
-                                and sensor.entity_id == entity_id
-                            ):
-                                if hasattr(sensor, "async_manual_update"):
-                                    success = await sensor.async_manual_update()
-                                    if success:
-                                        updated_count += 1
-                                        _LOGGER.info(
-                                            f"🌞 Manual update completed for {entity_id}"
-                                        )
-                                    else:
-                                        _LOGGER.error(
-                                            f"🌞 Manual update failed for {entity_id}"
-                                        )
-                                else:
-                                    # Fallback - zavolej fetch_forecast_data přímo
-                                    await sensor.async_fetch_forecast_data()
-                                    updated_count += 1
-                                    _LOGGER.info(
-                                        f"🌞 Manual update completed for {entity_id}"
-                                    )
-                                break
-                else:
-                    _LOGGER.warning(
-                        f"Entity {entity_id} not found or not from OIG Cloud"
-                    )
-            else:
-                # Update all solar forecast sensors across all entries
-                for entry_id, entry_data in hass.data[DOMAIN].items():
-                    if entry_id == "shield":  # Skip shield data
-                        continue
-                    solar_sensors = entry_data.get("solar_forecast_sensors", [])
-                    for sensor in solar_sensors:
-                        try:
-                            if hasattr(sensor, "async_manual_update"):
-                                success = await sensor.async_manual_update()
-                                if success:
-                                    updated_count += 1
-                            elif hasattr(sensor, "async_fetch_forecast_data"):
-                                await sensor.async_fetch_forecast_data()
-                                updated_count += 1
-                        except Exception as e:
-                            _LOGGER.error(
-                                f"Error updating solar forecast sensor {getattr(sensor, 'entity_id', 'unknown')}: {e}"
-                            )
-
-                _LOGGER.info(
-                    f"🌞 Manual update completed for {updated_count} solar forecast sensors"
-                )
-
-        except Exception as e:
-            _LOGGER.error(f"Error in solar forecast service: {e}")
-
-    # Registrace služby
-    hass.services.async_register(
-        DOMAIN,
-        "update_solar_forecast",
-        handle_update_solar_forecast,
-        schema=vol.Schema(
-            {
-                vol.Optional("entity_id"): cv.entity_id,
-            }
-        ),
-    )
-
-    _LOGGER.debug("OIG Cloud services registered")

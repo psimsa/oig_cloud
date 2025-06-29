@@ -1,7 +1,7 @@
 """Platform pro OIG Cloud senzory."""
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -435,6 +435,61 @@ async def async_setup_entry(
             )
     except Exception as e:
         _LOGGER.error(f"Error initializing ServiceShield sensors: {e}")
+
+    # 7. Notification sensors - jednoduše jako ostatní senzory
+    try:
+        if coordinator.data is not None and SENSOR_TYPES:
+            from .oig_cloud_data_sensor import OigCloudDataSensor
+
+            # Notification senzory vytvoříme jednoduše, bez složitého setup
+            notification_sensors: List[Any] = []
+            notification_sensor_types = {
+                k: v
+                for k, v in SENSOR_TYPES.items()
+                if v.get("sensor_type_category") == "notification"
+            }
+            _LOGGER.debug(
+                f"Found {len(notification_sensor_types)} notification sensors to create"
+            )
+
+            for sensor_type, config in notification_sensor_types.items():
+                try:
+                    sensor = OigCloudDataSensor(
+                        coordinator, sensor_type, notification=True
+                    )
+
+                    # Jednoduché ověření device_info
+                    if (
+                        hasattr(sensor, "device_info")
+                        and sensor.device_info is not None
+                    ):
+                        if not isinstance(sensor.device_info, dict):
+                            _LOGGER.error(
+                                f"Notification sensor {sensor_type} has invalid device_info type: {type(sensor.device_info)}"
+                            )
+                            continue
+
+                    notification_sensors.append(sensor)
+                    _LOGGER.debug(f"Created notification sensor: {sensor_type}")
+                except Exception as e:
+                    _LOGGER.error(
+                        f"Error creating notification sensor {sensor_type}: {e}"
+                    )
+                    continue
+
+            if notification_sensors:
+                _LOGGER.info(
+                    f"Registering {len(notification_sensors)} notification sensors"
+                )
+                async_add_entities(notification_sensors, True)
+            else:
+                _LOGGER.debug("No notification sensors found")
+        else:
+            _LOGGER.debug(
+                "Coordinator data is None or SENSOR_TYPES empty, skipping notification sensors"
+            )
+    except Exception as e:
+        _LOGGER.error(f"Error initializing notification sensors: {e}")
 
     _LOGGER.info("OIG Cloud sensor setup completed")
 

@@ -1,16 +1,14 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
-from homeassistant.const import EntityCategory
+from homeassistant.const import EntityCategory, UnitOfEnergy, UnitOfPower
 
-from typing import Dict
+from typing import Dict, Any
 
-SENSOR_TYPES_BOILER: Dict[
-    str, Dict[str, str | SensorDeviceClass | SensorStateClass]
-] = {
+SENSOR_TYPES_BOILER: Dict[str, Dict[str, Any]] = {
     "boiler_current_cbb_w": {
         "name": "Boiler - Current Energy (CBB)",
         "name_cs": "Bojler - Aktuální výkon (CBB)",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,
         "node_id": "boiler",
         "node_key": "p",
         "state_class": SensorStateClass.MEASUREMENT,
@@ -21,7 +19,7 @@ SENSOR_TYPES_BOILER: Dict[
         "name": "Boiler - Current Energy (Computed)",
         "name_cs": "Bojler - Aktuální výkon (Vypočítaná)",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,
@@ -32,7 +30,7 @@ SENSOR_TYPES_BOILER: Dict[
         "name": "Boiler - Today Energy",
         "name_cs": "Bojler - Dnešní uložení",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "Wh",
+        "unit_of_measurement": UnitOfEnergy.WATT_HOUR,
         "node_id": "boiler",
         "node_key": "w",
         "state_class": SensorStateClass.TOTAL_INCREASING,
@@ -103,7 +101,7 @@ SENSOR_TYPES_BOILER: Dict[
         "name": "Boiler - install power",
         "name_cs": "Bojler - instalovaný výkon",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": "boiler_prms",
         "node_key": "p_set",

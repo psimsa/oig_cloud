@@ -1,14 +1,19 @@
-from typing import Dict
+from typing import Dict, Any
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.helpers.entity import EntityCategory
+from homeassistant.const import (
+    UnitOfElectricPotential,
+    UnitOfElectricCurrent,
+    PERCENTAGE,
+    UnitOfTemperature,
+    UnitOfEnergy,
+)
 
-SENSOR_TYPES_EXTENDED_BATT: Dict[
-    str, Dict[str, str | SensorDeviceClass | SensorStateClass]
-] = {
+SENSOR_TYPES_EXTENDED_BATT: Dict[str, Dict[str, Any]] = {
     "extended_battery_voltage": {
         "name": "Extended Battery Voltage",
         "name_cs": "Napětí baterie",
-        "unit_of_measurement": "V",
+        "unit_of_measurement": UnitOfElectricPotential.VOLT,
         "device_class": SensorDeviceClass.VOLTAGE,
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
@@ -18,7 +23,7 @@ SENSOR_TYPES_EXTENDED_BATT: Dict[
     "extended_battery_current": {
         "name": "Extended Battery Current",
         "name_cs": "Proud baterie",
-        "unit_of_measurement": "A",
+        "unit_of_measurement": UnitOfElectricCurrent.AMPERE,
         "device_class": SensorDeviceClass.CURRENT,
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
@@ -28,7 +33,7 @@ SENSOR_TYPES_EXTENDED_BATT: Dict[
     "extended_battery_capacity": {
         "name": "Extended Battery Capacity",
         "name_cs": "Rozšířená kapacita baterie",
-        "unit_of_measurement": "%",
+        "unit_of_measurement": PERCENTAGE,
         "device_class": SensorDeviceClass.BATTERY,
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
@@ -38,7 +43,7 @@ SENSOR_TYPES_EXTENDED_BATT: Dict[
     "extended_battery_temperature": {
         "name": "Extended Battery Temperature",
         "name_cs": "Teplota baterie",
-        "unit_of_measurement": "°C",
+        "unit_of_measurement": UnitOfTemperature.CELSIUS,
         "device_class": SensorDeviceClass.TEMPERATURE,
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
@@ -49,7 +54,7 @@ SENSOR_TYPES_EXTENDED_BATT: Dict[
     "usable_battery_capacity": {
         "name": "Usable Battery Capacity",
         "name_cs": "Baterie - využitelná kapacita",
-        "unit_of_measurement": "kWh",
+        "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
         "device_class": SensorDeviceClass.ENERGY,
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
@@ -59,7 +64,7 @@ SENSOR_TYPES_EXTENDED_BATT: Dict[
     "missing_battery_kwh": {
         "name": "Missing Energy to 100%",
         "name_cs": "Baterie - k nabití",
-        "unit_of_measurement": "kWh",
+        "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
         "device_class": SensorDeviceClass.ENERGY,
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
@@ -69,7 +74,7 @@ SENSOR_TYPES_EXTENDED_BATT: Dict[
     "remaining_usable_capacity": {
         "name": "Remaining Usable Capacity",
         "name_cs": "Baterie - zbývající kapacita",
-        "unit_of_measurement": "kWh",
+        "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
         "device_class": SensorDeviceClass.ENERGY,
         "state_class": SensorStateClass.MEASUREMENT,
         "node_id": None,
