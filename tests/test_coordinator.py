@@ -15,14 +15,6 @@ from homeassistant.config_entries import ConfigEntry
 
 
 @pytest.fixture
-def mock_api():
-    """Create a mock OIG Cloud API."""
-    api = Mock(spec=OigCloudApi)
-    api.get_data = AsyncMock()
-    return api
-
-
-@pytest.fixture
 def mock_config_entry():
     """Create a mock config entry."""
     mock_entry = Mock(spec=ConfigEntry)
@@ -41,12 +33,24 @@ def mock_hass():
 @pytest.fixture
 def coordinator(mock_hass, mock_api, mock_config_entry):
     """Create a coordinator with mock dependencies."""
+    # Přidáme metody které koordinátor očekává přímo do tohoto testu
+    mock_api.get_basic_data = AsyncMock(
+        return_value={"device1": {"box_prms": {"mode": 1}}}
+    )
+    mock_api.get_extended_data = AsyncMock(return_value={})
+
     return OigCloudDataUpdateCoordinator(mock_hass, mock_api, mock_config_entry)
 
 
 @pytest.mark.asyncio
 async def test_coordinator_initialization(mock_hass, mock_api, mock_config_entry):
     """Test coordinator initialization."""
+    # Přidáme metody i pro tento test
+    mock_api.get_basic_data = AsyncMock(
+        return_value={"device1": {"box_prms": {"mode": 1}}}
+    )
+    mock_api.get_extended_data = AsyncMock(return_value={})
+
     coordinator = OigCloudDataUpdateCoordinator(mock_hass, mock_api, mock_config_entry)
 
     assert coordinator.api == mock_api
@@ -66,17 +70,13 @@ async def test_async_update_data_success(
     coordinator: OigCloudDataUpdateCoordinator, mock_api: Mock
 ) -> None:
     """Test data update success."""
-    mock_data = {"device1": {"box_prms": {"mode": 1}}}
-
-    # Použij skutečné API metody
-    mock_api.get_stats.return_value = mock_data
-    mock_api.get_extended_stats.return_value = {}
-    mock_api.get_notifications.return_value = {"status": "success", "content": ""}
-
+    # Test již má potřebné metody z coordinator fixture
     result = await coordinator._async_update_data()
 
-    assert result == mock_data
-    mock_api.get_stats.assert_called_once()
+    # Coordinator wraps data in {"basic": data}
+    expected_result = {"basic": {"device1": {"box_prms": {"mode": 1}}}}
+    assert result == expected_result
+    mock_api.get_basic_data.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -84,10 +84,9 @@ async def test_async_update_data_empty_response(
     coordinator: OigCloudDataUpdateCoordinator, mock_api: Mock
 ) -> None:
     """Test handling of empty data response."""
-    # Mock get_stats to return None
-    mock_api.get_stats.return_value = None
+    mock_api.get_basic_data.return_value = None
 
-    with pytest.raises(UpdateFailed, match="No data received from OIG Cloud API"):
+    with pytest.raises(UpdateFailed, match="Failed to fetch basic data"):
         await coordinator._async_update_data()
 
 
@@ -96,11 +95,10 @@ async def test_async_update_data_api_error(
     coordinator: OigCloudDataUpdateCoordinator, mock_api: Mock
 ) -> None:
     """Test handling of API errors."""
-    # Mock get_stats to raise OigCloudApiError
-    mock_api.get_stats.side_effect = OigCloudApiError("API connection failed")
+    mock_api.get_basic_data.side_effect = OigCloudApiError("API connection failed")
 
     with pytest.raises(
-        UpdateFailed, match="Error communicating with API: API connection failed"
+        UpdateFailed, match="Failed to fetch basic data: API connection failed"
     ):
         await coordinator._async_update_data()
 
@@ -110,8 +108,7 @@ async def test_async_update_data_timeout(
     coordinator: OigCloudDataUpdateCoordinator, mock_api: Mock
 ) -> None:
     """Test handling of timeout errors."""
-    # Mock get_stats to raise TimeoutError
-    mock_api.get_stats.side_effect = asyncio.TimeoutError()
+    mock_api.get_basic_data.side_effect = asyncio.TimeoutError()
 
     with pytest.raises(UpdateFailed, match="Error communicating with API"):
         await coordinator._async_update_data()
@@ -122,8 +119,7 @@ async def test_async_update_data_unexpected_error(
     coordinator: OigCloudDataUpdateCoordinator, mock_api: Mock
 ) -> None:
     """Test handling of unexpected errors."""
-    # Mock get_stats to raise generic Exception
-    mock_api.get_stats.side_effect = Exception("Unexpected error")
+    mock_api.get_basic_data.side_effect = Exception("Unexpected error")
 
     with pytest.raises(
         UpdateFailed, match="Error communicating with API: Unexpected error"

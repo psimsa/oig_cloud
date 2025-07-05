@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import time
-from datetime import timedelta
+from datetime import timedelta, datetime
 from typing import Any, Awaitable, Callable, Dict, Optional
 
 from homeassistant.config_entries import ConfigEntry
@@ -28,10 +28,12 @@ class OigCloudDataUpdateCoordinator(DataUpdateCoordinator):
     ) -> None:
         """Initialize the coordinator."""
         # Get update interval from config entry data or use provided interval or default
-        configured_interval = config_entry.data.get(
+        configured_interval: int = config_entry.data.get(
             "update_interval", DEFAULT_UPDATE_INTERVAL
         )
-        effective_interval = update_interval or timedelta(seconds=configured_interval)
+        effective_interval: timedelta = update_interval or timedelta(
+            seconds=configured_interval
+        )
 
         super().__init__(
             hass,
@@ -40,7 +42,7 @@ class OigCloudDataUpdateCoordinator(DataUpdateCoordinator):
             update_interval=effective_interval,
             config_entry=config_entry,
         )
-        self.api = api
+        self.api: OigCloudApi = api
 
         # Initialize extended data attributes
         self._extended_enabled: bool = config_entry.data.get(
@@ -62,8 +64,8 @@ class OigCloudDataUpdateCoordinator(DataUpdateCoordinator):
     async def _fetch_basic_data(self) -> Dict[str, Any]:
         """Fetch basic data from API."""
         try:
-            data = await self.api.get_basic_data()
-            return {"basic": data}
+            data: Optional[Dict[str, Any]] = await self.api.get_stats()
+            return {"basic": data if data is not None else {}}
         except OigCloudApiError as e:
             _LOGGER.error(f"Error fetching basic data: {e}")
             raise UpdateFailed(f"Failed to fetch basic data: {e}")
@@ -71,8 +73,23 @@ class OigCloudDataUpdateCoordinator(DataUpdateCoordinator):
     async def _fetch_extended_data(self) -> Dict[str, Any]:
         """Fetch extended data from API."""
         try:
-            data = await self.api.get_extended_data()
-            return {"extended": data}
+            # Get extended stats for different time periods
+            today: datetime = datetime.now()
+            yesterday: datetime = today.replace(day=today.day - 1)
+
+            today_str: str = today.strftime("%Y-%m-%d")
+            yesterday_str: str = yesterday.strftime("%Y-%m-%d")
+
+            # Fetch different types of extended data
+            daily_data: Dict[str, Any] = await self.api.get_extended_stats(
+                name="daily", from_date=yesterday_str, to_date=today_str
+            )
+
+            monthly_data: Dict[str, Any] = await self.api.get_extended_stats(
+                name="monthly", from_date=today.strftime("%Y-%m-01"), to_date=today_str
+            )
+
+            return {"extended": {"daily": daily_data, "monthly": monthly_data}}
         except OigCloudApiError as e:
             _LOGGER.error(f"Error fetching extended data: {e}")
             raise UpdateFailed(f"Failed to fetch extended data: {e}")
@@ -80,17 +97,17 @@ class OigCloudDataUpdateCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> Dict[str, Any]:
         """Fetch data from API endpoint."""
         try:
-            combined_data = {}
+            combined_data: Dict[str, Any] = {}
 
             # 1. Základní data - vždy načíst
-            basic_data = await self._fetch_basic_data()
+            basic_data: Dict[str, Any] = await self._fetch_basic_data()
             combined_data.update(basic_data)
 
             # 2. Extended data - načíst jen pokud je povoleno a je čas
-            current_time = time.time()
+            current_time: float = time.time()
 
             if self._extended_enabled:
-                time_since_last = None
+                time_since_last: Optional[float] = None
                 if self._last_extended_update is not None:
                     time_since_last = current_time - self._last_extended_update
 
@@ -100,7 +117,9 @@ class OigCloudDataUpdateCoordinator(DataUpdateCoordinator):
                 ):
                     _LOGGER.info(f"Fetching extended data")
                     try:
-                        extended_data = await self._fetch_extended_data()
+                        extended_data: Dict[str, Any] = (
+                            await self._fetch_extended_data()
+                        )
                         combined_data.update(extended_data)
                         self._last_extended_update = current_time
                         _LOGGER.debug("Extended data updated successfully")

@@ -195,11 +195,11 @@ class OigCloudApi:
         """Try to get stats with proper error handling."""
         try:
             async with self.get_session() as session:
-                url = self._base_url + self._get_stats_url
+                url: str = self._base_url + self._get_stats_url
                 self._logger.debug(f"Getting stats from {url}")
                 async with session.get(url) as response:
                     if response.status == 200:
-                        result = await response.json()
+                        result: Dict[str, Any] = await response.json()
                         if not isinstance(result, dict) and not dependent:
                             self._logger.info("Retrying authentication")
                             if await self.authenticate():
@@ -238,6 +238,7 @@ class OigCloudApi:
                 raise e
 
     async def set_grid_delivery_limit(self, limit: int) -> bool:
+        """Set grid delivery limit."""
         if _has_opentelemetry and tracer:
             with tracer.start_as_current_span("set_grid_delivery_limit") as span:
                 try:
@@ -259,6 +260,7 @@ class OigCloudApi:
                 raise e
 
     async def set_boiler_mode(self, mode: str) -> bool:
+        """Set boiler mode."""
         if _has_opentelemetry and tracer:
             with tracer.start_as_current_span("set_boiler_mode") as span:
                 try:
@@ -278,6 +280,7 @@ class OigCloudApi:
                 raise e
 
     async def set_ssr_rele_1(self, mode: str) -> bool:
+        """Set SSR relay 1 mode."""
         if _has_opentelemetry and tracer:
             with tracer.start_as_current_span("set_ssr_rele_1") as span:
                 try:
@@ -297,6 +300,7 @@ class OigCloudApi:
                 raise e
 
     async def set_ssr_rele_2(self, mode: str) -> bool:
+        """Set SSR relay 2 mode."""
         if _has_opentelemetry and tracer:
             with tracer.start_as_current_span("set_ssr_rele_2") as span:
                 try:
@@ -316,6 +320,7 @@ class OigCloudApi:
                 raise e
 
     async def set_ssr_rele_3(self, mode: str) -> bool:
+        """Set SSR relay 3 mode."""
         if _has_opentelemetry and tracer:
             with tracer.start_as_current_span("set_ssr_rele_3") as span:
                 try:
@@ -337,10 +342,11 @@ class OigCloudApi:
     async def set_box_params_internal(
         self, table: str, column: str, value: str
     ) -> bool:
+        """Internal method to set box parameters."""
         if _has_opentelemetry and tracer:
             with tracer.start_as_current_span("set_box_params_internal") as span:
                 async with self.get_session() as session:
-                    data = json.dumps(
+                    data: str = json.dumps(
                         {
                             "id_device": self.box_id,
                             "table": table,
@@ -348,8 +354,10 @@ class OigCloudApi:
                             "value": value,
                         }
                     )
-                    _nonce = int(time.time() * 1000)
-                    target_url = f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
+                    _nonce: int = int(time.time() * 1000)
+                    target_url: str = (
+                        f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
+                    )
 
                     self._logger.debug(
                         f"Sending mode request to {target_url} with {data.replace(str(self.box_id), 'xxxxxx')}"
@@ -360,10 +368,10 @@ class OigCloudApi:
                         data=data,
                         headers={"Content-Type": "application/json"},
                     ) as response:
-                        response_content = await response.text()
+                        response_content: str = await response.text()
                         if response.status == 200:
-                            response_json = json.loads(response_content)
-                            message = response_json[0][2]
+                            response_json: Dict[str, Any] = json.loads(response_content)
+                            message: str = response_json[0][2]
                             self._logger.info(f"Response: {message}")
                             return True
                         else:
@@ -373,7 +381,7 @@ class OigCloudApi:
                             )
         else:
             async with self.get_session() as session:
-                data = json.dumps(
+                data: str = json.dumps(
                     {
                         "id_device": self.box_id,
                         "table": table,
@@ -381,8 +389,10 @@ class OigCloudApi:
                         "value": value,
                     }
                 )
-                _nonce = int(time.time() * 1000)
-                target_url = f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
+                _nonce: int = int(time.time() * 1000)
+                target_url: str = (
+                    f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
+                )
 
                 self._logger.debug(
                     f"Sending mode request to {target_url} with {data.replace(str(self.box_id), 'xxxxxx')}"
@@ -393,10 +403,10 @@ class OigCloudApi:
                     data=data,
                     headers={"Content-Type": "application/json"},
                 ) as response:
-                    response_content = await response.text()
+                    response_content: str = await response.text()
                     if response.status == 200:
-                        response_json = json.loads(response_content)
-                        message = response_json[0][2]
+                        response_json: Dict[str, Any] = json.loads(response_content)
+                        message: str = response_json[0][2]
                         self._logger.info(f"Response: {message}")
                         return True
                     else:
@@ -510,12 +520,13 @@ class OigCloudApi:
                 raise e
 
     async def set_battery_formating(self, mode: str, limit: int) -> bool:
+        """Set battery formatting parameters."""
         if _has_opentelemetry and tracer:
             with tracer.start_as_current_span("set_batt_formating") as span:
                 try:
                     self._logger.debug(f"Setting formatting battery to {limit} percent")
                     async with self.get_session() as session:
-                        data = json.dumps(
+                        data: str = json.dumps(
                             {
                                 "id_device": self.box_id,
                                 "column": "bat_ac",
@@ -523,8 +534,10 @@ class OigCloudApi:
                             }
                         )
 
-                        _nonce = int(time.time() * 1000)
-                        target_url = f"{self._base_url}{self._set_batt_formating_url}?_nonce={_nonce}"
+                        _nonce: int = int(time.time() * 1000)
+                        target_url: str = (
+                            f"{self._base_url}{self._set_batt_formating_url}?_nonce={_nonce}"
+                        )
 
                         self._logger.debug(
                             f"Sending formatting battery request to {target_url} with {data.replace(str(self.box_id), 'xxxxxx')}"
@@ -535,10 +548,12 @@ class OigCloudApi:
                             data=data,
                             headers={"Content-Type": "application/json"},
                         ) as response:
-                            response_content = await response.text()
+                            response_content: str = await response.text()
                             if response.status == 200:
-                                response_json = json.loads(response_content)
-                                message = response_json[0][2]
+                                response_json: Dict[str, Any] = json.loads(
+                                    response_content
+                                )
+                                message: str = response_json[0][2]
                                 self._logger.info(f"Response: {message}")
                                 return True
                             else:
@@ -553,7 +568,7 @@ class OigCloudApi:
             try:
                 self._logger.debug(f"Setting formatting battery to {limit} percent")
                 async with self.get_session() as session:
-                    data = json.dumps(
+                    data: str = json.dumps(
                         {
                             "id_device": self.box_id,
                             "column": "bat_ac",
@@ -561,8 +576,10 @@ class OigCloudApi:
                         }
                     )
 
-                    _nonce = int(time.time() * 1000)
-                    target_url = f"{self._base_url}{self._set_batt_formating_url}?_nonce={_nonce}"
+                    _nonce: int = int(time.time() * 1000)
+                    target_url: str = (
+                        f"{self._base_url}{self._set_batt_formating_url}?_nonce={_nonce}"
+                    )
 
                     self._logger.debug(
                         f"Sending formatting battery request to {target_url} with {data.replace(str(self.box_id), 'xxxxxx')}"
@@ -573,10 +590,10 @@ class OigCloudApi:
                         data=data,
                         headers={"Content-Type": "application/json"},
                     ) as response:
-                        response_content = await response.text()
+                        response_content: str = await response.text()
                         if response.status == 200:
-                            response_json = json.loads(response_content)
-                            message = response_json[0][2]
+                            response_json: Dict[str, Any] = json.loads(response_content)
+                            message: str = response_json[0][2]
                             self._logger.info(f"Response: {message}")
                             return True
                         else:
@@ -588,7 +605,9 @@ class OigCloudApi:
                 self._logger.error(f"Error: {e}", stack_info=True)
                 raise
 
-    async def get_extended_stats(self, name: str, from_date: str, to_date: str) -> Any:
+    async def get_extended_stats(
+        self, name: str, from_date: str, to_date: str
+    ) -> Dict[str, Any]:
         """Get extended statistics - fixed to return actual data."""
         try:
             self._logger.debug(
@@ -596,16 +615,19 @@ class OigCloudApi:
             )
 
             async with self.get_session() as session:
-                url = self._base_url + "json2.php"
+                url: str = self._base_url + "json2.php"
 
                 # Původní payload formát
-                payload = {"name": name, "range": f"{from_date},{to_date},0"}
-                headers = {"Content-Type": "application/json"}
+                payload: Dict[str, str] = {
+                    "name": name,
+                    "range": f"{from_date},{to_date},0",
+                }
+                headers: Dict[str, str] = {"Content-Type": "application/json"}
 
                 async with session.post(url, json=payload, headers=headers) as response:
                     if response.status == 200:
                         try:
-                            result = await response.json()
+                            result: Dict[str, Any] = await response.json()
                             self._logger.debug(
                                 f"Extended stats '{name}' retrieved successfully, data size: {len(str(result))}"
                             )
