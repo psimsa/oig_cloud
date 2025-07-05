@@ -19,9 +19,9 @@ from homeassistant.config_entries import ConfigEntry
 def mock_config_entry() -> Mock:
     """Create a mock config entry."""
     mock_entry: Mock = Mock(spec=ConfigEntry)
-    # Přidáme potřebné atributy
+    # Používáme DEFAULT_UPDATE_INTERVAL místo pevné hodnoty
     mock_entry.data = {
-        "update_interval": 30,
+        "update_interval": DEFAULT_UPDATE_INTERVAL,
         "inverter_sn": "test_sn_123",
         "extended_data_enabled": False,
         "extended_update_interval": 300,
@@ -137,7 +137,7 @@ async def test_extended_data_enabled(mock_hass: Mock, mock_api: Mock) -> None:
     """Test coordinator with extended data enabled."""
     mock_config_entry: Mock = Mock(spec=ConfigEntry)
     mock_config_entry.data = {
-        "update_interval": 30,
+        "update_interval": DEFAULT_UPDATE_INTERVAL,  # Použij DEFAULT_UPDATE_INTERVAL
         "extended_data_enabled": True,
         "extended_update_interval": 300,
     }
