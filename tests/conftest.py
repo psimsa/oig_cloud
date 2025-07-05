@@ -1,21 +1,23 @@
 import pytest
 from unittest.mock import Mock, AsyncMock
-from custom_components.oig_cloud.api.oig_cloud_api import OigCloudApi
 
 
 @pytest.fixture
 def mock_api() -> Mock:
     """Create a mock API instance."""
-    api = Mock(spec=OigCloudApi)
+    api = Mock()  # Odstranili jsme spec=OigCloudApi
 
-    # Mock všechny potřebné metody
-    api.get_data = AsyncMock(return_value={"device1": {"box_prms": {"mode": 1}}})
-    api.get_basic_data = AsyncMock(return_value={"device1": {"box_prms": {"mode": 1}}})
-    api.get_extended_data = AsyncMock(return_value={})
+    # Mock existující metody z OigCloudApi
+    api.get_stats = AsyncMock(return_value={"device1": {"box_prms": {"mode": 1}}})
+    api.get_extended_stats = AsyncMock(return_value={})
     api.get_notifications = AsyncMock(return_value={"status": "success", "content": ""})
     api.authenticate = AsyncMock(return_value=True)
-    api.get_stats = AsyncMock(return_value={})
     api.get_session = Mock(return_value=Mock())
     api.set_box_params_internal = AsyncMock(return_value=True)
+
+    # Alias metody pro kompatibilitu s koordinátorem
+    api.get_data = api.get_stats  # Alias pro get_stats
+    api.get_basic_data = api.get_stats  # Alias pro get_stats
+    api.get_extended_data = api.get_extended_stats  # Alias pro get_extended_stats
 
     return api
