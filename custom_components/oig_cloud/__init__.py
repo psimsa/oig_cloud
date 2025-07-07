@@ -60,6 +60,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up OIG Cloud from a config entry."""
+    _LOGGER.info("[OIG SETUP] Starting OIG Cloud setup")
     _LOGGER.info(f"Setting up OIG Cloud entry: {entry.title}")
     _LOGGER.debug(f"Config data keys: {list(entry.data.keys())}")
     _LOGGER.debug(f"Config options keys: {list(entry.options.keys())}")
@@ -411,12 +412,6 @@ async def async_unload_entry(
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, ["sensor"])
     if unload_ok:
-        # NOVÉ: Uzavřít OTE API pokud existuje
-        entry_data = hass.data[DOMAIN].get(entry.entry_id, {})
-        ote_api = entry_data.get("ote_api")
-        if ote_api:
-            await ote_api.close()
-
         hass.data[DOMAIN].pop(entry.entry_id, None)
     return unload_ok
 

@@ -11,7 +11,6 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-# OPRAVA: Import SENSOR_TYPES s detailním logováním pro diagnostiku
 try:
     _LOGGER.debug("Attempting to import SENSOR_TYPES from sensor_types.py")
     from .sensor_types import SENSOR_TYPES
@@ -535,6 +534,53 @@ async def async_setup_entry(
             _LOGGER.error(f"Error initializing battery prediction sensors: {e}")
     else:
         _LOGGER.info("Battery prediction sensors disabled - skipping creation")
+
+    # OPRAVA: Spotové senzory (pokud jsou povoleny)
+    spot_prices_enabled = entry.options.get("enable_spot_prices", False)
+    _LOGGER.info(f"Spot prices enabled: {spot_prices_enabled}")
+
+    if spot_prices_enabled:
+        try:
+            _LOGGER.info("Adding spot price sensors")
+            from .sensors.SENSOR_TYPES_SPOT import SENSOR_TYPES_SPOT
+            from .oig_cloud_analytics_sensor import (
+                OigCloudAnalyticsSensor,
+            )  # OPRAVA: přidat import
+
+            spot_sensors: List[Any] = []  # OPRAVA: vytvořit správný seznam
+
+            for sensor_type in SENSOR_TYPES_SPOT.keys():
+                if (
+                    SENSOR_TYPES_SPOT[sensor_type].get("sensor_type_category")
+                    == "pricing"
+                ):
+                    try:
+                        entity = OigCloudAnalyticsSensor(
+                            coordinator,
+                            sensor_type,
+                            entry,  # OPRAVA: použít 'entry' místo 'config_entry'
+                        )
+                        spot_sensors.append(
+                            entity
+                        )  # OPRAVA: použít spot_sensors místo entities
+                        _LOGGER.debug(f"Added spot price sensor: {sensor_type}")
+                    except Exception as e:
+                        _LOGGER.error(
+                            f"Failed to create spot price sensor {sensor_type}: {e}"
+                        )
+
+            if spot_sensors:  # OPRAVA: registrovat pouze pokud máme senzory
+                _LOGGER.info(f"Registering {len(spot_sensors)} spot price sensors")
+                async_add_entities(spot_sensors, True)
+            else:
+                _LOGGER.debug("No spot price sensors could be created")
+
+        except ImportError as e:
+            _LOGGER.error(f"OigCloudAnalyticsSensor not available: {e}")
+        except Exception as e:
+            _LOGGER.error(f"Error initializing spot price sensors: {e}")
+    else:
+        _LOGGER.info("Spot price sensors disabled - skipping creation")
 
     _LOGGER.info("OIG Cloud sensor setup completed")
 

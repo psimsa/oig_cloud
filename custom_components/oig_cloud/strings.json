@@ -5,9 +5,13 @@
         "title": "OIG Cloud",
         "description": "Nastavte své přihlašovací údaje pro OIG Cloud",
         "data": {
-          "username": "Uživatelské jméno",
+          "username": "Uživatelské jméno nebo e-mail",
           "password": "Heslo",
-          "no_telemetry": "Zakázat telemetrii"
+          "enable_solar_forecast": "Povolit solární předpověď",
+          "enable_statistics": "Povolit statistiky a analýzy",
+          "enable_pricing": "Povolit cenové senzory",
+          "enable_spot_prices": "Povolit spotové ceny elektřiny",
+          "enable_extended_sensors": "Povolit rozšířené senzory"
         }
       },
       "init": {
@@ -52,7 +56,8 @@
           "solar_forecast": "☀️ Solar forecast",
           "statistics_config": "📈 Statistiky a analytics",
           "battery_prediction": "🔋 Battery Prediction",
-          "pricing_config": "💰 Cenové senzory"
+          "pricing_config": "💰 Cenové senzory",
+          "spot_prices_config": "Cenové senzory"
         }
       },
       "basic_config": {
@@ -103,20 +108,16 @@
       },
       "pricing_config": {
         "title": "Cenové senzory",
-        "description": "Aktuálně {current_state}. Interval: {update_interval} minut",
+        "description": "Aktuálně {current_state}",
         "data": {
-          "enable_pricing": "Povolit cenové senzory",
-          "pricing_update_interval": "Interval aktualizace cen (minuty)",
-          "fixed_price_vt": "Fixní cena VT (Kč/kWh)",
-          "fixed_price_nt": "Fixní cena NT (Kč/kWh)",
-          "distribution_area": "Distribuční oblast"
+          "enable_pricing": "Povolit cenové senzory a kalkulace",
+          "enable_spot_prices": "Povolit stahování spotových cen elektřiny z OTE",
+          "spot_prices_update_interval": "Interval kontroly spotových cen (minuty)"
         },
         "data_description": {
-          "enable_pricing": "Senzory pro porovnání spotových cen s vašimi tarify",
-          "pricing_update_interval": "Jak často aktualizovat cenové informace (doporučeno 60-120 min)",
-          "fixed_price_vt": "Vaše aktuální cena za elektřinu ve vysokém tarifu (CZK/kWh)",
-          "fixed_price_nt": "Vaše aktuální cena za elektřinu v nízkém tarifu (CZK/kWh)",
-          "distribution_area": "Vaše distribuční území (ovlivňuje poplatky za distribuci)"
+          "enable_pricing": "Základní cenové kalkulace a cenové senzory",
+          "enable_spot_prices": "Stahování aktuálních a historických spotových cen z OTE ČR",
+          "spot_prices_update_interval": "Jak často kontrolovat nové spotové ceny (doporučeno 60 minut)"
         }
       },
       "solar_forecast": {

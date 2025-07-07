@@ -1,6 +1,8 @@
 import logging
-from datetime import timedelta, datetime
+import asyncio
+from datetime import timedelta, datetime, time
 from typing import Dict, Any, Optional, Tuple
+from zoneinfo import ZoneInfo  # Nahradit pytz import
 from homeassistant.core import HomeAssistant
 from homeassistant.util.dt import now as dt_now, utcnow as dt_utcnow
 from homeassistant.helpers import aiohttp_client
@@ -41,6 +43,43 @@ class OigCloudCoordinator(DataUpdateCoordinator):
         # Battery forecast data
         self.battery_forecast_data: Optional[Dict[str, Any]] = None
 
+        # NOVÉ: OTE API inicializace - OPRAVA logiky
+        spot_prices_enabled = self.config_entry and self.config_entry.options.get(
+            "enable_spot_prices", False
+        )
+
+        if spot_prices_enabled:
+            try:
+                _LOGGER.debug("Spot prices enabled - initializing OTE API")
+                from .api.ote_api import OteApi
+
+                self.ote_api = OteApi()
+
+                # Naplánovat aktualizaci na příští den ve 13:00
+                # OPRAVA: Použít zoneinfo místo pytz
+                now = datetime.now(ZoneInfo("Europe/Prague"))
+                next_update = now.replace(hour=13, minute=0, second=0, microsecond=0)
+                if next_update <= now:
+                    next_update += timedelta(days=1)
+
+                _LOGGER.debug(f"Next spot price update scheduled for: {next_update}")
+
+                # NOVÉ: Naplánovat fallback hodinové kontroly
+                self._schedule_hourly_fallback()
+
+            except Exception as e:
+                _LOGGER.error(f"Failed to initialize OTE API: {e}")
+                self.ote_api = None
+        else:
+            _LOGGER.debug("Spot prices disabled - not initializing OTE API")
+            self.ote_api = None
+
+        # NOVÉ: Sledování posledního stažení spotových cen
+        self._last_spot_fetch: Optional[datetime] = None
+        self._spot_retry_count: int = 0
+        self._max_spot_retries: int = 20  # 20 * 15min = 5 hodin retry
+        self._hourly_fallback_active: bool = False  # NOVÉ: flag pro hodinový fallback
+
         _LOGGER.info(
             f"Coordinator initialized with intervals: standard={standard_interval_seconds}s, extended={extended_interval_seconds}s"
         )
@@ -65,10 +104,189 @@ class OigCloudCoordinator(DataUpdateCoordinator):
         # Vynutíme okamžitou aktualizaci s novým intervalem
         self.hass.async_create_task(self.async_request_refresh())
 
-    async def _async_update_data(self) -> dict[str, Any]:
-        """Fetch data from API endpoint."""
+    def _schedule_spot_price_update(self) -> None:
+        """Naplánuje aktualizaci spotových cen."""
+        now = dt_now()
+        today_13 = now.replace(hour=13, minute=0, second=0, microsecond=0)
+
+        # Pokud je už po 13:00 dnes, naplánujeme na zítra
+        if now >= today_13:
+            next_update = today_13 + timedelta(days=1)
+        else:
+            next_update = today_13
+
+        _LOGGER.debug(f"Next spot price update scheduled for: {next_update}")
+
+        # Naplánujeme callback
+        async def spot_price_callback(now: datetime) -> None:
+            await self._update_spot_prices()
+
+        self.hass.helpers.event.async_track_point_in_time(
+            spot_price_callback, next_update
+        )
+
+    def _schedule_hourly_fallback(self) -> None:
+        """Naplánuje hodinové fallback stahování OTE dat."""
+        from homeassistant.helpers.event import async_track_time_interval
+
+        # Spustit každou hodinu
+        self.hass.loop.call_later(
+            3600,  # 1 hodina
+            lambda: self.hass.async_create_task(self._hourly_fallback_check()),
+        )
+
+    async def _hourly_fallback_check(self) -> None:
+        """Hodinová kontrola a případné stahování OTE dat."""
+        if not self.ote_api:
+            return
+
+        now = dt_now()
+
+        # Kontrola, jestli máme aktuální data
+        needs_data = False
+
+        if hasattr(self, "data") and self.data and "spot_prices" in self.data:
+            spot_data = self.data["spot_prices"]
+
+            # Před 13:00 - kontrolujeme jestli máme dnešní data
+            if now.hour < 13:
+                today_key = f"{now.strftime('%Y-%m-%d')}T{now.hour:02d}:00:00"
+                if today_key not in spot_data.get("prices_czk_kwh", {}):
+                    needs_data = True
+                    _LOGGER.debug(
+                        f"Missing today's data for hour {now.hour}, triggering fallback"
+                    )
+
+            # Po 13:00 - kontrolujeme jestli máme zítřejší data
+            else:
+                tomorrow = now + timedelta(days=1)
+                tomorrow_key = f"{tomorrow.strftime('%Y-%m-%d')}T00:00:00"
+                if tomorrow_key not in spot_data.get("prices_czk_kwh", {}):
+                    needs_data = True
+                    _LOGGER.debug(
+                        "Missing tomorrow's data after 13:00, triggering fallback"
+                    )
+        else:
+            # Žádná data vůbec
+            needs_data = True
+            _LOGGER.debug("No spot price data available, triggering fallback")
+
+        if needs_data:
+            self._hourly_fallback_active = True
+            try:
+                _LOGGER.info(
+                    "Hourly fallback: Attempting to fetch spot prices from OTE"
+                )
+
+                # Upravit OTE API call podle času
+                if now.hour < 13:
+                    # Před 13:00 - stahujeme pouze dnešek
+                    _LOGGER.debug("Before 13:00 - fetching today's data only")
+                    spot_data = await self.ote_api.get_spot_prices()
+                else:
+                    # Po 13:00 - stahujeme dnes + zítra
+                    _LOGGER.debug("After 13:00 - fetching today + tomorrow data")
+                    spot_data = await self.ote_api.get_spot_prices()
+
+                if spot_data and spot_data.get("prices_czk_kwh"):
+                    # Aktualizujeme data v koordinátoru
+                    if hasattr(self, "data") and self.data:
+                        self.data["spot_prices"] = spot_data
+                        self.async_update_listeners()
+
+                    _LOGGER.info(
+                        f"Hourly fallback: Successfully updated spot prices: {spot_data.get('hours_count', 0)} hours"
+                    )
+                    self._last_spot_fetch = dt_now()
+                    self._hourly_fallback_active = False
+                else:
+                    _LOGGER.warning(
+                        "Hourly fallback: No valid spot price data received"
+                    )
+
+            except Exception as e:
+                _LOGGER.warning(f"Hourly fallback: Failed to update spot prices: {e}")
+            finally:
+                self._hourly_fallback_active = False
+
+        # Naplánuj další hodinovou kontrolu
+        self._schedule_hourly_fallback()
+
+    async def _update_spot_prices(self) -> None:
+        """Aktualizace spotových cen s lepším error handling."""
+        if not self.ote_api:
+            return
+
         try:
-            _LOGGER.debug("Fetching standard stats")
+            _LOGGER.info(
+                "Attempting to update spot prices from OTE (scheduled 13:00 update)"
+            )
+            spot_data = await self.ote_api.get_spot_prices()
+
+            if spot_data and spot_data.get("prices_czk_kwh"):
+                _LOGGER.info(
+                    f"Successfully updated spot prices: {spot_data.get('hours_count', 0)} hours"
+                )
+                self._last_spot_fetch = dt_now()
+                self._spot_retry_count = 0
+                self._hourly_fallback_active = (
+                    False  # NOVÉ: vypnout fallback po úspěšném stažení
+                )
+
+                # Uložíme data do coordinator dat
+                if hasattr(self, "data") and self.data:
+                    self.data["spot_prices"] = spot_data
+                    self.async_update_listeners()
+
+                # Naplánujeme další aktualizaci na zítra ve 13:00
+                self._schedule_spot_price_update()
+
+            else:
+                _LOGGER.warning("No valid spot price data received from OTE API")
+                self._handle_spot_retry()
+
+        except Exception as e:
+            _LOGGER.warning(f"Failed to update spot prices: {e}")
+            self._handle_spot_retry()
+
+    def _handle_spot_retry(self) -> None:
+        """Handle spot price retry logic - pouze pro scheduled updates."""
+        self._spot_retry_count += 1
+
+        # Omezit retry pouze na důležité časy (kolem 13:00)
+        now = dt_now()
+        is_important_time = 12 <= now.hour <= 15  # Retry pouze 12-15h
+
+        if self._spot_retry_count < 3 and is_important_time:  # Snížit max retries
+            # Zkusíme znovu za 30 minut místo 15
+            retry_time = dt_now() + timedelta(minutes=30)
+            _LOGGER.info(
+                f"Retrying spot price update in 30 minutes (attempt {self._spot_retry_count + 1}/3)"
+            )
+
+            async def retry_callback() -> None:
+                await asyncio.sleep(30 * 60)  # 30 minutes
+                await self._update_spot_prices()
+
+            asyncio.create_task(retry_callback())
+        else:
+            if not is_important_time:
+                _LOGGER.info(
+                    "OTE API error outside important hours (12-15h), skipping retries until tomorrow"
+                )
+            else:
+                _LOGGER.error(
+                    f"Failed to update spot prices after 3 attempts, giving up until tomorrow"
+                )
+
+            self._spot_retry_count = 0
+            # Naplánujeme další pokus na zítra
+            self._schedule_spot_price_update()
+
+    async def _async_update_data(self) -> Dict[str, Any]:
+        """Aktualizace základních dat."""
+        try:
+            # Standardní OIG data
             stats = await self._try_get_stats()
 
             # NOVÉ: Inicializovat notification manager pokud ještě není
@@ -234,6 +452,30 @@ class OigCloudCoordinator(DataUpdateCoordinator):
                 "enable_battery_prediction", True
             ):
                 await self._update_battery_forecast()
+
+            # NOVÉ: Přidáme spotové ceny pokud jsou k dispozici
+            if (
+                self.ote_api
+                and hasattr(self, "data")
+                and self.data
+                and "spot_prices" in self.data
+            ):
+                stats["spot_prices"] = self.data["spot_prices"]
+                _LOGGER.debug("Including cached spot prices in coordinator data")
+            elif self.ote_api and not hasattr(self, "_initial_spot_attempted"):
+                # První pokus o získání spotových cen při startu
+                self._initial_spot_attempted = True
+                try:
+                    _LOGGER.debug("Attempting initial spot price fetch")
+                    spot_data = await self.ote_api.get_spot_prices()
+                    if spot_data and spot_data.get("hours_count", 0) > 0:
+                        stats["spot_prices"] = spot_data
+                        _LOGGER.info("Initial spot price data loaded successfully")
+                    else:
+                        _LOGGER.warning("Initial spot price fetch returned empty data")
+                except Exception as e:
+                    _LOGGER.warning(f"Initial spot price fetch failed: {e}")
+                    # Nebudeme dělat retry při inicializaci
 
             # Sloučíme standardní a extended data
             result = stats.copy() if stats else {}

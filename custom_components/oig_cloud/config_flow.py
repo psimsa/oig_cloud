@@ -243,24 +243,200 @@ class OigCloudOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_init(
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> FlowResult:
-        """Manage the options."""
-        return await self.async_step_menu()
+        """Manage the options - zobrazit menu s výběrem konfigurace."""
+        if user_input is not None:
+            # Přesměrování na vybraný krok
+            return await getattr(self, f"async_step_{user_input['config_type']}")()
 
-    async def async_step_menu(
+        # Menu pro výběr typu konfigurace
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required("config_type"): vol.In(
+                        {
+                            "basic_config": "🔧 Základní konfigurace (interval, přihlášení)",
+                            "extended_sensors": "⚡ Rozšířené senzory (vyžaduje nastavení)",
+                            "statistics_config": "📊 Statistiky a analýzy",
+                            "solar_forecast": "☀️ Solární předpověď (vyžaduje nastavení)",
+                            "battery_prediction": "🔋 Predikce baterie",
+                            "pricing_config": "💰 Spotové ceny elektřiny",
+                        }
+                    )
+                }
+            ),
+            description_placeholders={
+                "info": "Vyberte kategorii nastavení, kterou chcete upravit"
+            },
+        )
+
+    async def async_step_basic_config(
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> FlowResult:
-        """Show configuration menu."""
-        return self.async_show_menu(
-            step_id="menu",
-            menu_options=[
-                "basic_config",
-                "extended_sensors",
-                "solar_forecast",
-                "statistics_config",
-                "battery_prediction",
-                "pricing_config",
-                "spot_prices_config",  # NOVÉ: přidáno menu pro spotové ceny
-            ],
+        """Základní konfigurace."""
+        if user_input is not None:
+            # Pokud byly změněny přihlašovací údaje, aktualizuj je v config_entry.data
+            new_options = {**self.config_entry.options, **user_input}
+
+            # Kontrola, zda se změnily přihlašovací údaje
+            username_changed = user_input.get("username") and user_input.get(
+                "username"
+            ) != self.config_entry.data.get(CONF_USERNAME)
+            password_changed = user_input.get("password") and user_input.get(
+                "password"
+            ) != self.config_entry.data.get(CONF_PASSWORD)
+
+            if username_changed or password_changed:
+                # Aktualizuj také data v config_entry
+                new_data = dict(self.config_entry.data)
+                if username_changed:
+                    new_data[CONF_USERNAME] = user_input["username"]
+                if password_changed:
+                    new_data[CONF_PASSWORD] = user_input["password"]
+
+                # Aktualizuj config_entry s novými daty
+                self.hass.config_entries.async_update_entry(
+                    self.config_entry, data=new_data, options=new_options
+                )
+
+            # Restart integrace pro aplikování všech změn (včetně intervalu)
+            await self.hass.config_entries.async_reload(self.config_entry.entry_id)
+
+            return self.async_create_entry(title="", data=new_options)
+
+        current_options = self.config_entry.options
+        current_data = self.config_entry.data
+
+        schema = vol.Schema(
+            {
+                vol.Optional(
+                    "standard_scan_interval",
+                    default=current_options.get("standard_scan_interval", 30),
+                    description="Jak často načítat základní data z OIG Cloud (doporučeno 20-30s)",
+                ): vol.All(int, vol.Range(min=10, max=300)),
+                vol.Optional(
+                    "username",
+                    default=current_data.get(CONF_USERNAME, ""),
+                    description="E-mail nebo uživatelské jméno pro přihlášení do OIG Cloud",
+                ): str,
+                vol.Optional(
+                    "password",
+                    default="",
+                    description="Heslo pro OIG Cloud (pokud necháte prázdné, heslo se nezmění)",
+                ): str,
+            }
+        )
+
+        return self.async_show_form(
+            step_id="basic_config",
+            data_schema=schema,
+            description_placeholders={
+                "current_username": current_data.get(CONF_USERNAME, ""),
+                "info": "Změna přihlašovacích údajů restartuje integraci",
+            },
+        )
+
+    async def async_step_extended_sensors(
+        self, user_input: Optional[Dict[str, Any]] = None
+    ) -> FlowResult:
+        """Konfigurace rozšířených senzorů."""
+        if user_input is not None:
+            new_options = {**self.config_entry.options, **user_input}
+
+            # Logika pro automatické zapnutí/vypnutí sub-modulů
+            extended_enabled = user_input.get("enable_extended_sensors", False)
+            current_extended_enabled = self.config_entry.options.get(
+                "enable_extended_sensors", False
+            )
+
+            _LOGGER.info(
+                f"Extended sensors: current={current_extended_enabled}, new={extended_enabled}"
+            )
+            _LOGGER.info(f"User input: {user_input}")
+
+            if extended_enabled:
+                if not current_extended_enabled:
+                    # Pokud se main modul právě zapnul, zapneme všechny sub-moduly
+                    new_options["enable_extended_battery_sensors"] = True
+                    new_options["enable_extended_fve_sensors"] = True
+                    new_options["enable_extended_grid_sensors"] = True
+                    _LOGGER.info("Main modul zapnut - zapínám všechny sub-moduly")
+                else:
+                    # Pokud je main modul už zapnutý, kontrolujeme sub-moduly
+                    battery_enabled = user_input.get(
+                        "enable_extended_battery_sensors", True
+                    )
+                    fve_enabled = user_input.get("enable_extended_fve_sensors", True)
+                    grid_enabled = user_input.get("enable_extended_grid_sensors", True)
+
+                    # Pokud není žádný zapnutý, zapneme všechny
+                    if not (battery_enabled or fve_enabled or grid_enabled):
+                        new_options["enable_extended_battery_sensors"] = True
+                        new_options["enable_extended_fve_sensors"] = True
+                        new_options["enable_extended_grid_sensors"] = True
+                        _LOGGER.info("Žádný sub-modul nebyl zapnutý - zapínám všechny")
+            else:
+                # DŮLEŽITÉ: Když je main modul vypnutý, VŽDY vypneme všechny sub-moduly
+                new_options["enable_extended_battery_sensors"] = False
+                new_options["enable_extended_fve_sensors"] = False
+                new_options["enable_extended_grid_sensors"] = False
+                _LOGGER.info("Main modul vypnut - FORCE vypínám všechny sub-moduly")
+
+            _LOGGER.info(f"New options after: {new_options}")
+
+            # Uložíme změny PŘED reloadem
+            self.hass.config_entries.async_update_entry(
+                self.config_entry, options=new_options
+            )
+
+            # Restart integrace pro aplikování nových nastavení
+            await self.hass.config_entries.async_reload(self.config_entry.entry_id)
+
+            return self.async_create_entry(title="", data=new_options)
+
+        current_options = self.config_entry.options
+        extended_enabled = current_options.get("enable_extended_sensors", False)
+
+        # Zobrazujeme VŠECHNY parametry vždy (i sub-moduly), ale s různými popisky
+        schema_fields = {
+            vol.Optional(
+                "enable_extended_sensors",
+                default=extended_enabled,
+                description="Povolit rozšířené senzory pro detailní monitoring systému",
+            ): bool,
+            vol.Optional(
+                "extended_scan_interval",
+                default=current_options.get("extended_scan_interval", 300),
+                description=f"{'✅ Jak často načítat rozšířená data (60-3600s)' if extended_enabled else '⏸️ Interval načítání (aktivní po zapnutí)'}",
+            ): vol.All(int, vol.Range(min=60, max=3600)),
+            vol.Optional(
+                "enable_extended_battery_sensors",
+                default=current_options.get("enable_extended_battery_sensors", True),
+                description=f"{'✅ Napětí článků, proudy, teplota baterie' if extended_enabled else '⏸️ Senzory baterie (aktivní po zapnutí)'}",
+            ): bool,
+            vol.Optional(
+                "enable_extended_fve_sensors",
+                default=current_options.get("enable_extended_fve_sensors", True),
+                description=f"{'✅ Výkon a proudy stringů fotovoltaiky' if extended_enabled else '⏸️ Senzory FVE (aktivní po zapnutí)'}",
+            ): bool,
+            vol.Optional(
+                "enable_extended_grid_sensors",
+                default=current_options.get("enable_extended_grid_sensors", True),
+                description=f"{'✅ Napětí L1/L2/L3, frekvence sítě' if extended_enabled else '⏸️ Senzory sítě (aktivní po zapnutí)'}",
+            ): bool,
+        }
+
+        return self.async_show_form(
+            step_id="extended_sensors",
+            data_schema=vol.Schema(schema_fields),
+            description_placeholders={
+                "current_state": "Povoleno" if extended_enabled else "Zakázáno",
+                "info": (
+                    "⚠️ Rozšířené senzory jsou vypnuté - sub-moduly se aktivují po zapnutí"
+                    if not extended_enabled
+                    else "✅ Rozšířené senzory jsou zapnuté - vyberte které typy chcete použít"
+                ),
+            },
         )
 
     async def async_step_statistics_config(
@@ -407,72 +583,6 @@ class OigCloudOptionsFlowHandler(config_entries.OptionsFlow):
                     if not battery_enabled
                     else "✅ Battery prediction je zapnuté - nastavte parametry pro optimální nabíjení"
                 ),
-            },
-        )
-
-    async def async_step_basic_config(
-        self, user_input: Optional[Dict[str, Any]] = None
-    ) -> FlowResult:
-        """Základní konfigurace."""
-        if user_input is not None:
-            # Pokud byly změněny přihlašovací údaje, aktualizuj je v config_entry.data
-            new_options = {**self.config_entry.options, **user_input}
-
-            # Kontrola, zda se změnily přihlašovací údaje
-            username_changed = user_input.get("username") and user_input.get(
-                "username"
-            ) != self.config_entry.data.get(CONF_USERNAME)
-            password_changed = user_input.get("password") and user_input.get(
-                "password"
-            ) != self.config_entry.data.get(CONF_PASSWORD)
-
-            if username_changed or password_changed:
-                # Aktualizuj také data v config_entry
-                new_data = dict(self.config_entry.data)
-                if username_changed:
-                    new_data[CONF_USERNAME] = user_input["username"]
-                if password_changed:
-                    new_data[CONF_PASSWORD] = user_input["password"]
-
-                # Aktualizuj config_entry s novými daty
-                self.hass.config_entries.async_update_entry(
-                    self.config_entry, data=new_data, options=new_options
-                )
-
-            # Restart integrace pro aplikování všech změn (včetně intervalu)
-            await self.hass.config_entries.async_reload(self.config_entry.entry_id)
-
-            return self.async_create_entry(title="", data=new_options)
-
-        current_options = self.config_entry.options
-        current_data = self.config_entry.data
-
-        schema = vol.Schema(
-            {
-                vol.Optional(
-                    "standard_scan_interval",
-                    default=current_options.get("standard_scan_interval", 30),
-                    description="Jak často načítat základní data z OIG Cloud (doporučeno 20-30s)",
-                ): vol.All(int, vol.Range(min=10, max=300)),
-                vol.Optional(
-                    "username",
-                    default=current_data.get(CONF_USERNAME, ""),
-                    description="E-mail nebo uživatelské jméno pro přihlášení do OIG Cloud",
-                ): str,
-                vol.Optional(
-                    "password",
-                    default="",
-                    description="Heslo pro OIG Cloud (pokud necháte prázdné, heslo se nezmění)",
-                ): str,
-            }
-        )
-
-        return self.async_show_form(
-            step_id="basic_config",
-            data_schema=schema,
-            description_placeholders={
-                "current_username": current_data.get(CONF_USERNAME, ""),
-                "info": "Změna přihlašovacích údajů restartuje integraci",
             },
         )
 
@@ -695,7 +805,7 @@ class OigCloudOptionsFlowHandler(config_entries.OptionsFlow):
                                         "🌞 Triggered integration reload for solar forecast initialization"
                                     )
 
-                                    # Po dalším krátké době zkusíme update entity
+                                    # Po dalším kráté době zkusíme update entity
                                     await asyncio.sleep(5)
 
                                     # Zkusíme najít a updatovat solar forecast entity
@@ -940,194 +1050,126 @@ class OigCloudOptionsFlowHandler(config_entries.OptionsFlow):
             },
         )
 
-    async def async_step_extended_sensors(
-        self, user_input: Optional[Dict[str, Any]] = None
-    ) -> FlowResult:
-        """Konfigurace rozšířených senzorů."""
-        if user_input is not None:
-            new_options = {**self.config_entry.options, **user_input}
-
-            # Logika pro automatické zapnutí/vypnutí sub-modulů
-            extended_enabled = user_input.get("enable_extended_sensors", False)
-            current_extended_enabled = self.config_entry.options.get(
-                "enable_extended_sensors", False
-            )
-
-            _LOGGER.info(
-                f"Extended sensors: current={current_extended_enabled}, new={extended_enabled}"
-            )
-            _LOGGER.info(f"User input: {user_input}")
-
-            if extended_enabled:
-                if not current_extended_enabled:
-                    # Pokud se main modul právě zapnul, zapneme všechny sub-moduly
-                    new_options["enable_extended_battery_sensors"] = True
-                    new_options["enable_extended_fve_sensors"] = True
-                    new_options["enable_extended_grid_sensors"] = True
-                    _LOGGER.info("Main modul zapnut - zapínám všechny sub-moduly")
-                else:
-                    # Pokud je main modul už zapnutý, kontrolujeme sub-moduly
-                    battery_enabled = user_input.get(
-                        "enable_extended_battery_sensors", True
-                    )
-                    fve_enabled = user_input.get("enable_extended_fve_sensors", True)
-                    grid_enabled = user_input.get("enable_extended_grid_sensors", True)
-
-                    # Pokud není žádný zapnutý, zapneme všechny
-                    if not (battery_enabled or fve_enabled or grid_enabled):
-                        new_options["enable_extended_battery_sensors"] = True
-                        new_options["enable_extended_fve_sensors"] = True
-                        new_options["enable_extended_grid_sensors"] = True
-                        _LOGGER.info("Žádný sub-modul nebyl zapnutý - zapínám všechny")
-            else:
-                # DŮLEŽITÉ: Když je main modul vypnutý, VŽDY vypneme všechny sub-moduly
-                new_options["enable_extended_battery_sensors"] = False
-                new_options["enable_extended_fve_sensors"] = False
-                new_options["enable_extended_grid_sensors"] = False
-                _LOGGER.info("Main modul vypnut - FORCE vypínám všechny sub-moduly")
-
-            _LOGGER.info(f"New options after: {new_options}")
-
-            # Uložíme změny PŘED reloadem
-            self.hass.config_entries.async_update_entry(
-                self.config_entry, options=new_options
-            )
-
-            # Restart integrace pro aplikování nových nastavení
-            await self.hass.config_entries.async_reload(self.config_entry.entry_id)
-
-            return self.async_create_entry(title="", data=new_options)
-
-        current_options = self.config_entry.options
-        extended_enabled = current_options.get("enable_extended_sensors", False)
-
-        # Zobrazujeme VŠECHNY parametry vždy (i sub-moduly), ale s různými popisky
-        schema_fields = {
-            vol.Optional(
-                "enable_extended_sensors",
-                default=extended_enabled,
-                description="Povolit rozšířené senzory pro detailní monitoring systému",
-            ): bool,
-            vol.Optional(
-                "extended_scan_interval",
-                default=current_options.get("extended_scan_interval", 300),
-                description=f"{'✅ Jak často načítat rozšířená data (60-3600s)' if extended_enabled else '⏸️ Interval načítání (aktivní po zapnutí)'}",
-            ): vol.All(int, vol.Range(min=60, max=3600)),
-            vol.Optional(
-                "enable_extended_battery_sensors",
-                default=current_options.get("enable_extended_battery_sensors", True),
-                description=f"{'✅ Napětí článků, proudy, teplota baterie' if extended_enabled else '⏸️ Senzory baterie (aktivní po zapnutí)'}",
-            ): bool,
-            vol.Optional(
-                "enable_extended_fve_sensors",
-                default=current_options.get("enable_extended_fve_sensors", True),
-                description=f"{'✅ Výkon a proudy stringů fotovoltaiky' if extended_enabled else '⏸️ Senzory FVE (aktivní po zapnutí)'}",
-            ): bool,
-            vol.Optional(
-                "enable_extended_grid_sensors",
-                default=current_options.get("enable_extended_grid_sensors", True),
-                description=f"{'✅ Napětí L1/L2/L3, frekvence sítě' if extended_enabled else '⏸️ Senzory sítě (aktivní po zapnutí)'}",
-            ): bool,
-        }
-
-        return self.async_show_form(
-            step_id="extended_sensors",
-            data_schema=vol.Schema(schema_fields),
-            description_placeholders={
-                "current_state": "Povoleno" if extended_enabled else "Zakázáno",
-                "info": (
-                    "⚠️ Rozšířené senzory jsou vypnuté - sub-moduly se aktivují po zapnutí"
-                    if not extended_enabled
-                    else "✅ Rozšířené senzory jsou zapnuté - vyberte které typy chcete použít"
-                ),
-            },
-        )
-
     async def async_step_pricing_config(
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> FlowResult:
-        """Configure pricing options."""
-        if user_input is not None:
-            new_options = {**self.config_entry.options, **user_input}
-            await self.hass.config_entries.async_reload(self.config_entry.entry_id)
-            return self.async_create_entry(title="", data=new_options)
-
+        """Handle pricing configuration including spot prices."""
         current_options = self.config_entry.options
+        errors: Dict[str, str] = {}
 
-        schema = vol.Schema(
-            {
-                vol.Optional(
-                    "enable_pricing",
-                    default=current_options.get("enable_pricing", False),
-                    description="Povolit cenové senzory a kalkulace",
-                ): bool,
-            }
-        )
+        if user_input is not None:
+            # NOVÁ VALIDACE: Kontrola spotových cen konfigurace
+            spot_enabled = user_input.get("enable_spot_prices", False)
+
+            if spot_enabled:
+                pricing_model = user_input.get("spot_pricing_model", "percentage")
+
+                try:
+                    if pricing_model == "percentage":
+                        # Validace procentního modelu
+                        positive_fee = float(
+                            user_input.get("spot_positive_fee_percent", 0)
+                        )
+                        negative_fee = float(
+                            user_input.get("spot_negative_fee_percent", 0)
+                        )
+
+                        if positive_fee <= 0:
+                            errors["spot_positive_fee_percent"] = "invalid_positive_fee"
+                        if negative_fee <= 0:
+                            errors["spot_negative_fee_percent"] = "invalid_negative_fee"
+
+                    elif pricing_model == "fixed":
+                        # Validace fixního modelu
+                        fixed_fee = float(user_input.get("spot_fixed_fee_mwh", 0))
+
+                        if fixed_fee <= 0:
+                            errors["spot_fixed_fee_mwh"] = "invalid_fixed_fee"
+
+                    # Validace distribučního poplatku (vždy povinný)
+                    distribution_fee = float(user_input.get("distribution_fee_kwh", 0))
+                    if distribution_fee < 0:  # Může být 0, ale ne záporný
+                        errors["distribution_fee_kwh"] = "invalid_distribution_fee"
+
+                except (ValueError, TypeError):
+                    errors["base"] = "invalid_spot_pricing_config"
+
+            # Pokud nejsou chyby, pokračuj
+            if not errors:
+                new_options = current_options.copy()
+                new_options.update(user_input)
+
+                # Restart integrace pro aplikování nových nastavení
+                await self.hass.config_entries.async_reload(self.config_entry.entry_id)
+
+                return self.async_create_entry(title="", data=new_options)
+
+        # OPRAVA: Číst spot_enabled z current_options, ne z user_input
+        spot_enabled = current_options.get("enable_spot_prices", False)
+
+        schema_fields: Dict[str, Any] = {
+            vol.Optional(
+                "enable_spot_prices",
+                default=spot_enabled,
+                description="Povolit spotové ceny elektřiny z OTE",
+            ): bool,
+        }
+
+        # OPRAVA: Přidat konfiguraci pouze pokud jsou spotové ceny již zapnuté
+        if spot_enabled:
+            schema_fields.update(
+                {
+                    vol.Required(
+                        "spot_pricing_model",
+                        default=current_options.get("spot_pricing_model", "percentage"),
+                        description="Model výpočtu obchodní ceny z spotové ceny",
+                    ): vol.In(
+                        {
+                            "percentage": "Procentní model (různé % pro kladné/záporné ceny)",
+                            "fixed": "Fixní poplatek za MWh",
+                        }
+                    ),
+                    vol.Required(
+                        "spot_positive_fee_percent",
+                        default=current_options.get("spot_positive_fee_percent", 15.0),
+                        description="Poplatek při kladné spotové ceně (%). Např. 15% = cena × 1,15",
+                    ): vol.All(vol.Coerce(float), vol.Range(min=0.1, max=100.0)),
+                    vol.Required(
+                        "spot_negative_fee_percent",
+                        default=current_options.get("spot_negative_fee_percent", 9.0),
+                        description="Poplatek při záporné spotové ceně (%). Např. 9% = cena × 0,91",
+                    ): vol.All(vol.Coerce(float), vol.Range(min=0.1, max=100.0)),
+                    vol.Required(
+                        "spot_fixed_fee_mwh",
+                        default=current_options.get("spot_fixed_fee_mwh", 500.0),
+                        description="Fixní poplatek v CZK/MWh přičtený ke spotové ceně",
+                    ): vol.All(vol.Coerce(float), vol.Range(min=0.1)),
+                    vol.Required(
+                        "distribution_fee_kwh",
+                        default=current_options.get("distribution_fee_kwh", 1.2),
+                        description="Distribuční poplatek v CZK/kWh přičtený k finální ceně",
+                    ): vol.All(vol.Coerce(float), vol.Range(min=0.0)),
+                }
+            )
 
         return self.async_show_form(
             step_id="pricing_config",
-            data_schema=schema,
+            data_schema=vol.Schema(schema_fields),
+            errors=errors,
             description_placeholders={
-                "current_state": (
-                    "Povoleno"
-                    if current_options.get("enable_pricing", False)
-                    else "Zakázáno"
+                "current_state": "Povoleno" if spot_enabled else "Zakázáno",
+                "current_model": current_options.get(
+                    "spot_pricing_model", "percentage"
                 ),
-                "info": "Cenové senzory pro fixní tarify a kalkulace nákladů",
-            },
-        )
-
-    async def async_step_spot_prices_config(
-        self, user_input: Optional[Dict[str, Any]] = None
-    ) -> FlowResult:
-        """Configure spot prices options."""
-        if user_input is not None:
-            new_options = {**self.config_entry.options, **user_input}
-
-            # Test OTE API pokud jsou spotové ceny povoleny
-            if user_input.get("enable_spot_prices", False):
-                try:
-                    from .api.ote_api import OteApi
-
-                    ote_api = OteApi()
-                    test_data = await ote_api.get_spot_prices()
-                    await ote_api.close()
-                    if test_data:
-                        _LOGGER.info("OTE API test successful")
-                    else:
-                        _LOGGER.warning("OTE API returned empty data")
-                except Exception as e:
-                    _LOGGER.error(f"OTE API test failed: {e}")
-
-            await self.hass.config_entries.async_reload(self.config_entry.entry_id)
-            return self.async_create_entry(title="", data=new_options)
-
-        current_options = self.config_entry.options
-
-        schema = vol.Schema(
-            {
-                vol.Optional(
-                    "enable_spot_prices",
-                    default=current_options.get("enable_spot_prices", True),
-                    description="Povolit stahování spotových cen elektřiny z OTE",
-                ): bool,
-                vol.Optional(
-                    "spot_prices_update_interval",
-                    default=current_options.get("spot_prices_update_interval", 30),
-                    description="Jak často kontrolovat spotové ceny (minuty)",
-                ): vol.All(vol.Coerce(int), vol.Range(min=15, max=180)),
-            }
-        )
-
-        return self.async_show_form(
-            step_id="spot_prices_config",
-            data_schema=schema,
-            description_placeholders={
-                "current_state": (
-                    "Povoleno"
-                    if current_options.get("enable_spot_prices", True)
-                    else "Zakázáno"
+                "positive_fee": current_options.get("spot_positive_fee_percent", 15.0),
+                "negative_fee": current_options.get("spot_negative_fee_percent", 9.0),
+                "fixed_fee": current_options.get("spot_fixed_fee_mwh", 500.0),
+                "distribution_fee": current_options.get("distribution_fee_kwh", 1.2),
+                "update_interval": "denně ve 13:00",
+                "info": (
+                    "⚠️ Spotové ceny jsou vypnuté - zapněte je pro zobrazení dalších možností"
+                    if not spot_enabled
+                    else f"✅ Spotové ceny jsou zapnuté - Model: {current_options.get('spot_pricing_model', 'percentage')}, Poplatky: +{current_options.get('spot_positive_fee_percent', 15.0)}%/-{current_options.get('spot_negative_fee_percent', 9.0)}%, Distribuce: {current_options.get('distribution_fee_kwh', 1.2)} CZK/kWh"
                 ),
-                "info": "Spotové ceny se stahují přímo z OTE SOAP API s aktuálními kurzy ČNB",
             },
         )

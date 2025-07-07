@@ -21,7 +21,12 @@
       "invalid_percentile": "Percentil pro špičku musí být mezi 10% a 100%",
       "invalid_hours": "Doba predikce musí být mezi 12 a 48 hodin",
       "invalid_latitude": "Zeměpisná šířka musí být mezi -90° a 90°",
-      "invalid_longitude": "Zeměpisná délka musí být mezi -180° a 180°"
+      "invalid_longitude": "Zeměpisná délka musí být mezi -180° a 180°",
+      "invalid_spot_pricing_config": "Neplatná konfigurace spotových cen",
+      "invalid_positive_fee": "Poplatek pro kladné ceny musí být větší než 0%",
+      "invalid_negative_fee": "Poplatek pro záporné ceny musí být větší než 0%",
+      "invalid_fixed_fee": "Fixní poplatek musí být větší než 0 CZK/MWh",
+      "invalid_distribution_fee": "Distribuční poplatek nesmí být záporný"
     },
     "step": {
       "user": {
@@ -66,7 +71,12 @@
       "invalid_percentile": "Percentil pro špičku musí být mezi 10% a 100%",
       "invalid_hours": "Doba predikce musí být mezi 12 a 48 hodin",
       "invalid_latitude": "Zeměpisná šířka musí být mezi -90° a 90°",
-      "invalid_longitude": "Zeměpisná délka musí být mezi -180° a 180°"
+      "invalid_longitude": "Zeměpisná délka musí být mezi -180° a 180°",
+      "invalid_spot_pricing_config": "Neplatná konfigurace spotových cen",
+      "invalid_positive_fee": "Poplatek pro kladné ceny musí být větší než 0%",
+      "invalid_negative_fee": "Poplatek pro záporné ceny musí být větší než 0%",
+      "invalid_fixed_fee": "Fixní poplatek musí být větší než 0 CZK/MWh",
+      "invalid_distribution_fee": "Distribuční poplatek nesmí být záporný"
     },
     "step": {
       "menu": {
@@ -218,21 +228,23 @@
         }
       },
       "pricing_config": {
-        "title": "Cenové senzory",
-        "description": "Aktuálně {current_state}. Interval: {update_interval} minut",
+        "title": "Spotové ceny elektřiny",
+        "description": "Konfigurace spotových cen a výpočtu finálních cen elektřiny\n\nAktuální stav: {current_state}\n{info}",
         "data": {
-          "enable_pricing": "Povolit cenové senzory",
-          "pricing_update_interval": "Interval aktualizace cen (minuty)",
-          "fixed_price_vt": "Fixní cena VT (Kč/kWh)",
-          "fixed_price_nt": "Fixní cena NT (Kč/kWh)",
-          "distribution_area": "Distribuční oblast"
+          "enable_spot_prices": "Povolit spotové ceny elektřiny z OTE",
+          "spot_pricing_model": "Model výpočtu ceny",
+          "spot_positive_fee_percent": "Poplatek při kladné ceně (%)",
+          "spot_negative_fee_percent": "Poplatek při záporné ceně (%)",
+          "spot_fixed_fee_mwh": "Fixní poplatek (CZK/MWh)",
+          "distribution_fee_kwh": "Distribuční poplatek (CZK/kWh)"
         },
         "data_description": {
-          "enable_pricing": "Senzory pro porovnání spotových cen s vašimi tarify",
-          "pricing_update_interval": "Jak často aktualizovat cenové informace (doporučeno 60-120 minut)",
-          "fixed_price_vt": "Vaše aktuální cena za elektřinu ve vysokém tarifu",
-          "fixed_price_nt": "Vaše aktuální cena za elektřinu v nízkém tarifu",
-          "distribution_area": "Vaše distribuční území (ovlivňuje poplatky za distribuci)"
+          "enable_spot_prices": "Stahování a zpracování spotových cen elektřiny z OTE každý den ve 13:00",
+          "spot_pricing_model": "Jak se počítá obchodní cena z hrubé spotové ceny",
+          "spot_positive_fee_percent": "Při kladné spotové ceně: cena × (1 + procento/100). Např. 15% = cena × 1,15",
+          "spot_negative_fee_percent": "Při záporné spotové ceně: cena × (1 - procento/100). Např. 9% = cena × 0,91",
+          "spot_fixed_fee_mwh": "Konstantní poplatek v CZK za MWh přičtený ke spotové ceně (automaticky převeden na kWh)",
+          "distribution_fee_kwh": "Poplatek za distribuci elektřiny přičtený k finální ceně (obvykle 1-2 CZK/kWh)"
         }
       }
     }

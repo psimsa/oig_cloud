@@ -205,21 +205,23 @@
         }
       },
       "pricing_config": {
-        "title": "Pricing Sensors",
-        "description": "Currently {current_state}. Interval: {update_interval} minutes",
+        "title": "Spot Electricity Prices",
+        "description": "Configuration of spot prices and final price calculation\n\nCurrent state: {current_state}\n{info}",
         "data": {
-          "enable_pricing": "Enable pricing sensors",
-          "pricing_update_interval": "Price update interval (minutes)",
-          "fixed_price_vt": "Fixed high tariff price (CZK/kWh)",
-          "fixed_price_nt": "Fixed low tariff price (CZK/kWh)",
-          "distribution_area": "Distribution area"
+          "enable_spot_prices": "Enable spot electricity prices from OTE",
+          "spot_pricing_model": "Price calculation model",
+          "spot_positive_fee_percent": "Fee for positive prices (%)",
+          "spot_negative_fee_percent": "Fee for negative prices (%)",
+          "spot_fixed_fee_mwh": "Fixed fee (CZK/MWh)",
+          "distribution_fee_kwh": "Distribution fee (CZK/kWh)"
         },
         "data_description": {
-          "enable_pricing": "Sensors for comparing spot prices with your tariffs",
-          "pricing_update_interval": "How often to update pricing information (recommended 60-120 minutes)",
-          "fixed_price_vt": "Your current electricity price in high tariff",
-          "fixed_price_nt": "Your current electricity price in low tariff",
-          "distribution_area": "Your distribution territory (affects distribution fees)"
+          "enable_spot_prices": "Download and process spot electricity prices from OTE daily at 13:00",
+          "spot_pricing_model": "How commercial price is calculated from raw spot price",
+          "spot_positive_fee_percent": "For positive spot price: price × (1 + percent/100). E.g. 15% = price × 1.15",
+          "spot_negative_fee_percent": "For negative spot price: price × (1 - percent/100). E.g. 9% = price × 0.91",
+          "spot_fixed_fee_mwh": "Constant fee in CZK per MWh added to spot price (automatically converted to kWh)",
+          "distribution_fee_kwh": "Distribution fee added to final price (usually 1-2 CZK/kWh)"
         }
       }
     }
