@@ -1,6 +1,34 @@
 import pytest
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import Mock, AsyncMock, MagicMock
 from typing import Dict, Any, Optional
+import sys
+
+# NOVÉ: Mock homeassistant modules before they are imported
+mock_modules = [
+    "homeassistant",
+    "homeassistant.core",
+    "homeassistant.config_entries",
+    "homeassistant.const",
+    "homeassistant.exceptions",
+    "homeassistant.helpers",
+    "homeassistant.helpers.device_registry",
+    "homeassistant.helpers.entity_registry",
+    "homeassistant.helpers.update_coordinator",
+    "homeassistant.helpers.entity",
+    "homeassistant.helpers.entity_platform",
+    "homeassistant.components.sensor",
+]
+
+for module in mock_modules:
+    if module not in sys.modules:
+        sys.modules[module] = MagicMock()
+
+# NOVÉ: Mock specific classes that are commonly used
+sys.modules["homeassistant.core"].HomeAssistant = Mock
+sys.modules["homeassistant.config_entries"].ConfigEntry = Mock
+sys.modules["homeassistant.exceptions"].ConfigEntryNotReady = Exception
+sys.modules["homeassistant.exceptions"].ConfigEntryAuthFailed = Exception
+sys.modules["homeassistant.helpers.update_coordinator"].UpdateFailed = Exception
 
 
 @pytest.fixture
