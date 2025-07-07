@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import Mock, AsyncMock, MagicMock
 from typing import Dict, Any, Optional
 import sys
+from datetime import datetime
 
 # NOVÉ: Mock homeassistant modules before they are imported
 mock_modules = [
@@ -17,6 +18,8 @@ mock_modules = [
     "homeassistant.helpers.entity",
     "homeassistant.helpers.entity_platform",
     "homeassistant.components.sensor",
+    "homeassistant.util",  # NOVÉ: Přidáno
+    "homeassistant.util.dt",  # NOVÉ: Přidáno
 ]
 
 for module in mock_modules:
@@ -29,6 +32,10 @@ sys.modules["homeassistant.config_entries"].ConfigEntry = Mock
 sys.modules["homeassistant.exceptions"].ConfigEntryNotReady = Exception
 sys.modules["homeassistant.exceptions"].ConfigEntryAuthFailed = Exception
 sys.modules["homeassistant.helpers.update_coordinator"].UpdateFailed = Exception
+
+# NOVÉ: Mock datetime utilities
+sys.modules["homeassistant.util.dt"].now = lambda: datetime.now()
+sys.modules["homeassistant.util.dt"].utcnow = lambda: datetime.utcnow()
 
 
 @pytest.fixture
