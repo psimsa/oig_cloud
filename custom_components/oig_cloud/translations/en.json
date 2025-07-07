@@ -89,5 +89,139 @@
         }
       }
     }
+  },
+  "options": {
+    "step": {
+      "menu": {
+        "title": "OIG Cloud Configuration",
+        "description": "Select what you want to configure",
+        "menu_options": {
+          "basic_config": "⚙️ Basic Settings",
+          "extended_sensors": "📊 Extended Sensors",
+          "solar_forecast": "☀️ Solar Forecast",
+          "statistics_config": "📈 Statistics & Analytics",
+          "battery_prediction": "🔋 Battery Prediction",
+          "pricing_config": "💰 Pricing Sensors"
+        }
+      },
+      "basic_config": {
+        "title": "⚙️ Basic Settings",
+        "description": "Configuration of basic integration parameters",
+        "data": {
+          "standard_scan_interval": "Basic data update interval (seconds)",
+          "username": "Username / Email",
+          "password": "Password"
+        },
+        "data_description": {
+          "standard_scan_interval": "How often to fetch basic data from OIG Cloud (recommended 20-30s)",
+          "username": "Email or username for OIG Cloud login",
+          "password": "Password for OIG Cloud (leave empty to keep unchanged)"
+        }
+      },
+      "extended_sensors": {
+        "title": "📊 Extended Sensors",
+        "description": "Currently {current_state}",
+        "data": {
+          "enable_extended_sensors": "Enable extended sensors",
+          "extended_scan_interval": "⏱️ Extended sensors update interval (seconds)",
+          "disable_extended_stats_api": "🚫 Disable extended stats API calls",
+          "enable_extended_battery_sensors": "🔋 Extended battery data",
+          "enable_extended_fve_sensors": "☀️ Extended PV data",
+          "enable_extended_grid_sensors": "⚡ Extended grid data"
+        },
+        "data_description": {
+          "enable_extended_sensors": "Enable extended sensors for detailed system monitoring",
+          "extended_scan_interval": "How often to fetch extended data (higher value = less server load)",
+          "disable_extended_stats_api": "If you have HTTP 500 errors, disable extended stats API",
+          "enable_extended_battery_sensors": "Cell voltages, currents, temperature and detailed battery status",
+          "enable_extended_fve_sensors": "Power and currents of individual PV strings",
+          "enable_extended_grid_sensors": "Voltages L1/L2/L3, grid frequency, power per phase"
+        }
+      },
+      "solar_forecast": {
+        "title": "☀️ Solar Forecast",
+        "description": "Currently {current_state}. Mode: {current_mode}",
+        "data": {
+          "enable_solar_forecast": "Enable solar forecast",
+          "solar_forecast_mode": "Update mode",
+          "solar_forecast_api_key": "Forecast.Solar API key (optional)",
+          "solar_forecast_latitude": "Latitude",
+          "solar_forecast_longitude": "Longitude",
+          "solar_forecast_string1_enabled": "Enable String 1",
+          "solar_forecast_string1_kwp": "String 1 - Power (kWp)",
+          "solar_forecast_string1_declination": "String 1 - Tilt (°)",
+          "solar_forecast_string1_azimuth": "String 1 - Azimuth (°)",
+          "solar_forecast_string2_enabled": "Enable String 2",
+          "solar_forecast_string2_kwp": "String 2 - Power (kWp)",
+          "solar_forecast_string2_declination": "String 2 - Tilt (°)",
+          "solar_forecast_string2_azimuth": "String 2 - Azimuth (°)"
+        },
+        "data_description": {
+          "enable_solar_forecast": "Enable solar forecast for battery optimization and production prediction",
+          "solar_forecast_mode": "How often to update solar forecast",
+          "solar_forecast_api_key": "API key for forecast.solar (optional, increases limits)",
+          "solar_forecast_latitude": "GPS latitude of your PV system (-90 to 90)",
+          "solar_forecast_longitude": "GPS longitude of your PV system (-180 to 180)",
+          "solar_forecast_string1_enabled": "Enable first panel string (at least one required)",
+          "solar_forecast_string1_kwp": "Installed power of 1st string in kWp",
+          "solar_forecast_string1_declination": "Tilt of 1st string panels from horizontal (0-90°)",
+          "solar_forecast_string1_azimuth": "Orientation of 1st string panels (0°=north, 90°=east, 180°=south, 270°=west)",
+          "solar_forecast_string2_enabled": "Enable second panel string (optional)",
+          "solar_forecast_string2_kwp": "Installed power of 2nd string in kWp",
+          "solar_forecast_string2_declination": "Tilt of 2nd string panels from horizontal (0-90°)",
+          "solar_forecast_string2_azimuth": "Orientation of 2nd string panels (0°=north, 90°=east, 180°=south, 270°=west)"
+        }
+      },
+      "statistics_config": {
+        "title": "Statistics & Analytics",
+        "description": "Currently {current_state}",
+        "data": {
+          "enable_statistics": "Enable statistical sensors",
+          "reconfigure_statistics": "Reconfigure statistics (deletes old data)"
+        },
+        "data_description": {
+          "enable_statistics": "Consumption median by time, battery prediction, consumption analysis",
+          "reconfigure_statistics": "⚠️ Deletes all stored historical data and starts over"
+        }
+      },
+      "battery_prediction": {
+        "title": "Battery Prediction",
+        "description": "Currently {current_state}. Min. capacity: {min_capacity}%, Charging power: {charge_rate}W",
+        "data": {
+          "enable_battery_prediction": "Enable battery prediction",
+          "min_capacity_percent": "Minimum battery capacity (%)",
+          "home_charge_rate": "Grid charging power (W)",
+          "percentile_conf": "Percentile for peak detection (%)",
+          "max_price_conf": "Maximum charging price (CZK/kWh)",
+          "total_hours": "Prediction hours"
+        },
+        "data_description": {
+          "enable_battery_prediction": "Intelligent charging planning based on spot prices and consumption",
+          "min_capacity_percent": "Below this level, grid charging starts (recommended 15-25%)",
+          "home_charge_rate": "Maximum charging power of your system from grid",
+          "percentile_conf": "Values above this percentile are considered peak (recommended 75-85%)",
+          "max_price_conf": "Never charge from grid if price is higher than this value",
+          "total_hours": "How far into future to plan charging (recommended 24-48h)"
+        }
+      },
+      "pricing_config": {
+        "title": "Pricing Sensors",
+        "description": "Currently {current_state}. Interval: {update_interval} minutes",
+        "data": {
+          "enable_pricing": "Enable pricing sensors",
+          "pricing_update_interval": "Price update interval (minutes)",
+          "fixed_price_vt": "Fixed high tariff price (CZK/kWh)",
+          "fixed_price_nt": "Fixed low tariff price (CZK/kWh)",
+          "distribution_area": "Distribution area"
+        },
+        "data_description": {
+          "enable_pricing": "Sensors for comparing spot prices with your tariffs",
+          "pricing_update_interval": "How often to update pricing information (recommended 60-120 minutes)",
+          "fixed_price_vt": "Your current electricity price in high tariff",
+          "fixed_price_nt": "Your current electricity price in low tariff",
+          "distribution_area": "Your distribution territory (affects distribution fees)"
+        }
+      }
+    }
   }
 }

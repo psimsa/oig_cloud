@@ -42,4 +42,14 @@ SENSOR_TYPES_PRICING: Dict[str, Dict[str, Any]] = {
         "sensor_type_category": "pricing",
         "description": "Aktuální typ tarifu (VT/NT/jednotný)",
     },
+    "electricity_spot_price_current": {
+        "name": "Aktuální spotová cena elektřiny",
+        "icon": "mdi:flash-outline",
+        "unit_of_measurement": "CZK/kWh",
+        "device_class": SensorDeviceClass.MONETARY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "category": "pricing",
+        "sensor_type_category": "pricing",
+        "description": "Aktuální spotová cena elektřiny z OTE ČR",
+    },
 }

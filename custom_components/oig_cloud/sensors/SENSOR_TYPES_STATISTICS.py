@@ -279,4 +279,14 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "source_sensor": "actual_fv_p2",
         "description": "Reálná výroba FVE string 2 za poslední hodinu",
     },
+    # Battery Prediction sensors
+    "battery_forecast": {
+        "name": "Battery Forecast",
+        "icon": "mdi:battery-clock",
+        "unit": UnitOfEnergy.KILO_WATT_HOUR,
+        "device_class": SensorDeviceClass.ENERGY_STORAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "battery_prediction",
+        "entity_category": EntityCategory.DIAGNOSTIC,  # Diagnostický senzor
+    },
 }

@@ -491,6 +491,51 @@ async def async_setup_entry(
     except Exception as e:
         _LOGGER.error(f"Error initializing notification sensors: {e}")
 
+    # 8. Battery Prediction sensors - pouze pokud je povolen
+    battery_prediction_enabled = entry.options.get("enable_battery_prediction", True)
+    _LOGGER.info(f"Battery prediction enabled: {battery_prediction_enabled}")
+
+    if battery_prediction_enabled:
+        try:
+            from .oig_cloud_battery_forecast import OigCloudBatteryForecastSensor
+
+            battery_forecast_sensors: List[Any] = []
+            if SENSOR_TYPES:
+                for sensor_type, config in SENSOR_TYPES.items():
+                    if config.get("sensor_type_category") == "battery_prediction":
+                        try:
+                            sensor = OigCloudBatteryForecastSensor(
+                                coordinator, sensor_type, entry
+                            )
+                            battery_forecast_sensors.append(sensor)
+                            _LOGGER.debug(
+                                f"Created battery prediction sensor: {sensor_type}"
+                            )
+                        except ValueError as e:
+                            _LOGGER.warning(
+                                f"Skipping battery prediction sensor {sensor_type}: {e}"
+                            )
+                            continue
+                        except Exception as e:
+                            _LOGGER.error(
+                                f"Error creating battery prediction sensor {sensor_type}: {e}"
+                            )
+                            continue
+
+            if battery_forecast_sensors:
+                _LOGGER.info(
+                    f"Registering {len(battery_forecast_sensors)} battery prediction sensors"
+                )
+                async_add_entities(battery_forecast_sensors, True)
+            else:
+                _LOGGER.debug("No battery prediction sensors found")
+        except ImportError as e:
+            _LOGGER.warning(f"Battery prediction sensors not available: {e}")
+        except Exception as e:
+            _LOGGER.error(f"Error initializing battery prediction sensors: {e}")
+    else:
+        _LOGGER.info("Battery prediction sensors disabled - skipping creation")
+
     _LOGGER.info("OIG Cloud sensor setup completed")
 
 

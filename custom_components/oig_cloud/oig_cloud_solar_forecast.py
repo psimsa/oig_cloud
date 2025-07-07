@@ -20,6 +20,7 @@ _LOGGER = logging.getLogger(__name__)
 FORECAST_SOLAR_API_URL = (
     "https://api.forecast.solar/estimate/{lat}/{lon}/{declination}/{azimuth}/{kwp}"
 )
+FORECAST_SOLAR_API_URL_WITH_KEY = "https://api.forecast.solar/{api_key}/estimate/{lat}/{lon}/{declination}/{azimuth}/{kwp}"
 
 
 class OigCloudSolarForecastSensor(OigCloudSensor):
@@ -349,76 +350,144 @@ class OigCloudSolarForecastSensor(OigCloudSensor):
             lon = self._config_entry.options.get("solar_forecast_longitude", 13.9373742)
             api_key = self._config_entry.options.get("solar_forecast_api_key", "")
 
-            # String 1 (povinný)
-            string1_declination = self._config_entry.options.get(
-                "solar_forecast_string1_declination", 10
-            )
-            string1_azimuth = self._config_entry.options.get(
-                "solar_forecast_string1_azimuth", 138
-            )
-            string1_kwp = self._config_entry.options.get(
-                "solar_forecast_string1_kwp", 5.4
+            # String 1 - zapnutý podle checkboxu
+            string1_enabled = self._config_entry.options.get(
+                "solar_forecast_string1_enabled", True
             )
 
-            # String 2 (volitelný)
+            # String 2 - zapnutý podle checkboxu
             string2_enabled = self._config_entry.options.get(
                 "solar_forecast_string2_enabled", False
             )
-            string2_declination = self._config_entry.options.get(
-                "solar_forecast_string2_declination", 10
-            )
-            string2_azimuth = self._config_entry.options.get(
-                "solar_forecast_string2_azimuth", 138
-            )
-            string2_kwp = self._config_entry.options.get(
-                "solar_forecast_string2_kwp", 0
-            )
 
-            headers = {"X-Forecast-API-Key": api_key} if api_key else {}
+            _LOGGER.debug(f"🌞 String 1: enabled={string1_enabled}")
+            _LOGGER.debug(f"🌞 String 2: enabled={string2_enabled}")
 
-            # Získání dat pro String 1
-            url_string1 = FORECAST_SOLAR_API_URL.format(
-                lat=lat,
-                lon=lon,
-                declination=string1_declination,
-                azimuth=string1_azimuth,
-                kwp=string1_kwp,
-            )
-
-            _LOGGER.info(f"🌞 Calling forecast.solar API for string 1: {url_string1}")
-
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url_string1, headers=headers) as response:
-                    if response.status != 200:
-                        _LOGGER.error(
-                            f"Error from forecast.solar API string1: {response.status}"
-                        )
-                        return
-                    data_string1 = await response.json()
-
+            # Pro API key už nepotřebujeme headers, protože je v URL
+            headers = {}
+            data_string1 = None
             data_string2 = None
-            # Získání dat pro String 2 (pokud je povolen)
-            if string2_enabled and string2_kwp > 0:
-                url_string2 = FORECAST_SOLAR_API_URL.format(
-                    lat=lat,
-                    lon=lon,
-                    declination=string2_declination,
-                    azimuth=string2_azimuth,
-                    kwp=string2_kwp,
+
+            # Získání dat pro String 1 (pokud je zapnutý)
+            if string1_enabled:
+                string1_declination = self._config_entry.options.get(
+                    "solar_forecast_string1_declination", 10
                 )
+                string1_azimuth = self._config_entry.options.get(
+                    "solar_forecast_string1_azimuth", 138
+                )
+                string1_kwp = self._config_entry.options.get(
+                    "solar_forecast_string1_kwp", 5.4
+                )
+
+                # URL s nebo bez API key
+                if api_key:
+                    url_string1 = FORECAST_SOLAR_API_URL_WITH_KEY.format(
+                        api_key=api_key,
+                        lat=lat,
+                        lon=lon,
+                        declination=string1_declination,
+                        azimuth=string1_azimuth,
+                        kwp=string1_kwp,
+                    )
+                else:
+                    url_string1 = FORECAST_SOLAR_API_URL.format(
+                        lat=lat,
+                        lon=lon,
+                        declination=string1_declination,
+                        azimuth=string1_azimuth,
+                        kwp=string1_kwp,
+                    )
+
+                _LOGGER.info(
+                    f"🌞 Calling forecast.solar API for string 1: {url_string1}"
+                )
+
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(
+                        url_string1, headers=headers, timeout=30
+                    ) as response:
+                        if response.status == 200:
+                            data_string1 = await response.json()
+                            _LOGGER.debug("🌞 String 1 data received successfully")
+                        elif response.status == 422:
+                            error_text = await response.text()
+                            _LOGGER.warning(f"🌞 String 1 API error 422: {error_text}")
+                            return
+                        elif response.status == 429:
+                            _LOGGER.warning("🌞 String 1 rate limited")
+                            return
+                        else:
+                            error_text = await response.text()
+                            _LOGGER.error(
+                                f"🌞 String 1 API error {response.status}: {error_text}"
+                            )
+                            return
+            else:
+                _LOGGER.debug("🌞 String 1 disabled")
+
+            # Získání dat pro String 2 (pokud je zapnutý)
+            if string2_enabled:
+                string2_declination = self._config_entry.options.get(
+                    "solar_forecast_string2_declination", 10
+                )
+                string2_azimuth = self._config_entry.options.get(
+                    "solar_forecast_string2_azimuth", 138
+                )
+                string2_kwp = self._config_entry.options.get(
+                    "solar_forecast_string2_kwp", 0
+                )
+
+                # URL s nebo bez API key
+                if api_key:
+                    url_string2 = FORECAST_SOLAR_API_URL_WITH_KEY.format(
+                        api_key=api_key,
+                        lat=lat,
+                        lon=lon,
+                        declination=string2_declination,
+                        azimuth=string2_azimuth,
+                        kwp=string2_kwp,
+                    )
+                else:
+                    url_string2 = FORECAST_SOLAR_API_URL.format(
+                        lat=lat,
+                        lon=lon,
+                        declination=string2_declination,
+                        azimuth=string2_azimuth,
+                        kwp=string2_kwp,
+                    )
 
                 _LOGGER.info(
                     f"🌞 Calling forecast.solar API for string 2: {url_string2}"
                 )
 
                 async with aiohttp.ClientSession() as session:
-                    async with session.get(url_string2, headers=headers) as response:
+                    async with session.get(
+                        url_string2, headers=headers, timeout=30
+                    ) as response:
                         if response.status == 200:
                             data_string2 = await response.json()
+                            _LOGGER.debug("🌞 String 2 data received successfully")
+                        elif response.status == 422:
+                            error_text = await response.text()
+                            _LOGGER.warning(f"🌞 String 2 API error 422: {error_text}")
+                            # Pro string 2 pokračujeme i s chybou
+                        elif response.status == 429:
+                            _LOGGER.warning("🌞 String 2 rate limited")
                         else:
+                            error_text = await response.text()
                             _LOGGER.error(
-                                f"Error from forecast.solar API string2: {response.status}"
+                                f"🌞 String 2 API error {response.status}: {error_text}"
                             )
+            else:
+                _LOGGER.debug("🌞 String 2 disabled")
+
+            # Kontrola, zda máme alespoň jeden string s daty
+            if not data_string1 and not data_string2:
+                _LOGGER.error(
+                    "🌞 No data received - at least one string must be enabled"
+                )
+                return
 
             # Zpracování dat
             self._last_forecast_data = self._process_forecast_data(
@@ -447,6 +516,12 @@ class OigCloudSolarForecastSensor(OigCloudSensor):
             # NOVÉ: Pošli signál ostatním solar forecast sensorům, že jsou dostupná nová data
             await self._broadcast_forecast_data()
 
+        except asyncio.TimeoutError:
+            _LOGGER.warning(f"[{self.entity_id}] Timeout fetching solar forecast data")
+            self._last_forecast_data = {
+                "error": "Timeout",
+                "response_time": datetime.now().isoformat(),
+            }
         except Exception as e:
             _LOGGER.error(f"[{self.entity_id}] Error fetching solar forecast data: {e}")
             self._last_forecast_data = {
@@ -497,7 +572,7 @@ class OigCloudSolarForecastSensor(OigCloudSensor):
 
     def _process_forecast_data(
         self,
-        data_string1: Dict[str, Any],
+        data_string1: Optional[Dict[str, Any]],
         data_string2: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Zpracuje data z forecast.solar API."""
@@ -506,38 +581,44 @@ class OigCloudSolarForecastSensor(OigCloudSensor):
         }
 
         try:
-            if "result" not in data_string1:
-                _LOGGER.error(
-                    f"Invalid data format from forecast.solar API: {data_string1}"
+            # Inicializace prázdných hodnot
+            total_hourly: Dict[str, float] = {}
+            total_daily: Dict[str, float] = {}
+
+            # Zpracování String 1 dat (pouze pokud existují)
+            if data_string1 and "result" in data_string1:
+                string1_watts = data_string1.get("result", {}).get("watts", {})
+                string1_wh_day = data_string1.get("result", {}).get(
+                    "watt_hours_day", {}
                 )
-                return {
-                    "error": "Invalid data format",
-                    "response_time": datetime.now().isoformat(),
-                }
 
-            # Zpracování String 1 dat
-            string1_watts = data_string1.get("result", {}).get("watts", {})
-            string1_wh_day = data_string1.get("result", {}).get("watt_hours_day", {})
-            string1_wh = data_string1.get("result", {}).get("watt_hours", {})
+                # Převod na hodinová data pro String 1
+                string1_hourly = self._convert_to_hourly(string1_watts)
+                string1_daily = {
+                    k: v / 1000 for k, v in string1_wh_day.items()
+                }  # Převod na kWh
 
-            # Převod na hodinová data pro String 1
-            string1_hourly = self._convert_to_hourly(string1_watts)
-            string1_daily = {
-                k: v / 1000 for k, v in string1_wh_day.items()
-            }  # Převod na kWh
+                result.update(
+                    {
+                        "string1_hourly": string1_hourly,
+                        "string1_daily": string1_daily,
+                        "string1_today_kwh": next(iter(string1_daily.values()), 0),
+                        "string1_raw_data": data_string1,
+                    }
+                )
 
-            result.update(
-                {
-                    "string1_hourly": string1_hourly,
-                    "string1_daily": string1_daily,
-                    "string1_today_kwh": next(iter(string1_daily.values()), 0),
-                    "string1_raw_data": data_string1,
-                }
-            )
-
-            # Inicializace celkových dat s String 1
-            total_hourly = string1_hourly.copy()
-            total_daily = string1_daily.copy()
+                # Inicializace celkových dat s String 1
+                total_hourly = string1_hourly.copy()
+                total_daily = string1_daily.copy()
+            else:
+                # String 1 není nakonfigurován - prázdné hodnoty
+                result.update(
+                    {
+                        "string1_hourly": {},
+                        "string1_daily": {},
+                        "string1_today_kwh": 0,
+                    }
+                )
 
             # Zpracování String 2 dat (pokud existují)
             if data_string2 and "result" in data_string2:
@@ -558,14 +639,19 @@ class OigCloudSolarForecastSensor(OigCloudSensor):
                     }
                 )
 
-                # Sečtení obou stringů pro celkové hodnoty
-                for hour, power in string2_hourly.items():
-                    total_hourly[hour] = total_hourly.get(hour, 0) + power
+                # Pokud nemáme String 1 data, inicializujeme celkové hodnoty s String 2
+                if not total_hourly:
+                    total_hourly = string2_hourly.copy()
+                    total_daily = string2_daily.copy()
+                else:
+                    # Sečtení obou stringů pro celkové hodnoty
+                    for hour, power in string2_hourly.items():
+                        total_hourly[hour] = total_hourly.get(hour, 0) + power
 
-                for day, energy in string2_daily.items():
-                    total_daily[day] = total_daily.get(day, 0) + energy
+                    for day, energy in string2_daily.items():
+                        total_daily[day] = total_daily.get(day, 0) + energy
             else:
-                # Pokud nemáme String 2, nastavíme prázdné hodnoty
+                # String 2 není nakonfigurován - prázdné hodnoty
                 result.update(
                     {
                         "string2_hourly": {},
@@ -618,8 +704,46 @@ class OigCloudSolarForecastSensor(OigCloudSensor):
         return self._device_info
 
     @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        # OPRAVA 3: Hlavní kontrola - je solar forecast zapnutý?
+        solar_enabled = self._config_entry.options.get("enable_solar_forecast", False)
+
+        if not solar_enabled:
+            return False  # Modul je vypnutý - senzor není dostupný
+
+        # Dodatečné kontroly pro stringy
+        if self._sensor_type == "solar_forecast_string1":
+            string1_enabled = self._config_entry.options.get(
+                "solar_forecast_string1_enabled", False
+            )
+            return string1_enabled
+
+        elif self._sensor_type == "solar_forecast_string2":
+            string2_enabled = self._config_entry.options.get(
+                "solar_forecast_string2_enabled", False
+            )
+            return string2_enabled
+
+        # Pro hlavní senzor - dostupný pokud je alespoň jeden string zapnutý
+        elif self._sensor_type == "solar_forecast":
+            string1_enabled = self._config_entry.options.get(
+                "solar_forecast_string1_enabled", False
+            )
+            string2_enabled = self._config_entry.options.get(
+                "solar_forecast_string2_enabled", False
+            )
+            return string1_enabled or string2_enabled
+
+        return True  # Default pro ostatní typy
+
+    @property
     def state(self) -> Optional[Union[float, str]]:
         """Stav senzoru - celková denní prognóza výroby v kWh."""
+        # Pokud není dostupný, vrátit None
+        if not self.available:
+            return None
+
         # Zkusíme načíst data z koordinátoru pokud nemáme vlastní
         if not self._last_forecast_data and hasattr(
             self.coordinator, "solar_forecast_data"
@@ -789,7 +913,7 @@ class OigCloudSolarForecastSensor(OigCloudSensor):
                 today_sum = 0
                 tomorrow_sum = 0
 
-                for hour_str, power in string1_hourly.items():
+                for hour_str, power in today_hours.items():
                     try:
                         hour_dt = datetime.fromisoformat(hour_str)
                         power_kw = round(power / 1000, 2)
@@ -832,7 +956,7 @@ class OigCloudSolarForecastSensor(OigCloudSensor):
                 today_sum = 0
                 tomorrow_sum = 0
 
-                for hour_str, power in string2_hourly.items():
+                for hour_str, power in today_hours.items():
                     try:
                         hour_dt = datetime.fromisoformat(hour_str)
                         power_kw = round(power / 1000, 2)

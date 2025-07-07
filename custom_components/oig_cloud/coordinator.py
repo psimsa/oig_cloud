@@ -61,6 +61,9 @@ class OigCloudDataUpdateCoordinator(DataUpdateCoordinator):
         # Initialize notification manager reference
         self.notification_manager: Optional[Any] = None
 
+        # Battery forecast data
+        self.battery_forecast_data: Optional[Dict[str, Any]] = None
+
     async def _fetch_basic_data(self) -> Dict[str, Any]:
         """Fetch basic data from API."""
         try:
@@ -150,8 +153,34 @@ class OigCloudDataUpdateCoordinator(DataUpdateCoordinator):
                     )
                     # Neházeme chybu - notifikace nejsou kritické pro fungování integrace
 
+            # Aktualizuj battery forecast pokud je povolen
+            if self.config_entry.options.get("enable_battery_prediction", True):
+                await self._update_battery_forecast()
+
             return combined_data
 
         except Exception as e:
             _LOGGER.error(f"Error in _async_update_data: {e}", exc_info=True)
             raise UpdateFailed(f"Error communicating with API: {e}")
+
+    async def _update_battery_forecast(self) -> None:
+        """Aktualizuje battery forecast data."""
+        try:
+            # Importujeme battery forecast třídu a použijeme její logiku
+            from .oig_cloud_battery_forecast import OigCloudBatteryForecastSensor
+
+            # Vytvoříme dočasnou instanci pro výpočet (bez registrace)
+            temp_sensor = OigCloudBatteryForecastSensor(
+                self, "battery_forecast", self.config_entry
+            )
+            temp_sensor._hass = self.hass
+
+            # Spustíme výpočet
+            self.battery_forecast_data = await temp_sensor._calculate_battery_forecast()
+            _LOGGER.debug("🔋 Battery forecast data updated in coordinator")
+
+        except Exception as e:
+            _LOGGER.error(f"🔋 Failed to update battery forecast in coordinator: {e}")
+            self.battery_forecast_data = None
+        except Exception as e:
+            _LOGGER.debug(f"Battery forecast update failed: {e}")
