@@ -5,7 +5,10 @@ from .release_const import COMPONENT_VERSION, SERVICE_NAME
 DOMAIN = "oig_cloud"
 
 # Configuration constants
-# CONF_API_URL = "api_url"  # Odebráno - zbytečné, API URL je hardcoded
+CONF_ENABLE_STATISTICS = "enable_statistics"
+CONF_ENABLE_PRICING = "enable_pricing"
+CONF_ENABLE_SPOT_PRICES = "enable_spot_prices"  # NOVÉ
+CONF_SPOT_PRICES_UPDATE_INTERVAL = "spot_prices_update_interval"  # NOVÉ
 CONF_UPDATE_INTERVAL = "update_interval"
 CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
@@ -13,6 +16,7 @@ CONF_NO_TELEMETRY = "no_telemetry"
 CONF_STANDARD_SCAN_INTERVAL = "standard_scan_interval"
 CONF_EXTENDED_SCAN_INTERVAL = "extended_scan_interval"
 CONF_LOG_LEVEL = "log_level"
+CONF_TIMEOUT = "timeout"
 
 # Default values
 DEFAULT_UPDATE_INTERVAL = 20

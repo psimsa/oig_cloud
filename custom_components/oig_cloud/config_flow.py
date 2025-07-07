@@ -139,6 +139,11 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
             description="Povolit cenové senzory a spotové ceny",
         ): bool,
         vol.Optional(
+            "enable_spot_prices",
+            default=True,
+            description="Povolit spotové ceny elektřiny z OTE",
+        ): bool,  # NOVÉ: přidáno pro spotové ceny
+        vol.Optional(
             "enable_extended_sensors",
             default=True,  # Oprava: změněno na True
             description="Povolit rozšířené senzory (napětí, proudy, teploty)",
@@ -165,6 +170,20 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         try:
             info = await validate_input(self.hass, user_input)
+
+            # NOVÉ: Test OTE API pokud jsou spotové ceny povoleny
+            if user_input.get("enable_spot_prices", True):
+                try:
+                    from .api.ote_api import OteApi
+
+                    ote_api = OteApi()
+                    test_data = await ote_api.get_spot_prices()
+                    await ote_api.close()
+                    if not test_data:
+                        _LOGGER.warning("OTE API test failed, but continuing")
+                except Exception as e:
+                    _LOGGER.warning(f"OTE API test failed: {e}")
+
         except CannotConnect:
             errors["base"] = "cannot_connect"
         except InvalidAuth:
@@ -180,16 +199,19 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_PASSWORD: user_input[CONF_PASSWORD],
                 },
                 options={
-                    "standard_scan_interval": 30,  # 30 sekund
-                    "extended_scan_interval": 300,  # 5 minut
+                    "standard_scan_interval": 30,
+                    "extended_scan_interval": 300,
                     "enable_solar_forecast": user_input.get(
                         "enable_solar_forecast", False
                     ),
                     "enable_statistics": user_input.get("enable_statistics", True),
                     "enable_extended_sensors": user_input.get(
                         "enable_extended_sensors", True
-                    ),  # Změněno na True
+                    ),
                     "enable_pricing": user_input.get("enable_pricing", False),
+                    "enable_spot_prices": user_input.get(
+                        "enable_spot_prices", True
+                    ),  # NOVÉ
                     # Přidat defaultní extended sensors nastavení
                     "enable_extended_battery_sensors": True,
                     "enable_extended_fve_sensors": True,
@@ -237,6 +259,7 @@ class OigCloudOptionsFlowHandler(config_entries.OptionsFlow):
                 "statistics_config",
                 "battery_prediction",
                 "pricing_config",
+                "spot_prices_config",  # NOVÉ: přidáno menu pro spotové ceny
             ],
         )
 
@@ -1024,11 +1047,87 @@ class OigCloudOptionsFlowHandler(config_entries.OptionsFlow):
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> FlowResult:
         """Configure pricing options."""
-        # Placeholder for pricing configuration
+        if user_input is not None:
+            new_options = {**self.config_entry.options, **user_input}
+            await self.hass.config_entries.async_reload(self.config_entry.entry_id)
+            return self.async_create_entry(title="", data=new_options)
+
+        current_options = self.config_entry.options
+
+        schema = vol.Schema(
+            {
+                vol.Optional(
+                    "enable_pricing",
+                    default=current_options.get("enable_pricing", False),
+                    description="Povolit cenové senzory a kalkulace",
+                ): bool,
+            }
+        )
+
         return self.async_show_form(
             step_id="pricing_config",
-            data_schema=vol.Schema({}),
+            data_schema=schema,
             description_placeholders={
-                "info": "Cenová konfigurace bude implementována v budoucí verzi",
+                "current_state": (
+                    "Povoleno"
+                    if current_options.get("enable_pricing", False)
+                    else "Zakázáno"
+                ),
+                "info": "Cenové senzory pro fixní tarify a kalkulace nákladů",
+            },
+        )
+
+    async def async_step_spot_prices_config(
+        self, user_input: Optional[Dict[str, Any]] = None
+    ) -> FlowResult:
+        """Configure spot prices options."""
+        if user_input is not None:
+            new_options = {**self.config_entry.options, **user_input}
+
+            # Test OTE API pokud jsou spotové ceny povoleny
+            if user_input.get("enable_spot_prices", False):
+                try:
+                    from .api.ote_api import OteApi
+
+                    ote_api = OteApi()
+                    test_data = await ote_api.get_spot_prices()
+                    await ote_api.close()
+                    if test_data:
+                        _LOGGER.info("OTE API test successful")
+                    else:
+                        _LOGGER.warning("OTE API returned empty data")
+                except Exception as e:
+                    _LOGGER.error(f"OTE API test failed: {e}")
+
+            await self.hass.config_entries.async_reload(self.config_entry.entry_id)
+            return self.async_create_entry(title="", data=new_options)
+
+        current_options = self.config_entry.options
+
+        schema = vol.Schema(
+            {
+                vol.Optional(
+                    "enable_spot_prices",
+                    default=current_options.get("enable_spot_prices", True),
+                    description="Povolit stahování spotových cen elektřiny z OTE",
+                ): bool,
+                vol.Optional(
+                    "spot_prices_update_interval",
+                    default=current_options.get("spot_prices_update_interval", 30),
+                    description="Jak často kontrolovat spotové ceny (minuty)",
+                ): vol.All(vol.Coerce(int), vol.Range(min=15, max=180)),
+            }
+        )
+
+        return self.async_show_form(
+            step_id="spot_prices_config",
+            data_schema=schema,
+            description_placeholders={
+                "current_state": (
+                    "Povoleno"
+                    if current_options.get("enable_spot_prices", True)
+                    else "Zakázáno"
+                ),
+                "info": "Spotové ceny se stahují přímo z OTE SOAP API s aktuálními kurzy ČNB",
             },
         )
