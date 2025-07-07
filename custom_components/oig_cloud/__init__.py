@@ -8,6 +8,11 @@ import hashlib
 import re
 from typing import Any, Dict
 
+from homeassistant import config_entries, core
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
+from homeassistant.core import HomeAssistant, ServiceCall, callback
+from homeassistant.exceptions import ConfigEntryNotReady
 
 from .api.oig_cloud_api import OigCloudApi
 from .const import (
@@ -23,8 +28,7 @@ from .oig_cloud_coordinator import OigCloudCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-# OPRAVA: Import Platform až při potřebě
-# PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR]
 
 # **OPRAVA: Globální analytics_device_info pro statistické senzory**
 analytics_device_info: Dict[str, Any] = {
@@ -36,7 +40,7 @@ analytics_device_info: Dict[str, Any] = {
 }
 
 
-async def async_setup(hass: "HomeAssistant", config: Dict[str, Any]) -> bool:
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up OIG Cloud integration."""
     # OPRAVA: Debug setup telemetrie
     print("[OIG SETUP] Starting OIG Cloud setup")
@@ -54,14 +58,8 @@ async def async_setup(hass: "HomeAssistant", config: Dict[str, Any]) -> bool:
     return True
 
 
-async def async_setup_entry(hass: "HomeAssistant", entry: "ConfigEntry") -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up OIG Cloud from a config entry."""
-    # OPRAVA: Import až při potřebě
-    from homeassistant.config_entries import ConfigEntry
-    from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
-    from homeassistant.core import HomeAssistant
-    from homeassistant.exceptions import ConfigEntryNotReady
-
     _LOGGER.info(f"Setting up OIG Cloud entry: {entry.title}")
     _LOGGER.debug(f"Config data keys: {list(entry.data.keys())}")
     _LOGGER.debug(f"Config options keys: {list(entry.options.keys())}")
@@ -360,11 +358,8 @@ async def async_setup_entry(hass: "HomeAssistant", entry: "ConfigEntry") -> bool
         raise ConfigEntryNotReady(f"Error initializing OIG Cloud: {e}") from e
 
 
-async def _setup_telemetry(hass: "HomeAssistant", username: str) -> None:
+async def _setup_telemetry(hass: core.HomeAssistant, username: str) -> None:
     """Setup telemetry if enabled."""
-    # Import až při potřebě
-    from homeassistant.core import HomeAssistant
-
     try:
         _LOGGER.debug("Starting telemetry setup...")
 
@@ -410,12 +405,10 @@ async def _setup_telemetry(hass: "HomeAssistant", username: str) -> None:
         # Pokračujeme bez telemetrie
 
 
-async def async_unload_entry(hass: "HomeAssistant", entry: "ConfigEntry") -> bool:
+async def async_unload_entry(
+    hass: HomeAssistant, entry: config_entries.ConfigEntry
+) -> bool:
     """Unload a config entry."""
-    # Import až při potřebě
-    from homeassistant.core import HomeAssistant
-    from homeassistant import config_entries
-
     unload_ok = await hass.config_entries.async_unload_platforms(entry, ["sensor"])
     if unload_ok:
         # NOVÉ: Uzavřít OTE API pokud existuje
@@ -428,24 +421,17 @@ async def async_unload_entry(hass: "HomeAssistant", entry: "ConfigEntry") -> boo
     return unload_ok
 
 
-async def async_reload_entry(config_entry: "ConfigEntry") -> None:
+async def async_reload_entry(config_entry: config_entries.ConfigEntry) -> None:
     """Reload config entry."""
-    # Import až při potřebě
-    from homeassistant import config_entries
-
     hass = config_entry.hass
     await async_unload_entry(hass, config_entry)
     await async_setup_entry(hass, config_entry)
 
 
 async def async_update_options(
-    hass: "HomeAssistant", config_entry: "ConfigEntry"
+    hass: HomeAssistant, config_entry: config_entries.ConfigEntry
 ) -> None:
     """Update options."""
-    # Import až při potřebě
-    from homeassistant.core import HomeAssistant
-    from homeassistant import config_entries
-
     # Pokud byla označena potřeba reload, proveď ho
     if config_entry.options.get("_needs_reload"):
         # Odstraň _needs_reload flag a reload
@@ -459,12 +445,10 @@ async def async_update_options(
         hass.config_entries.async_update_entry(config_entry, options=new_options)
 
 
-async def _cleanup_unused_devices(hass: "HomeAssistant", entry: "ConfigEntry") -> None:
+async def _cleanup_unused_devices(
+    hass: HomeAssistant, entry: config_entries.ConfigEntry
+) -> None:
     """Vyčištění nepoužívaných zařízení."""
-    # Import až při potřebě
-    from homeassistant.core import HomeAssistant
-    from homeassistant import config_entries
-
     try:
         from homeassistant.helpers import device_registry as dr
         from homeassistant.helpers import entity_registry as er
