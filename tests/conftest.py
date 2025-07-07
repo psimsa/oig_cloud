@@ -37,12 +37,20 @@ sys.modules["homeassistant.helpers.update_coordinator"].UpdateFailed = Exception
 # OPRAVA: Mock DataUpdateCoordinator jako skutečnou třídu
 class MockDataUpdateCoordinator:
     def __init__(
-        self, hass: Any, logger: Any, *, name: str, update_interval: Any
+        self,
+        hass: Any,
+        logger: Any,
+        *,
+        name: str,
+        update_interval: Any,
+        config_entry: Optional[Any] = None,  # NOVÉ: Přidán config_entry parametr
+        **kwargs: Any  # NOVÉ: Přidán **kwargs pro další parametry
     ) -> None:
         self.hass = hass
         self.logger = logger
         self.name = name
         self.update_interval = update_interval
+        self.config_entry = config_entry  # NOVÉ: Uložení config_entry
         self.data: Optional[Dict[str, Any]] = None
 
     async def async_config_entry_first_refresh(self) -> None:
