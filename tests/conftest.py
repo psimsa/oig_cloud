@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import Mock, AsyncMock, MagicMock
 from typing import Dict, Any, Optional
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # NOVÉ: Mock homeassistant modules before they are imported
 mock_modules = [
@@ -18,8 +18,8 @@ mock_modules = [
     "homeassistant.helpers.entity",
     "homeassistant.helpers.entity_platform",
     "homeassistant.components.sensor",
-    "homeassistant.util",  # NOVÉ: Přidáno
-    "homeassistant.util.dt",  # NOVÉ: Přidáno
+    "homeassistant.util",
+    "homeassistant.util.dt",
 ]
 
 for module in mock_modules:
@@ -32,6 +32,29 @@ sys.modules["homeassistant.config_entries"].ConfigEntry = Mock
 sys.modules["homeassistant.exceptions"].ConfigEntryNotReady = Exception
 sys.modules["homeassistant.exceptions"].ConfigEntryAuthFailed = Exception
 sys.modules["homeassistant.helpers.update_coordinator"].UpdateFailed = Exception
+
+
+# OPRAVA: Mock DataUpdateCoordinator jako skutečnou třídu
+class MockDataUpdateCoordinator:
+    def __init__(
+        self, hass: Any, logger: Any, *, name: str, update_interval: Any
+    ) -> None:
+        self.hass = hass
+        self.logger = logger
+        self.name = name
+        self.update_interval = update_interval
+        self.data: Optional[Dict[str, Any]] = None
+
+    async def async_config_entry_first_refresh(self) -> None:
+        pass
+
+    async def async_request_refresh(self) -> None:
+        pass
+
+
+sys.modules["homeassistant.helpers.update_coordinator"].DataUpdateCoordinator = (
+    MockDataUpdateCoordinator
+)
 
 # NOVÉ: Mock datetime utilities
 sys.modules["homeassistant.util.dt"].now = lambda: datetime.now()
