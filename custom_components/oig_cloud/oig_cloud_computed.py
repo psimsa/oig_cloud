@@ -58,9 +58,12 @@ class OigCloudComputedSensor(SensorEntity, RestoreEntity):
                     break
 
         # Nastavení základních atributů
-        self._attr_name = self._sensor_config.get(
-            "name_cs", self._sensor_config.get("name", sensor_type)
-        )
+        name_cs = self._sensor_config.get("name_cs")
+        name_en = self._sensor_config.get("name")
+
+        # Preferujeme český název, fallback na anglický, fallback na sensor_type
+        self._attr_name = name_cs or name_en or sensor_type.replace("_", " ").title()
+
         self._attr_unique_id = f"{self._data_key}_{sensor_type}"
         self._attr_icon = self._sensor_config.get("icon")
         self._attr_native_unit_of_measurement = self._sensor_config.get("unit")

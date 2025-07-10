@@ -32,13 +32,19 @@ class OigCloudShieldSensor(OigCloudSensor):
 
         # Nastavíme potřebné atributy pro entity
         sensor_def = _get_sensor_definition(sensor_type)
-        self._attr_name = sensor_def.get("name", sensor_type)
+
+        # OPRAVA: Zjednodušit na stejnou logiku jako ostatní senzory
+        name_cs = sensor_def.get("name_cs")
+        name_en = sensor_def.get("name")
+
+        self._attr_name = name_cs or name_en or sensor_type
+
         self._attr_native_unit_of_measurement = sensor_def.get("unit_of_measurement")
         self._attr_icon = sensor_def.get("icon")
         self._attr_device_class = sensor_def.get("device_class")
         self._attr_state_class = sensor_def.get("state_class")
 
-        # Nastavíme box_id a entity_id
+        # Nastavíme box_id a entity_id podle vzoru z OigCloudDataSensor
         self._box_id: str = list(self.coordinator.data.keys())[0]
         self.entity_id = f"sensor.oig_{self._box_id}_{sensor_type}"
 
@@ -49,13 +55,14 @@ class OigCloudShieldSensor(OigCloudSensor):
     @property
     def name(self) -> str:
         """Jméno senzoru."""
-        # Použijeme definice z SENSOR_TYPES místo hardcodovaných názvů
+        # OPRAVA: Zjednodušit na stejnou logiku jako ostatní senzory
         sensor_def = _get_sensor_definition(self._sensor_type)
-        language: str = self.hass.config.language
 
-        if language == "cs":
-            return sensor_def.get("name_cs", sensor_def.get("name", self._sensor_type))
-        return sensor_def.get("name", self._sensor_type)
+        # Preferujeme český název, fallback na anglický, fallback na sensor_type
+        name_cs = sensor_def.get("name_cs")
+        name_en = sensor_def.get("name")
+
+        return name_cs or name_en or self._sensor_type
 
     @property
     def icon(self) -> str:

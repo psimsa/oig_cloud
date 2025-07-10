@@ -71,10 +71,10 @@ class OigCloudDataSensor(CoordinatorEntity, SensorEntity):
         # Přidání entity_category z konfigurace
         self._attr_entity_category = self._sensor_config.get("entity_category")
 
-        # Entity ID - OPRAVA: bez _ext suffixu pro extended senzory
+        # Entity ID - KLÍČOVÉ: Tady se vytváří entity ID z sensor_type!
         if coordinator.data:
             self._box_id = list(coordinator.data.keys())[0]
-            # Používáme sensor_type bez dalších úprav
+            # DŮLEŽITÉ: Entity ID používá sensor_type (anglický klíč)
             self.entity_id = f"sensor.oig_{self._box_id}_{sensor_type}"
 
     @property

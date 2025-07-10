@@ -40,7 +40,7 @@ analytics_device_info: Dict[str, Any] = {
 }
 
 
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+async def async_setup(hass: HomeAssistant, config: Dict[str, Any]) -> bool:
     """Set up OIG Cloud integration."""
     # OPRAVA: Debug setup telemetrie
     print("[OIG SETUP] Starting OIG Cloud setup")
@@ -54,8 +54,153 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.data.setdefault(DOMAIN, {})
     print("[OIG SETUP] Global data structure prepared")
 
+    # OPRAVA: Univerzální registrace statických cest pro všechny verze HA
+    await _register_static_paths(hass)
+
+    # OPRAVA: Odstranění volání _setup_frontend_panel z async_setup
+    # Panel se registruje až v async_setup_entry kde máme přístup k entry
+    # await _setup_frontend_panel(hass)  # ODSTRANĚNO
+
     print("[OIG SETUP] OIG Cloud setup completed")
     return True
+
+
+async def _register_static_paths(hass: HomeAssistant) -> None:
+    """Registrace statických cest pro HA 2024.5+."""
+    static_path = "/oig_cloud_static"
+    directory = hass.config.path("custom_components/oig_cloud/www")
+
+    _LOGGER.info(f"Registering static path: {static_path} -> {directory}")
+
+    # OPRAVA: Pouze moderní metoda
+    from homeassistant.components.http import StaticPathConfig
+
+    static_config = StaticPathConfig(static_path, directory, cache_headers=False)
+    await hass.http.async_register_static_paths([static_config])
+    _LOGGER.info("✅ Static paths registered successfully")
+
+
+async def _setup_frontend_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Nastavení frontend panelu (pouze když je povolen)."""
+    try:
+        # Unikátní ID panelu pro tuto instanci
+        panel_id = f"oig_cloud_dashboard_{entry.entry_id}"
+
+        # OPRAVA: Získání inverter_sn přímo z coordinator.data
+        inverter_sn = "unknown"
+        coordinator_data = hass.data[DOMAIN][entry.entry_id].get("coordinator")
+        if coordinator_data and coordinator_data.data:
+            inverter_sn = next(iter(coordinator_data.data.keys()), "unknown")
+            _LOGGER.info(f"Dashboard setup: Found inverter_sn = {inverter_sn}")
+        else:
+            _LOGGER.warning("Dashboard setup: No coordinator data available")
+
+        panel_title = (
+            f"OIG Dashboard ({inverter_sn})"
+            if inverter_sn != "unknown"
+            else "OIG Cloud Dashboard"
+        )
+
+        # OPRAVA: Přidat parametry pro debugging do URL
+        dashboard_url = f"/oig_cloud_static/dashboard.html?entry_id={entry.entry_id}&inverter_sn={inverter_sn}"
+
+        _LOGGER.info(f"Dashboard URL: {dashboard_url}")
+
+        from homeassistant.components import frontend
+
+        # OPRAVA: Kontrola existence funkce a její volání bez await pokud vrací None
+        if hasattr(frontend, "async_register_built_in_panel"):
+            register_func = getattr(frontend, "async_register_built_in_panel")
+            if callable(register_func):
+                try:
+                    result = register_func(
+                        hass,
+                        "iframe",
+                        panel_title,
+                        "mdi:solar-power",
+                        panel_id,
+                        {"url": dashboard_url},
+                        require_admin=False,
+                    )
+
+                    # Pokud funkce vrací coroutine, await it
+                    if hasattr(result, "__await__"):
+                        await result
+
+                    _LOGGER.info(f"✅ Panel '{panel_title}' registered successfully")
+                except Exception as reg_error:
+                    _LOGGER.error(f"Error during panel registration: {reg_error}")
+                    raise
+            else:
+                _LOGGER.warning("async_register_built_in_panel is not callable")
+        else:
+            _LOGGER.warning("Frontend async_register_built_in_panel not available")
+
+        # OPRAVA: Debug logování dostupných entit
+        coordinator = hass.data[DOMAIN][entry.entry_id].get("coordinator")
+        if coordinator and coordinator.data:
+            entity_count = len(
+                [
+                    k
+                    for k in hass.states.async_entity_ids()
+                    if k.startswith(f"sensor.oig_{inverter_sn}")
+                ]
+            )
+            _LOGGER.info(
+                f"Dashboard: Found {entity_count} OIG entities for inverter {inverter_sn}"
+            )
+
+            # Ukázka několika klíčových entit
+            key_entities = [
+                f"sensor.oig_{inverter_sn}_remaining_usable_capacity",
+                f"sensor.oig_{inverter_sn}_solar_forecast",
+                f"sensor.oig_{inverter_sn}_battery_forecast",
+            ]
+
+            for entity_id in key_entities:
+                entity_state = hass.states.get(entity_id)
+                if entity_state:
+                    _LOGGER.info(
+                        f"Dashboard entity check: {entity_id} = {entity_state.state}"
+                    )
+                else:
+                    _LOGGER.warning(f"Dashboard entity missing: {entity_id}")
+        else:
+            _LOGGER.warning("Dashboard: No coordinator data for entity checking")
+
+    except Exception as e:
+        _LOGGER.error(f"Failed to setup frontend panel: {e}")
+
+
+async def _remove_frontend_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Odebrání frontend panelu."""
+    try:
+        panel_id = f"oig_cloud_dashboard_{entry.entry_id}"
+
+        from homeassistant.components import frontend
+
+        if hasattr(frontend, "async_remove_panel") and callable(
+            getattr(frontend, "async_remove_panel")
+        ):
+            # OPRAVA: Nejdříve zkontrolujeme, jestli panel existuje
+            if hasattr(hass.data.get("frontend", {}), "panels"):
+                existing_panels = hass.data["frontend"].panels
+                if panel_id in existing_panels:
+                    await frontend.async_remove_panel(hass, panel_id)
+                    _LOGGER.info(f"✅ Panel removed: {panel_id}")
+                else:
+                    _LOGGER.debug(f"Panel {panel_id} not found, nothing to remove")
+            else:
+                # Pokud nemůžeme zkontrolovat existenci, zkusíme smazat přímo
+                await frontend.async_remove_panel(hass, panel_id)
+                _LOGGER.info(f"✅ Panel removed: {panel_id}")
+        else:
+            _LOGGER.debug("async_remove_panel not available")
+
+    except Exception as e:
+        _LOGGER.debug(
+            f"Error removing frontend panel (this is expected if panel doesn't exist): {e}"
+        )
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -233,17 +378,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 from .api.ote_api import OteApi
 
                 ote_api = OteApi()
-                # Test připojení
-                test_data = await ote_api.get_spot_prices()
-                if test_data:
-                    _LOGGER.info("OTE API successfully initialized")
-                else:
-                    _LOGGER.warning("OTE API test returned empty data")
+                # OPRAVA: Odstraněno volání fetch_spot_prices - data už jsou v coordinatoru
+                _LOGGER.info("OTE API successfully initialized")
             except Exception as e:
                 _LOGGER.error(f"Failed to initialize OTE API: {e}")
                 if ote_api:
                     await ote_api.close()
                 ote_api = None
+        else:
+            _LOGGER.debug("Spot prices disabled - skipping OTE API initialization")
+
+        # NOVÉ: Podmíněné nastavení dashboard podle konfigurace
+        dashboard_enabled = entry.options.get("enable_dashboard", False)
+        # OPRAVA: Dashboard registrujeme AŽ PO vytvoření senzorů
 
         # Uložení dat do hass.data
         hass.data[DOMAIN][entry.entry_id] = {
@@ -253,11 +400,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "statistics_enabled": statistics_enabled,
             "analytics_device_info": analytics_device_info,
             "service_shield": service_shield,
-            "ote_api": ote_api,  # NOVÉ: OTE API
-            "config": {  # NOVÉ: Konfigurace pro senzory
+            "ote_api": ote_api,
+            "dashboard_enabled": dashboard_enabled,  # NOVÉ: stav dashboard
+            "config": {
                 "enable_statistics": statistics_enabled,
                 "enable_pricing": entry.options.get("enable_pricing", False),
                 "enable_spot_prices": entry.options.get("enable_spot_prices", False),
+                "enable_dashboard": dashboard_enabled,  # NOVÉ
             },
         }
 
@@ -287,6 +436,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         # Vždy registrovat sensor platform
         await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
+
+        # OPRAVA: Dashboard registrujeme až TERAZ - po vytvoření všech senzorů
+        if dashboard_enabled:
+            await _setup_frontend_panel(hass, entry)
+            _LOGGER.info("OIG Cloud Dashboard panel enabled and registered")
+        else:
+            await _remove_frontend_panel(hass, entry)
+            _LOGGER.debug("OIG Cloud Dashboard panel disabled")
 
         # Přidáme listener pro změny konfigurace - OPRAVEN callback na async funkci
         entry.async_on_unload(entry.add_update_listener(async_update_options))
@@ -410,6 +567,9 @@ async def async_unload_entry(
     hass: HomeAssistant, entry: config_entries.ConfigEntry
 ) -> bool:
     """Unload a config entry."""
+    # Odebrání dashboard panelu při unload
+    await _remove_frontend_panel(hass, entry)
+
     unload_ok = await hass.config_entries.async_unload_platforms(entry, ["sensor"])
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
@@ -426,17 +586,43 @@ async def async_reload_entry(config_entry: config_entries.ConfigEntry) -> None:
 async def async_update_options(
     hass: HomeAssistant, config_entry: config_entries.ConfigEntry
 ) -> None:
-    """Update options."""
+    """Update options with dashboard management."""
+    old_options = config_entry.options
+    new_options = dict(config_entry.options)
+
+    # Kontrola změny dashboard nastavení
+    old_dashboard_enabled = old_options.get("enable_dashboard", False)
+    new_dashboard_enabled = new_options.get("enable_dashboard", False)
+
+    if old_dashboard_enabled != new_dashboard_enabled:
+        _LOGGER.info(
+            f"Dashboard setting changed: {old_dashboard_enabled} -> {new_dashboard_enabled}"
+        )
+
+        if new_dashboard_enabled:
+            # Zapnutí dashboard
+            await _setup_frontend_panel(hass, config_entry)
+            _LOGGER.info("Dashboard panel enabled")
+        else:
+            # Vypnutí dashboard
+            await _remove_frontend_panel(hass, config_entry)
+            _LOGGER.info("Dashboard panel disabled")
+
+        # Aktualizace dat v hass.data
+        if DOMAIN in hass.data and config_entry.entry_id in hass.data[DOMAIN]:
+            hass.data[DOMAIN][config_entry.entry_id][
+                "dashboard_enabled"
+            ] = new_dashboard_enabled
+            hass.data[DOMAIN][config_entry.entry_id]["config"][
+                "enable_dashboard"
+            ] = new_dashboard_enabled
+
     # Pokud byla označena potřeba reload, proveď ho
-    if config_entry.options.get("_needs_reload"):
-        # Odstraň _needs_reload flag a reload
-        new_options = dict(config_entry.options)
+    if new_options.get("_needs_reload"):
         new_options.pop("_needs_reload", None)
         hass.config_entries.async_update_entry(config_entry, options=new_options)
-        # Naplánuj reload
         hass.async_create_task(hass.config_entries.async_reload(config_entry.entry_id))
     else:
-        new_options = dict(config_entry.options)
         hass.config_entries.async_update_entry(config_entry, options=new_options)
 
 

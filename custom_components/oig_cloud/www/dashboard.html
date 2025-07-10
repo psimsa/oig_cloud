@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OIG Cloud Dashboard</title>
+    <script src="/oig_cloud_static/chart-loader.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            /* OPRAVA: Použít HA CSS proměnné pro témata */
+            background-color: var(--primary-background-color, #fafafa);
+            color: var(--primary-text-color, #212121);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* NOVÉ: Automatická detekce tmavého režimu */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: var(--primary-background-color, #111111);
+                color: var(--primary-text-color, #e1e1e1);
+            }
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-background-color, white);
+            border-radius: var(--ha-card-border-radius, 8px);
+            padding: 20px;
+            box-shadow: var(--ha-card-box-shadow, 0 2px 8px rgba(0,0,0,0.1));
+            border: 1px solid var(--divider-color, #e0e0e0);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .card-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary-text-color, #212121);
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 400px;
+            background: var(--card-background-color, white);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--secondary-text-color, #666);
+        }
+
+        .error {
+            color: var(--error-color, #f44336);
+            text-align: center;
+            padding: 20px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 8px;
+        }
+
+        .status-online { background-color: var(--success-color, #4caf50); }
+        .status-offline { background-color: var(--error-color, #f44336); }
+        .status-loading {
+            background-color: var(--warning-color, #ff9800);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* NOVÉ: Tlačítko pro přepínání tématu */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--primary-color, #03a9f4);
+            color: var(--text-primary-color, white);
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            cursor: pointer;
+            font-size: 18px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background: var(--primary-color-dark, #0288d1);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- NOVÉ: Tlačítko pro přepínání tématu -->
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Přepnout téma">
+        🌙
+    </button>
+
+    <div class="dashboard-container">
+        <!-- Connection Status -->
+        <div class="card">
+            <div class="card-title">
+                🌐 Stav připojení
+                <span id="connection-status" class="status-indicator status-loading"></span>
+            </div>
+            <div id="connection-info" class="loading">Připojování...</div>
+        </div>
+
+        <!-- Battery Forecast Card -->
+        <div class="card">
+            <div class="card-title">🔋 Predikce kapacity baterie</div>
+            <div id="battery-chart" class="chart-container loading">Načítání grafu...</div>
+        </div>
+
+        <!-- Solar Forecast Card -->
+        <div class="card">
+            <div class="card-title">☀️ Předpověď solární výroby</div>
+            <div id="solar-chart" class="chart-container loading">Načítání grafu...</div>
+        </div>
+
+        <!-- Spot Prices Card -->
+        <div class="card">
+            <div class="card-title">💰 Spotové ceny elektřiny</div>
+            <div id="prices-chart" class="chart-container loading">Načítání grafu...</div>
+        </div>
+    </div>
+
+    <script>
+        // OPRAVA: Načíst HA bridge před dashboard inicializací
+        const scriptElement = document.createElement('script');
+        scriptElement.src = '/oig_cloud_static/ha-bridge.js';
+        document.head.appendChild(scriptElement);
+
+        // Inicializace dashboard po načtení Apex Charts
+        window.OIG_CHART_CONFIG.autoLoad = true;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Indikátor načítání
+                document.getElementById('connection-status').className = 'status-indicator status-loading';
+                document.getElementById('connection-info').textContent = 'Načítání Apex Charts...';
+
+                // OPRAVA: Kontrola dostupnosti chart loaderu
+                if (!window.ApexChartsLoader) {
+                    throw new Error('Chart loader není dostupný');
+                }
+
+                // Načtení chart knihovny
+                await window.ApexChartsLoader.load();
+
+                // OPRAVA: Kontrola dostupnosti dashboard třídy
+                if (typeof OigCloudDashboard === 'undefined') {
+                    throw new Error('Dashboard třída není dostupná - zkontrolujte dashboard.js');
+                }
+
+                // Inicializace dashboard
+                const dashboard = new OigCloudDashboard();
+                await dashboard.init();
+
+                // Úspěšné připojení
+                document.getElementById('connection-status').className = 'status-indicator status-online';
+                document.getElementById('connection-info').innerHTML = `
+                    <strong>Připojeno</strong><br>
+                    Apex Charts verze: ${window.ApexChartsLoader.getVersion()}<br>
+                    <small>Používá reálná data ze senzorů</small>
+                `;
+
+            } catch (error) {
+                console.error('Dashboard initialization failed:', error);
+                document.getElementById('connection-status').className = 'status-indicator status-offline';
+                document.getElementById('connection-info').innerHTML = `
+                    <strong>Chyba připojení</strong><br>
+                    ${error.message}<br>
+                    <button onclick="location.reload()" style="margin-top: 10px;">Zkusit znovu</button>
+                `;
+            }
+        });
+
+        // NOVÉ: Funkce pro detekci a nastavení tématu
+        function detectTheme() {
+            // Zkusit číst z Home Assistant
+            if (window.parent && window.parent.document) {
+                const haTheme = window.parent.document.querySelector('html').getAttribute('data-theme');
+                if (haTheme) {
+                    return haTheme.includes('dark') ? 'dark' : 'light';
+                }
+            }
+
+            // Fallback na system preference
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+
+            // Aktualizovat ikonu tlačítka
+            const toggleButton = document.getElementById('theme-toggle');
+            if (toggleButton) {
+                toggleButton.textContent = theme === 'dark' ? '☀️' : '🌙';
+            }
+
+            // Uložit preference
+            localStorage.setItem('oig-dashboard-theme', theme);
+
+            // Aktualizovat grafy pokud existují
+            if (window.oigDashboard) {
+                window.oigDashboard.updateChartThemes(theme);
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            applyTheme(newTheme);
+        }
+
+        // Inicializovat téma při načtení
+        document.addEventListener('DOMContentLoaded', () => {
+            // Zkusit načíst uloženou preference
+            let savedTheme = localStorage.getItem('oig-dashboard-theme');
+
+            // Pokud není uložená, detekovat z HA nebo systému
+            if (!savedTheme) {
+                savedTheme = detectTheme();
+            }
+
+            applyTheme(savedTheme);
+
+            // Poslouchat změny systémového tématu
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (!localStorage.getItem('oig-dashboard-theme')) {
+                    applyTheme(e.matches ? 'dark' : 'light');
+                }
+            });
+        });
+    </script>
+    <script src="/oig_cloud_static/dashboard.js"></script>
+</body>
+</html>

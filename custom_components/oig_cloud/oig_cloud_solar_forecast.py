@@ -27,10 +27,15 @@ class OigCloudSolarForecastSensor(OigCloudSensor):
     """Senzor pro solar forecast data."""
 
     def __init__(
-        self, coordinator: Any, sensor_type: str, config_entry: ConfigEntry
+        self,
+        coordinator: Any,
+        sensor_type: str,
+        config_entry: ConfigEntry,
+        device_info: Dict[str, Any],  # PŘIDÁNO: přebíráme device_info jako parametr
     ) -> None:
         super().__init__(coordinator, sensor_type)
         self._config_entry = config_entry
+        self._device_info = device_info  # OPRAVA: použijeme předané device_info
 
         # Získáme inverter_sn ze správného místa
         inverter_sn = "unknown"
@@ -44,15 +49,19 @@ class OigCloudSolarForecastSensor(OigCloudSensor):
             first_device_key = list(coordinator.data.keys())[0]
             inverter_sn = first_device_key
 
-        # Nastavíme Analytics Module device_info - stejné jako statistics
-        self._device_info = {
-            "identifiers": {("oig_cloud_analytics", inverter_sn)},
-            "name": f"Analytics & Predictions {inverter_sn}",
-            "manufacturer": "OIG",
-            "model": "Analytics Module",
-            "via_device": ("oig_cloud", inverter_sn),
-            "entry_type": "service",
-        }
+        # OPRAVA: Nastavit _box_id a entity_id podle vzoru z OigCloudDataSensor
+        self._box_id = inverter_sn
+        self.entity_id = f"sensor.oig_{self._box_id}_{sensor_type}"
+
+        # OPRAVA: Přepsat název podle name_cs logiky (pokud OigCloudSensor nemá správnou logiku)
+        from .sensors.SENSOR_TYPES_SOLAR_FORECAST import SENSOR_TYPES_SOLAR_FORECAST
+
+        sensor_config = SENSOR_TYPES_SOLAR_FORECAST.get(sensor_type, {})
+        name_cs = sensor_config.get("name_cs")
+        name_en = sensor_config.get("name")
+
+        # Preferujeme český název, fallback na anglický, fallback na sensor_type
+        self._attr_name = name_cs or name_en or sensor_type
 
         self._last_forecast_data: Optional[Dict[str, Any]] = None
         self._last_api_call: float = 0
@@ -706,41 +715,14 @@ class OigCloudSolarForecastSensor(OigCloudSensor):
     @property
     def available(self) -> bool:
         """Return True if entity is available."""
-        # OPRAVA 3: Hlavní kontrola - je solar forecast zapnutý?
+        # ZJEDNODUŠENÍ: Pouze kontrola zda je solar forecast zapnutý
         solar_enabled = self._config_entry.options.get("enable_solar_forecast", False)
-
-        if not solar_enabled:
-            return False  # Modul je vypnutý - senzor není dostupný
-
-        # Dodatečné kontroly pro stringy
-        if self._sensor_type == "solar_forecast_string1":
-            string1_enabled = self._config_entry.options.get(
-                "solar_forecast_string1_enabled", False
-            )
-            return string1_enabled
-
-        elif self._sensor_type == "solar_forecast_string2":
-            string2_enabled = self._config_entry.options.get(
-                "solar_forecast_string2_enabled", False
-            )
-            return string2_enabled
-
-        # Pro hlavní senzor - dostupný pokud je alespoň jeden string zapnutý
-        elif self._sensor_type == "solar_forecast":
-            string1_enabled = self._config_entry.options.get(
-                "solar_forecast_string1_enabled", False
-            )
-            string2_enabled = self._config_entry.options.get(
-                "solar_forecast_string2_enabled", False
-            )
-            return string1_enabled or string2_enabled
-
-        return True  # Default pro ostatní typy
+        return solar_enabled
 
     @property
     def state(self) -> Optional[Union[float, str]]:
         """Stav senzoru - celková denní prognóza výroby v kWh."""
-        # Pokud není dostupný, vrátit None
+        # OPRAVA: Pokud není dostupný, vrátit None
         if not self.available:
             return None
 
@@ -904,7 +886,7 @@ class OigCloudSolarForecastSensor(OigCloudSensor):
                 current_hour_watts = string1_hourly.get(current_hour.isoformat(), 0)
                 attrs["current_hour_kw"] = round(current_hour_watts / 1000, 2)
 
-                # Hodinové výkony jen pro string 1 - s timestamp
+                # OPRAVA: Použít správnou proměnnou pro iteraci
                 today = datetime.now().date()
                 tomorrow = today + timedelta(days=1)
 
@@ -913,7 +895,8 @@ class OigCloudSolarForecastSensor(OigCloudSensor):
                 today_sum = 0
                 tomorrow_sum = 0
 
-                for hour_str, power in today_hours.items():
+                # OPRAVA: Iterovat přes string1_hourly místo today_hours
+                for hour_str, power in string1_hourly.items():
                     try:
                         hour_dt = datetime.fromisoformat(hour_str)
                         power_kw = round(power / 1000, 2)
@@ -947,7 +930,7 @@ class OigCloudSolarForecastSensor(OigCloudSensor):
                 current_hour_watts = string2_hourly.get(current_hour.isoformat(), 0)
                 attrs["current_hour_kw"] = round(current_hour_watts / 1000, 2)
 
-                # Hodinové výkony jen pro string 2 - s timestamp
+                # OPRAVA: Použít správnou proměnnou pro iteraci
                 today = datetime.now().date()
                 tomorrow = today + timedelta(days=1)
 
@@ -956,7 +939,8 @@ class OigCloudSolarForecastSensor(OigCloudSensor):
                 today_sum = 0
                 tomorrow_sum = 0
 
-                for hour_str, power in today_hours.items():
+                # OPRAVA: Iterovat přes string2_hourly místo today_hours
+                for hour_str, power in string2_hourly.items():
                     try:
                         hour_dt = datetime.fromisoformat(hour_str)
                         power_kw = round(power / 1000, 2)

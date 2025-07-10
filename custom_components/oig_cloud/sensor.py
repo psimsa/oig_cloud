@@ -110,6 +110,7 @@ async def async_setup_entry(
     computed_sensors: List[Any] = []
     try:
         if coordinator.data is not None:
+            # OPRAVA: Hledáme computed senzory ve VŠECH sensor types
             computed_sensor_types = {
                 k: v
                 for k, v in SENSOR_TYPES.items()
@@ -220,116 +221,38 @@ async def async_setup_entry(
         f"Statistics check: option={statistics_option}, hass.data={statistics_enabled}"
     )
 
+    # OPRAVA: Vytvoříme analytics_device_info jednou pro všechny analytics/statistics senzory
+    inverter_sn = "unknown"
+    if coordinator.data:
+        inverter_sn = list(coordinator.data.keys())[0]
+    elif hasattr(coordinator, "config_entry") and coordinator.config_entry.data:
+        inverter_sn = coordinator.config_entry.data.get("inverter_sn", "unknown")
+
+    analytics_device_info: Dict[str, Any] = {
+        "identifiers": {("oig_cloud_analytics", inverter_sn)},
+        "name": f"Analytics & Predictions {inverter_sn}",
+        "manufacturer": "OIG",
+        "model": "Analytics Module",
+        "via_device": ("oig_cloud", inverter_sn),
+        "entry_type": "service",
+    }
+
     if statistics_enabled:
         try:
             if coordinator.data is not None and SENSOR_TYPES:
                 from .oig_cloud_statistics import OigCloudStatisticsSensor
-                from .sensor_types import STATISTICS_SENSOR_TYPES
 
                 statistics_sensors: List[Any] = []
-
-                # **OPRAVA: Získat analytics_device_info z hass.data místo nedefinované proměnné**
-                analytics_device_info = hass.data[DOMAIN][entry.entry_id].get(
-                    "analytics_device_info",
-                    {
-                        "identifiers": {(DOMAIN, "analytics")},
-                        "name": "Analytics & Predictions",
-                        "manufacturer": "OIG Cloud",
-                        "model": "Analytics Module",
-                        "sw_version": "1.0",
-                    },
-                )
 
                 for sensor_type, config in SENSOR_TYPES.items():
                     if config.get("sensor_type_category") == "statistics":
                         try:
                             _LOGGER.debug(f"Creating statistics sensor: {sensor_type}")
 
-                            # Získáme inverter_sn ze správného místa
-                            inverter_sn = "unknown"
-
-                            # Zkusíme získat z coordinator.config_entry.data
-                            if (
-                                hasattr(coordinator, "config_entry")
-                                and coordinator.config_entry.data
-                            ):
-                                inverter_sn = coordinator.config_entry.data.get(
-                                    "inverter_sn", "unknown"
-                                )
-                                _LOGGER.debug(
-                                    f"Got inverter_sn from config_entry: {inverter_sn}"
-                                )
-
-                            # Pokud stále unknown, zkusíme z coordinator.data
-                            if inverter_sn == "unknown" and coordinator.data:
-                                first_device_key = list(coordinator.data.keys())[0]
-                                inverter_sn = first_device_key
-                                _LOGGER.debug(
-                                    f"Got inverter_sn from coordinator.data keys: {inverter_sn}"
-                                )
-
-                            # Pokud stále unknown, zkusíme z device_info v datech
-                            if inverter_sn == "unknown" and coordinator.data:
-                                first_device_key = list(coordinator.data.keys())[0]
-                                first_device_data = coordinator.data[first_device_key]
-                                if (
-                                    isinstance(first_device_data, dict)
-                                    and "device_info" in first_device_data
-                                ):
-                                    device_info_raw = first_device_data["device_info"]
-                                    if (
-                                        isinstance(device_info_raw, dict)
-                                        and "identifiers" in device_info_raw
-                                    ):
-                                        for identifier_set in device_info_raw[
-                                            "identifiers"
-                                        ]:
-                                            if len(identifier_set) > 1:
-                                                inverter_sn = identifier_set[1]
-                                                _LOGGER.debug(
-                                                    f"Got inverter_sn from device_info identifiers: {inverter_sn}"
-                                                )
-                                                break
-
-                            _LOGGER.debug(
-                                f"Final inverter_sn for statistics: {inverter_sn}"
-                            )
-
-                            # Vytvoříme Analytics Module device_info
-                            device_info: Dict[str, Any] = {
-                                "identifiers": {("oig_cloud_analytics", inverter_sn)},
-                                "name": f"Analytics & Predictions {inverter_sn}",
-                                "manufacturer": "OIG",
-                                "model": "Analytics Module",
-                                "via_device": ("oig_cloud", inverter_sn),
-                                "entry_type": "service",
-                            }
-
+                            # OPRAVA: Použít předem definované analytics_device_info
                             sensor = OigCloudStatisticsSensor(
-                                coordinator, sensor_type, device_info
+                                coordinator, sensor_type, analytics_device_info
                             )
-
-                            # Detailní debug device_info
-                            if hasattr(sensor, "device_info"):
-                                device_info_result = sensor.device_info
-                                _LOGGER.debug(
-                                    f"Statistics sensor {sensor_type} device_info type: {type(device_info_result)}"
-                                )
-                                _LOGGER.debug(
-                                    f"Statistics sensor {sensor_type} device_info content: {device_info_result}"
-                                )
-
-                                if device_info_result is not None and not isinstance(
-                                    device_info_result, dict
-                                ):
-                                    _LOGGER.error(
-                                        f"Statistics sensor {sensor_type} has invalid device_info type: {type(device_info_result)}, expected dict"
-                                    )
-                                    continue
-                            else:
-                                _LOGGER.warning(
-                                    f"Statistics sensor {sensor_type} has no device_info attribute"
-                                )
 
                             statistics_sensors.append(sensor)
                             _LOGGER.debug(
@@ -367,8 +290,11 @@ async def async_setup_entry(
             if SENSOR_TYPES:
                 for sensor_type, config in SENSOR_TYPES.items():
                     if config.get("sensor_type_category") == "solar_forecast":
+                        # OPRAVA: Předat analytics_device_info
                         solar_sensors.append(
-                            OigCloudSolarForecastSensor(coordinator, sensor_type, entry)
+                            OigCloudSolarForecastSensor(
+                                coordinator, sensor_type, entry, analytics_device_info
+                            )
                         )
 
             if solar_sensors:
@@ -503,8 +429,9 @@ async def async_setup_entry(
                 for sensor_type, config in SENSOR_TYPES.items():
                     if config.get("sensor_type_category") == "battery_prediction":
                         try:
+                            # OPRAVA: Předat analytics_device_info
                             sensor = OigCloudBatteryForecastSensor(
-                                coordinator, sensor_type, entry
+                                coordinator, sensor_type, entry, analytics_device_info
                             )
                             battery_forecast_sensors.append(sensor)
                             _LOGGER.debug(
@@ -535,52 +462,66 @@ async def async_setup_entry(
     else:
         _LOGGER.info("Battery prediction sensors disabled - skipping creation")
 
-    # OPRAVA: Spotové senzory (pokud jsou povoleny)
     spot_prices_enabled = entry.options.get("enable_spot_prices", False)
     _LOGGER.info(f"Spot prices enabled: {spot_prices_enabled}")
 
     if spot_prices_enabled:
         try:
-            _LOGGER.info("Adding spot price sensors")
+            _LOGGER.info("💰 Creating analytics sensors for spot prices")
+
             from .sensors.SENSOR_TYPES_SPOT import SENSOR_TYPES_SPOT
-            from .oig_cloud_analytics_sensor import (
-                OigCloudAnalyticsSensor,
-            )  # OPRAVA: přidat import
+            from .oig_cloud_analytics_sensor import OigCloudAnalyticsSensor
 
-            spot_sensors: List[Any] = []  # OPRAVA: vytvořit správný seznam
+            analytics_sensors: List[Any] = []
 
-            for sensor_type in SENSOR_TYPES_SPOT.keys():
-                if (
-                    SENSOR_TYPES_SPOT[sensor_type].get("sensor_type_category")
-                    == "pricing"
-                ):
-                    try:
-                        entity = OigCloudAnalyticsSensor(
-                            coordinator,
-                            sensor_type,
-                            entry,  # OPRAVA: použít 'entry' místo 'config_entry'
-                        )
-                        spot_sensors.append(
-                            entity
-                        )  # OPRAVA: použít spot_sensors místo entities
-                        _LOGGER.debug(f"Added spot price sensor: {sensor_type}")
-                    except Exception as e:
-                        _LOGGER.error(
-                            f"Failed to create spot price sensor {sensor_type}: {e}"
-                        )
+            pricing_sensors = {
+                k: v
+                for k, v in SENSOR_TYPES_SPOT.items()
+                if v.get("sensor_type_category") == "pricing"
+            }
 
-            if spot_sensors:  # OPRAVA: registrovat pouze pokud máme senzory
-                _LOGGER.info(f"Registering {len(spot_sensors)} spot price sensors")
-                async_add_entities(spot_sensors, True)
+            _LOGGER.debug(f"Found {len(pricing_sensors)} pricing sensors to create")
+
+            for sensor_type, config in pricing_sensors.items():
+                try:
+                    _LOGGER.debug(f"Creating analytics sensor: {sensor_type}")
+
+                    # OPRAVA: Použít předem definované analytics_device_info
+                    sensor = OigCloudAnalyticsSensor(
+                        coordinator, sensor_type, entry, analytics_device_info
+                    )
+                    analytics_sensors.append(sensor)
+                    _LOGGER.debug(
+                        f"Successfully created analytics sensor: {sensor_type}"
+                    )
+                except Exception as e:
+                    _LOGGER.error(
+                        f"Failed to create analytics sensor {sensor_type}: {e}",
+                        exc_info=True,
+                    )
+                    continue
+
+            if analytics_sensors:
+                _LOGGER.info(f"Registering {len(analytics_sensors)} analytics sensors")
+                async_add_entities(analytics_sensors, True)
+                _LOGGER.info(
+                    f"Successfully registered {len(analytics_sensors)} analytics sensors"
+                )
+
+                # PŘIDÁNO: Debug log entity IDs
+                for sensor in analytics_sensors:
+                    _LOGGER.debug(
+                        f"💰 Registered analytics sensor: {sensor.entity_id} (unique_id: {sensor.unique_id})"
+                    )
             else:
-                _LOGGER.debug("No spot price sensors could be created")
+                _LOGGER.warning("No analytics sensors could be created")
 
         except ImportError as e:
             _LOGGER.error(f"OigCloudAnalyticsSensor not available: {e}")
         except Exception as e:
-            _LOGGER.error(f"Error initializing spot price sensors: {e}")
+            _LOGGER.error(f"Error initializing analytics sensors: {e}", exc_info=True)
     else:
-        _LOGGER.info("Spot price sensors disabled - skipping creation")
+        _LOGGER.info("💰 Spot prices disabled - skipping analytics sensors")
 
     _LOGGER.info("OIG Cloud sensor setup completed")
 

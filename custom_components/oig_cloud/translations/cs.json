@@ -26,7 +26,10 @@
       "invalid_positive_fee": "Poplatek pro kladné ceny musí být větší než 0%",
       "invalid_negative_fee": "Poplatek pro záporné ceny musí být větší než 0%",
       "invalid_fixed_fee": "Fixní poplatek musí být větší než 0 CZK/MWh",
-      "invalid_distribution_fee": "Distribuční poplatek nesmí být záporný"
+      "invalid_distribution_fee": "Distribuční poplatek nesmí být záporný",
+      "invalid_fixed_price": "Fixní cena musí být větší než 0 CZK/kWh",
+      "invalid_hour_range": "Hodiny musí být v rozsahu 0-23",
+      "invalid_hour_format": "Neplatný formát hodin. Použijte čárku jako oddělovač (např. 22,6)"
     },
     "step": {
       "user": {
@@ -35,7 +38,12 @@
         "data": {
           "username": "E-mail / Uživatelské jméno",
           "password": "Heslo",
-          "scan_interval": "Jak často aktualizovat data (sekundy)"
+          "enable_solar_forecast": "Povolit solární předpověď",
+          "enable_statistics": "Povolit statistiky a analýzy",
+          "enable_pricing": "Povolit cenové senzory",
+          "enable_spot_prices": "Povolit spotové ceny elektřiny",
+          "enable_extended_sensors": "Povolit rozšířené senzory",
+          "enable_dashboard": "Povolit webový dashboard"
         }
       },
       "menu": {
@@ -47,7 +55,8 @@
           "solar_forecast": "☀️ Předpověď výroby",
           "statistics_config": "📈 Statistiky a analýzy",
           "battery_prediction": "🔋 Chytré nabíjení",
-          "pricing_config": "💰 Cenové senzory"
+          "pricing_config": "💰 Cenové senzory",
+          "dashboard_config": "📈 Webový dashboard"
         }
       }
     }
@@ -76,7 +85,10 @@
       "invalid_positive_fee": "Poplatek pro kladné ceny musí být větší než 0%",
       "invalid_negative_fee": "Poplatek pro záporné ceny musí být větší než 0%",
       "invalid_fixed_fee": "Fixní poplatek musí být větší než 0 CZK/MWh",
-      "invalid_distribution_fee": "Distribuční poplatek nesmí být záporný"
+      "invalid_distribution_fee": "Distribuční poplatek nesmí být záporný",
+      "invalid_fixed_price": "Fixní cena musí být větší než 0 CZK/kWh",
+      "invalid_hour_range": "Hodiny musí být v rozsahu 0-23",
+      "invalid_hour_format": "Neplatný formát hodin. Použijte čárku jako oddělovač (např. 22,6)"
     },
     "step": {
       "menu": {
@@ -88,7 +100,8 @@
           "solar_forecast": "☀️ Předpověď výroby",
           "statistics_config": "📈 Statistiky a analýzy",
           "battery_prediction": "🔋 Chytré nabíjení",
-          "pricing_config": "💰 Cenové senzory"
+          "pricing_config": "💰 Cenové senzory",
+          "dashboard_config": "📈 Webový dashboard"
         }
       },
       "init": {
@@ -228,23 +241,51 @@
         }
       },
       "pricing_config": {
-        "title": "Spotové ceny elektřiny",
+        "title": "💰 Spotové ceny elektřiny",
         "description": "Konfigurace spotových cen a výpočtu finálních cen elektřiny\n\nAktuální stav: {current_state}\n{info}",
         "data": {
           "enable_spot_prices": "Povolit spotové ceny elektřiny z OTE",
-          "spot_pricing_model": "Model výpočtu ceny",
-          "spot_positive_fee_percent": "Poplatek při kladné ceně (%)",
-          "spot_negative_fee_percent": "Poplatek při záporné ceně (%)",
-          "spot_fixed_fee_mwh": "Fixní poplatek (CZK/MWh)",
-          "distribution_fee_kwh": "Distribuční poplatek (CZK/kWh)"
+          "spot_pricing_model": "Model výpočtu obchodní ceny",
+          "spot_positive_fee_percent": "Obchodní přirážka při kladné ceně (%)",
+          "spot_negative_fee_percent": "Obchodní přirážka při záporné ceně (%)",
+          "spot_fixed_fee_mwh": "Fixní obchodní poplatek (CZK/MWh)",
+          "fixed_commercial_price_vt": "Fixní obchodní cena VT (CZK/kWh)",
+          "fixed_commercial_price_nt": "Fixní obchodní cena NT (CZK/kWh)",
+          "dual_tariff_enabled": "Dvoutarifní sazba (VT/NT)",
+          "distribution_fee_vt_kwh": "Distribuční poplatek VT (CZK/kWh)",
+          "distribution_fee_nt_kwh": "Distribuční poplatek NT (CZK/kWh)",
+          "tariff_nt_start_weekday": "Začátky NT tarifu - pracovní dny",
+          "tariff_vt_start_weekday": "Začátky VT tarifu - pracovní dny",
+          "tariff_nt_start_weekend": "Začátky NT tarifu - víkend",
+          "tariff_vt_start_weekend": "Začátky VT tarifu - víkend",
+          "vat_rate": "Sazba DPH (%)"
         },
         "data_description": {
           "enable_spot_prices": "Stahování a zpracování spotových cen elektřiny z OTE každý den ve 13:00",
-          "spot_pricing_model": "Jak se počítá obchodní cena z hrubé spotové ceny",
+          "spot_pricing_model": "Jak se počítá obchodní cena z hrubé spotové ceny nebo použití fixních cen",
           "spot_positive_fee_percent": "Při kladné spotové ceně: cena × (1 + procento/100). Např. 15% = cena × 1,15",
           "spot_negative_fee_percent": "Při záporné spotové ceně: cena × (1 - procento/100). Např. 9% = cena × 0,91",
-          "spot_fixed_fee_mwh": "Konstantní poplatek v CZK za MWh přičtený ke spotové ceně (automaticky převeden na kWh)",
-          "distribution_fee_kwh": "Poplatek za distribuci elektřiny přičtený k finální ceně (obvykle 1-2 CZK/kWh)"
+          "spot_fixed_fee_mwh": "Konstantní poplatek v CZK za MWh přičtený ke spotové ceně",
+          "fixed_commercial_price_vt": "Fixní obchodní cena pro vysoký tarif v CZK/kWh ⚠️ ZADÁVEJTE BEZ DPH!",
+          "fixed_commercial_price_nt": "Fixní obchodní cena pro nízký tarif v CZK/kWh ⚠️ ZADÁVEJTE BEZ DPH!",
+          "dual_tariff_enabled": "Povolit dvoutarifní sazbu (VT/NT). Pokud ne, bude se používat pouze VT sazba",
+          "distribution_fee_vt_kwh": "Distribuční poplatek pro vysoký tarif v CZK/kWh ⚠️ ZADÁVEJTE BEZ DPH!",
+          "distribution_fee_nt_kwh": "Distribuční poplatek pro nízký tarif v CZK/kWh ⚠️ ZADÁVEJTE BEZ DPH!",
+          "tariff_nt_start_weekday": "Začátky NT tarifu v pracovní dny (pondělí-pátek), hodiny oddělené čárkou. Např: '22,2' = 22:00-6:00 a 2:00-6:00",
+          "tariff_vt_start_weekday": "Začátky VT tarifu v pracovní dny (pondělí-pátek), hodiny oddělené čárkou. Např: '6' = 6:00-22:00",
+          "tariff_nt_start_weekend": "Začátky NT tarifu o víkendu (sobota-neděle), hodiny oddělené čárkou. Např: '0' = celý víkend NT",
+          "tariff_vt_start_weekend": "Začátky VT tarifu o víkendu (sobota-neděle), hodiny oddělené čárkou. Prázdné = žádný VT o víkendu",
+          "vat_rate": "Sazba daně z přidané hodnoty v procentech (obvykle 21%)"
+        }
+      },
+      "dashboard_config": {
+        "title": "📈 Webový dashboard",
+        "description": "Aktuálně {current_state}",
+        "data": {
+          "enable_dashboard": "Povolit webový dashboard"
+        },
+        "data_description": {
+          "enable_dashboard": "Povolit webový dashboard s interaktivními grafy pro predikci baterie, solární předpověď a spotové ceny"
         }
       }
     }

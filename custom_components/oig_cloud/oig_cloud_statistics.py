@@ -41,13 +41,7 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
         from .sensor_types import SENSOR_TYPES
 
         sensor_config = SENSOR_TYPES.get(sensor_type, {})
-        self._sensor_config = sensor_config  # OPRAVA: Uložení reference
-
-        # OPRAVA: Použití sensor_type pro entity_id místo friendly_name
-        self._attr_name = sensor_config.get("name", sensor_type)
-        self._attr_unique_id = f"oig_statistics_{sensor_type}"
-        # OPRAVA: entity_id se odvozuje od sensor_type, ne od friendly_name
-        self.entity_id = f"sensor.{sensor_type}"
+        self._sensor_config = sensor_config
 
         # Získání data_key z coordinator config
         self._data_key = "unknown"
@@ -65,16 +59,18 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
             first_device_key = list(coordinator.data.keys())[0]
             self._data_key = first_device_key
 
-        # Nastavení základních atributů
-        sensor_name = sensor_config.get("name", sensor_type)
-        # Lokalizace názvu podle konfigurace
-        if hasattr(coordinator, "config_entry") and coordinator.config_entry.options:
-            use_czech = coordinator.config_entry.options.get("use_czech_names", False)
-            if use_czech and "name_cs" in sensor_config:
-                sensor_name = sensor_config["name_cs"]
+        # OPRAVA: Konzistentní logika pro názvy jako u ostatních senzorů
+        name_cs = sensor_config.get("name_cs")
+        name_en = sensor_config.get("name")
 
-        self._attr_name = sensor_name
+        # Preferujeme český název, fallback na anglický, fallback na sensor_type
+        self._attr_name = name_cs or name_en or sensor_type
+
+        # OPRAVA: Entity ID používá sensor_type (anglický klíč) a _box_id podle vzoru
         self._attr_unique_id = f"{self._data_key}_{sensor_type}"
+        self._box_id = self._data_key
+        self.entity_id = f"sensor.oig_{self._box_id}_{sensor_type}"
+
         self._attr_icon = sensor_config.get("icon")
         self._attr_native_unit_of_measurement = sensor_config.get("unit")
 
@@ -825,6 +821,14 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
     @property
     def available(self) -> bool:
         """Return True if sensor is available."""
+        # OPRAVA: Kontrola zda jsou statistics povoleny
+        statistics_enabled = getattr(
+            self._coordinator.config_entry.options, "enable_statistics", True
+        )
+
+        if not statistics_enabled:
+            return False  # Statistics jsou vypnuté - senzor není dostupný
+
         # Senzor je dostupný pokud má data nebo koordinátor funguje
         if self._sensor_type == "battery_load_median":
             return len(self._sampling_data) > 0 or self._coordinator.data is not None

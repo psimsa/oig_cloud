@@ -22,7 +22,7 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
     },
     # Víkend vs všední den odběr po časových úsecích
     "load_avg_6_8_weekday": {
-        "name": "Průměrný odběr 6-8h (všední dny)",
+        "name": "Average Load 6-8h Weekday",
         "name_cs": "Průměrný odběr 6-8h (všední dny)",
         "unit": UnitOfPower.WATT,
         "icon": "mdi:chart-timeline-variant",
@@ -36,7 +36,7 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "sensor_type_category": "statistics",
     },
     "load_avg_8_12_weekday": {
-        "name": "Průměrný odběr 8-12h (všední dny)",
+        "name": "Average Load 8-12h Weekday",
         "name_cs": "Průměrný odběr 8-12h (všední dny)",
         "unit": UnitOfPower.WATT,
         "icon": "mdi:chart-timeline-variant",
@@ -50,7 +50,7 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "sensor_type_category": "statistics",
     },
     "load_avg_12_16_weekday": {
-        "name": "Průměrný odběr 12-16h (všední dny)",
+        "name": "Average Load 12-16h Weekday",
         "name_cs": "Průměrný odběr 12-16h (všední dny)",
         "unit": UnitOfPower.WATT,
         "icon": "mdi:chart-timeline-variant",
@@ -64,7 +64,7 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "sensor_type_category": "statistics",
     },
     "load_avg_16_22_weekday": {
-        "name": "Průměrný odběr 16-22h (všední dny)",
+        "name": "Average Load 16-22h Weekday",
         "name_cs": "Průměrný odběr 16-22h (všední dny)",
         "unit": UnitOfPower.WATT,
         "icon": "mdi:chart-timeline-variant",
@@ -78,7 +78,7 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "sensor_type_category": "statistics",
     },
     "load_avg_22_6_weekday": {
-        "name": "Průměrný odběr 22-6h (všední dny)",
+        "name": "Average Load 22-6h Weekday",
         "name_cs": "Průměrný odběr 22-6h (všední dny)",
         "unit": UnitOfPower.WATT,
         "icon": "mdi:chart-timeline-variant",
@@ -93,7 +93,7 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
     },
     # Víkendové varianty
     "load_avg_6_8_weekend": {
-        "name": "Průměrný odběr 6-8h (víkendy)",
+        "name": "Average Load 6-8h Weekend",
         "name_cs": "Průměrný odběr 6-8h (víkendy)",
         "unit": UnitOfPower.WATT,
         "icon": "mdi:chart-timeline-variant",
@@ -107,7 +107,7 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "sensor_type_category": "statistics",
     },
     "load_avg_8_12_weekend": {
-        "name": "Průměrný odběr 8-12h (víkendy)",
+        "name": "Average Load 8-12h Weekend",
         "name_cs": "Průměrný odběr 8-12h (víkendy)",
         "unit": UnitOfPower.WATT,
         "icon": "mdi:chart-timeline-variant",
@@ -121,7 +121,7 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "sensor_type_category": "statistics",
     },
     "load_avg_12_16_weekend": {
-        "name": "Průměrný odběr 12-16h (víkendy)",
+        "name": "Average Load 12-16h Weekend",
         "name_cs": "Průměrný odběr 12-16h (víkendy)",
         "unit": UnitOfPower.WATT,
         "icon": "mdi:chart-timeline-variant",
@@ -135,7 +135,7 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "sensor_type_category": "statistics",
     },
     "load_avg_16_22_weekend": {
-        "name": "Průměrný odběr 16-22h (víkendy)",
+        "name": "Average Load 16-22h Weekend",
         "name_cs": "Průměrný odběr 16-22h (víkendy)",
         "unit": UnitOfPower.WATT,
         "icon": "mdi:chart-timeline-variant",
@@ -149,7 +149,7 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "sensor_type_category": "statistics",
     },
     "load_avg_22_6_weekend": {
-        "name": "Průměrný odběr 22-6h (víkendy)",
+        "name": "Average Load 22-6h Weekend",
         "name_cs": "Průměrný odběr 22-6h (víkendy)",
         "unit": UnitOfPower.WATT,
         "icon": "mdi:chart-timeline-variant",
@@ -164,14 +164,16 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
     },
     # Predikční senzory
     "battery_prediction_discharge_time": {
-        "name": "Predikce - doba vybití baterie",
+        "name": "Battery Discharge Time Prediction",
+        "name_cs": "Predikce - doba vybití baterie",
         "unit": UnitOfTime.HOURS,
         "icon": "mdi:battery-clock",
         "device_class": SensorDeviceClass.DURATION,
         "sensor_type_category": "statistics",
     },
     "battery_prediction_needed_capacity": {
-        "name": "Predikce - potřebná kapacita baterie",
+        "name": "Battery Needed Capacity Prediction",
+        "name_cs": "Predikce - potřebná kapacita baterie",
         "unit": UnitOfEnergy.KILO_WATT_HOUR,
         "icon": "mdi:battery-plus",
         "device_class": SensorDeviceClass.ENERGY,
@@ -179,7 +181,8 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "sensor_type_category": "statistics",
     },
     "battery_prediction_morning_soc": {
-        "name": "Predikce - stav baterie ráno",
+        "name": "Battery Morning SOC Prediction",
+        "name_cs": "Predikce - stav baterie ráno",
         "unit": PERCENTAGE,
         "icon": "mdi:battery-clock-outline",
         "device_class": SensorDeviceClass.BATTERY,
@@ -282,6 +285,7 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
     # Battery Prediction sensors
     "battery_forecast": {
         "name": "Battery Forecast",
+        "name_cs": "Predikce baterie",
         "icon": "mdi:battery-clock",
         "unit": UnitOfEnergy.KILO_WATT_HOUR,
         "device_class": SensorDeviceClass.ENERGY_STORAGE,

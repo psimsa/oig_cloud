@@ -11,7 +11,7 @@ import asyncio
 import voluptuous as vol
 from typing import Dict, List, Tuple, Optional, Any, Callable
 
-from .shared.logging import setup_otel_logging
+from .shared.logging import setup_simple_telemetry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,7 +58,6 @@ class ServiceShield:
     def _setup_telemetry(self) -> None:
         """Nastavit telemetrii pouze pro ServiceShield."""
         try:
-            from .shared.logging import setup_otel_logging
             import hashlib
 
             username = self.entry.data.get("username", "")
@@ -67,24 +66,11 @@ class ServiceShield:
                 self.hass.data["core.uuid"].encode("utf-8")
             ).hexdigest()
 
-            self._telemetry_handler = setup_otel_logging(email_hash, hass_id)
+            # Použijeme setup_simple_telemetry místo setup_otel_logging
+            self._telemetry_handler = setup_simple_telemetry(email_hash, hass_id)
 
-            # Nastavit i pro zpětnou kompatibilitu s _log_telemetry metodou
+            # Nastavit i pro zpětnou kompatibilitu
             self.telemetry_handler = self._telemetry_handler
-
-            # Připojit handler k ServiceShield loggeru
-            shield_logger = logging.getLogger(
-                "custom_components.oig_cloud.service_shield"
-            )
-            shield_logger.addHandler(self._telemetry_handler)
-            shield_logger.setLevel(logging.INFO)
-
-            # Vytvoříme i telemetry_logger pro zpětnou kompatibilitu
-            self.telemetry_logger = logging.getLogger(
-                "custom_components.oig_cloud.service_shield.telemetry"
-            )
-            self.telemetry_logger.addHandler(self._telemetry_handler)
-            self.telemetry_logger.setLevel(logging.INFO)
 
             self._logger.info("ServiceShield telemetry initialized successfully")
 
@@ -114,10 +100,10 @@ class ServiceShield:
                 },
             )
 
-    def _log_telemetry(
+    async def _log_telemetry(
         self, event_type: str, service_name: str, data: Optional[Dict[str, Any]] = None
     ) -> None:
-        """Log telemetry event."""
+        """Log telemetry event using SimpleTelemetry."""
         try:
             _LOGGER.debug(
                 f"[TELEMETRY DEBUG] Starting telemetry log: {event_type} for {service_name}"
@@ -127,47 +113,31 @@ class ServiceShield:
             )
 
             if self._telemetry_handler:
-                # Příprava shield_data pro extra field
-                shield_data: Dict[str, Any] = {
-                    "event_type": event_type,
-                    "service_name": service_name,
+                # Připravíme telemetrii data
+                telemetry_data: Dict[str, Any] = {
                     "timestamp": dt_now().isoformat(),
                     "component": "service_shield",
                 }
 
                 if data:
-                    shield_data.update(data)
+                    telemetry_data.update(data)
 
-                _LOGGER.debug(f"[TELEMETRY DEBUG] Shield data prepared: {shield_data}")
-
-                # OPRAVA: Vytvoříme LogRecord a pošleme přímo do handleru
-                message = f"ServiceShield {event_type}: {service_name}"
-
-                # Vytvoření custom log record
-                record = logging.LogRecord(
-                    name="custom_components.oig_cloud.telemetry",
-                    level=logging.INFO,
-                    pathname="",
-                    lineno=0,
-                    msg=message,
-                    args=(),
-                    exc_info=None,
+                _LOGGER.debug(
+                    f"[TELEMETRY DEBUG] Telemetry data prepared: {telemetry_data}"
                 )
 
-                # Přidání shield_data jako extra attribute
-                record.shield_data = shield_data
+                # Odešleme do SimpleTelemetry
+                await self._telemetry_handler.send_event(
+                    event_type=event_type,
+                    service_name=service_name,
+                    data=telemetry_data,
+                )
 
-                _LOGGER.debug(f"[TELEMETRY DEBUG] About to emit record to handler")
-
-                # OPRAVA: Pošleme přímo do handleru
-                self._telemetry_handler.emit(record)
-
-                _LOGGER.debug(f"[TELEMETRY DEBUG] Record emitted successfully")
+                _LOGGER.debug(f"[TELEMETRY DEBUG] Telemetry sent successfully")
             else:
                 _LOGGER.debug(f"[TELEMETRY DEBUG] No telemetry handler available!")
 
         except Exception as e:
-            # OPRAVA: Logujeme chybu místo tichého selhání
             _LOGGER.error(
                 f"[TELEMETRY DEBUG ERROR] Failed to log telemetry: {e}", exc_info=True
             )
@@ -378,7 +348,7 @@ class ServiceShield:
 
         new_expected_set = frozenset(expected_entities.items())
 
-        # 🚫 Je už ve frontě stejná služba se stejným cílem?
+        # ߚ렊e už ve frontě stejná služba se stejným cílem?
         if any(
             q[0] == service_name and frozenset(q[2].items()) == new_expected_set
             for q in self.queue
@@ -393,7 +363,7 @@ class ServiceShield:
                 reason="Ignorováno – služba se stejným efektem je již ve frontě",
                 context=context,
             )
-            self._log_telemetry(
+            await self._log_telemetry(
                 "ignored",
                 service_name,
                 {
@@ -422,7 +392,7 @@ class ServiceShield:
                 f"[INTERCEPT DEBUG] All entities already match - returning early"
             )
             # OPRAVA: Logujeme telemetrii i pro skipped požadavky
-            self._log_telemetry(
+            await self._log_telemetry(
                 "skipped",
                 service_name,
                 {
@@ -442,9 +412,10 @@ class ServiceShield:
             )
             return
 
-        # 🚀 Spustíme hned
+        # ߚࠓpustíme hned
         _LOGGER.info(f"[INTERCEPT DEBUG] Will execute service - logging telemetry")
-        self._log_telemetry(
+        # TELEMETRIE: Zde se odešle telemetrie při skutečném volání služby
+        await self._log_telemetry(
             "change_requested",
             service_name,
             {
@@ -492,7 +463,7 @@ class ServiceShield:
             "called_at": datetime.now(),
         }
 
-        # 🧹 Vymažeme metadata z fronty
+        # ߧ頖ymažeme metadata z fronty
         self.queue_metadata.pop((service_name, str(data)), None)
 
         await self._log_event(
@@ -532,8 +503,8 @@ class ServiceShield:
             if datetime.now() - info["called_at"] > timedelta(minutes=TIMEOUT_MINUTES):
                 _LOGGER.warning(f"[OIG Shield] Timeout pro službu {service_name}")
                 await self._log_event("timeout", service_name, info["params"])
-                # 📡 Telemetrie pro timeout
-                self._log_telemetry(
+                # ߓ᠔elemetrie pro timeout
+                await self._log_telemetry(
                     "timeout",
                     service_name,
                     {"params": info["params"], "entities": info["entities"]},
@@ -591,8 +562,8 @@ class ServiceShield:
                     },
                     reason="Změna provedena",
                 )
-                # 📡 Telemetrie pro dokončené požadavky
-                self._log_telemetry(
+                # ߓ᠔elemetrie pro dokončené požadavky
+                await self._log_telemetry(
                     "completed",
                     service_name,
                     {"params": info["params"], "entities": info["entities"]},
@@ -705,7 +676,7 @@ class ServiceShield:
             else:
                 message = f"{event_type} – {service}"
 
-            # 🪵 Log do HA logbooku
+            # ߪ堌og do HA logbooku
             self.hass.bus.async_fire(
                 "logbook_entry",
                 {
@@ -720,7 +691,7 @@ class ServiceShield:
                 context=context,
             )
 
-            # 📡 Emitujeme vlastní událost
+            # ߓ᠅mitujeme vlastní událost
             self.hass.bus.async_fire(
                 "oig_cloud_service_shield_event",
                 {
@@ -736,7 +707,7 @@ class ServiceShield:
                 context=context,
             )
 
-            # 🐞 Debug log do konzole
+            # ߐebug log do konzole
             _LOGGER.debug(
                 "[OIG Shield] Event: %s | Entity: %s | From: '%s' → To: '%s' | Reason: %s",
                 event_type,
@@ -1011,7 +982,16 @@ class ServiceShield:
                         "duration": time.time() - task_info["start_time"],
                     },
                 )
-                # ...existing code...
+                # TELEMETRIE: Úspěšné dokončení monitorování
+                self._log_security_event(
+                    "MONITORING_SUCCESS",
+                    {
+                        "task_id": task_id,
+                        "status": "completed",
+                        "duration": time.time() - task_info["start_time"],
+                    },
+                )
+                break
 
             # Check timeout
             if time.time() - task_info["start_time"] > task_info["timeout"]:
@@ -1024,7 +1004,16 @@ class ServiceShield:
                         "duration": task_info["timeout"],
                     },
                 )
-                # ...existing code...
+                # TELEMETRIE: Timeout monitorování
+                self._log_security_event(
+                    "MONITORING_TIMEOUT",
+                    {
+                        "task_id": task_id,
+                        "status": "timeout",
+                        "duration": task_info["timeout"],
+                    },
+                )
+                break
 
     async def cleanup(self) -> None:
         """Vyčistí ServiceShield při ukončení."""

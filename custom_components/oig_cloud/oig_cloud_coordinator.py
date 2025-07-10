@@ -391,7 +391,8 @@ class OigCloudCoordinator(DataUpdateCoordinator):
                             _LOGGER.debug(
                                 "Refreshing notification data with extended stats"
                             )
-                            await self.notification_manager.refresh_data()
+                            # OPRAVA: Použít správnou metodu pro aktualizaci notifikací
+                            await self.notification_manager.update_from_api()
                             _LOGGER.debug("Notification data updated successfully")
                         except Exception as e:
                             _LOGGER.debug(f"Notification data fetch failed: {e}")
@@ -433,7 +434,8 @@ class OigCloudCoordinator(DataUpdateCoordinator):
                     if should_refresh_notifications:
                         try:
                             _LOGGER.debug("Refreshing notification data (standalone)")
-                            await self.notification_manager.refresh_data()
+                            # OPRAVA: Použít správnou metodu pro aktualizaci notifikací
+                            await self.notification_manager.update_from_api()
                             self._last_notification_update = now
                             _LOGGER.debug(
                                 "Standalone notification data updated successfully"
@@ -526,42 +528,52 @@ class OigCloudCoordinator(DataUpdateCoordinator):
         return time_diff > self.extended_interval
 
     async def _update_battery_forecast(self) -> None:
-        """Aktualizuje battery forecast data."""
+        """Aktualizuje battery forecast data voláním metody na senzoru."""
         try:
-            # Najdeme battery forecast senzor a použijeme jeho logiku
+            # OPRAVA: Najdeme battery forecast senzor pomocí entity registry
             from homeassistant.helpers import entity_registry as er
 
             entity_reg = er.async_get(self.hass)
-
-            # Najdeme battery forecast entity
             entries = er.async_entries_for_config_entry(
                 entity_reg, self.config_entry.entry_id
             )
-            battery_forecast_entity = None
 
             for entry in entries:
                 if "battery_forecast" in entry.entity_id:
-                    battery_forecast_entity = self.hass.states.get(entry.entity_id)
-                    break
+                    # Najdeme skutečnou instanci entity v platform manageru
+                    sensor_platform = self.hass.data.get("sensor")
+                    if sensor_platform:
+                        entity = sensor_platform.get_entity(entry.entity_id)
+                        if entity and hasattr(entity, "async_update"):
+                            await entity.async_update()
+                            _LOGGER.debug("🔋 Battery forecast updated successfully")
+                            return
 
-            if battery_forecast_entity:
-                # Získáme senzor object a spustíme výpočet
-                from .oig_cloud_battery_forecast import OigCloudBatteryForecastSensor
-
-                # Vytvoříme dočasnou instanci pro výpočet
-                temp_sensor = OigCloudBatteryForecastSensor(
-                    self, "battery_forecast", self.config_entry
-                )
-                temp_sensor._hass = self.hass
-
-                # Spustíme výpočet
-                self.battery_forecast_data = (
-                    await temp_sensor._calculate_battery_forecast()
-                )
-                _LOGGER.debug("🔋 Battery forecast data updated in coordinator")
-            else:
-                _LOGGER.debug("🔋 Battery forecast entity not found")
+            # Fallback - pokud senzor nenajdeme, vytvoříme jednoduchá data
+            _LOGGER.debug(
+                "🔋 Battery forecast sensor not found, creating simple forecast"
+            )
+            self.battery_forecast_data = self._create_simple_battery_forecast()
 
         except Exception as e:
-            _LOGGER.error(f"🔋 Failed to update battery forecast in coordinator: {e}")
+            _LOGGER.error(f"🔋 Failed to update battery forecast: {e}")
             self.battery_forecast_data = None
+
+    def _create_simple_battery_forecast(self) -> Dict[str, Any]:
+        """Vytvoří jednoduchá forecast data když senzor není dostupný."""
+        current_time = dt_now()
+
+        # Základní data z koordinátoru
+        if self.data:
+            device_id = next(iter(self.data.keys()))
+            device_data = self.data.get(device_id, {})
+            battery_level = device_data.get("batt_bat_c", 0)
+        else:
+            battery_level = 0
+
+        return {
+            "calculation_time": current_time.isoformat(),
+            "current_battery_level": battery_level,
+            "forecast_available": False,
+            "simple_forecast": True,
+        }

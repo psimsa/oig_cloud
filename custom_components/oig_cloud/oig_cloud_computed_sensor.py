@@ -22,6 +22,26 @@ _LANGS: Dict[str, Dict[str, str]] = {
 class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
     def __init__(self, coordinator: Any, sensor_type: str) -> None:
         super().__init__(coordinator, sensor_type)
+
+        # OPRAVA: Nastavit _box_id a entity_id podle vzoru z OigCloudDataSensor
+        if coordinator.data:
+            self._box_id = list(coordinator.data.keys())[0]
+            self.entity_id = f"sensor.oig_{self._box_id}_{sensor_type}"
+        else:
+            self._box_id = "unknown"
+            self.entity_id = f"sensor.oig_{sensor_type}"
+
+        # OPRAVA: Přímý import SENSOR_TYPES místo neexistující funkce
+        from .sensor_types import SENSOR_TYPES
+
+        sensor_config = SENSOR_TYPES.get(sensor_type, {})
+
+        name_cs = sensor_config.get("name_cs")
+        name_en = sensor_config.get("name")
+
+        # Preferujeme český název, fallback na anglický, fallback na sensor_type
+        self._attr_name = name_cs or name_en or sensor_type
+
         self._last_update: Optional[datetime] = None
         self._attr_extra_state_attributes: Dict[str, Any] = {}
 
