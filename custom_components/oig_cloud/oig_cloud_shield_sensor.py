@@ -9,6 +9,25 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
+# OPRAVA: České překlady pro ServiceShield stavy
+SERVICESHIELD_STATE_TRANSLATIONS: Dict[str, str] = {
+    "active": "aktivní",
+    "idle": "nečinný",
+    "monitoring": "monitoruje",
+    "protecting": "chrání",
+    "disabled": "zakázán",
+    "error": "chyba",
+    "starting": "spouští se",
+    "stopping": "zastavuje se",
+    "unknown": "neznámý",
+    "unavailable": "nedostupný",
+}
+
+
+def translate_shield_state(state: str) -> str:
+    """Přeloží ServiceShield stav do češtiny."""
+    return SERVICESHIELD_STATE_TRANSLATIONS.get(state.lower(), state)
+
 
 class OigCloudShieldSensor(OigCloudSensor):
     """Senzor pro ServiceShield monitoring."""
@@ -91,10 +110,10 @@ class OigCloudShieldSensor(OigCloudSensor):
         try:
             shield = self.hass.data[DOMAIN].get("shield")
             if not shield:
-                return "unavailable"
+                return translate_shield_state("unavailable")
 
             if self._sensor_type == "service_shield_status":
-                return "active"
+                return translate_shield_state("active")
             elif self._sensor_type == "service_shield_queue":
                 # Celkový počet: čekající ve frontě + všechny pending služby
                 queue = getattr(shield, "queue", [])
@@ -105,13 +124,13 @@ class OigCloudShieldSensor(OigCloudSensor):
                 if running:
                     return running.replace("oig_cloud.", "")
                 else:
-                    return "idle"
+                    return translate_shield_state("idle")
 
         except Exception as e:
             _LOGGER.error(f"Error getting shield sensor state: {e}")
-            return None
+            return translate_shield_state("error")
 
-        return None
+        return translate_shield_state("unknown")
 
     @property
     def extra_state_attributes(self) -> Dict[str, Any]:

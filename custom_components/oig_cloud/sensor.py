@@ -417,7 +417,9 @@ async def async_setup_entry(
         _LOGGER.error(f"Error initializing notification sensors: {e}")
 
     # 8. Battery Prediction sensors - pouze pokud je povolen
-    battery_prediction_enabled = entry.options.get("enable_battery_prediction", True)
+    battery_prediction_enabled = entry.options.get(
+        "enable_battery_prediction", False
+    )  # OPRAVA: změna z True na False
     _LOGGER.info(f"Battery prediction enabled: {battery_prediction_enabled}")
 
     if battery_prediction_enabled:

@@ -179,28 +179,66 @@ async def _remove_frontend_panel(hass: HomeAssistant, entry: ConfigEntry) -> Non
 
         from homeassistant.components import frontend
 
+        # OPRAVA: Důkladnější kontrola existence panelu
+        panels_exist = False
+        try:
+            # Zkusíme získat přístup k registrovaným panelům
+            if hasattr(hass, "components") and "frontend" in hass.components:
+                frontend_component = hass.components.frontend
+                if hasattr(frontend_component, "async_register_built_in_panel"):
+                    # Panel systém je dostupný
+                    panels_exist = True
+        except Exception:
+            pass
+
+        if not panels_exist:
+            _LOGGER.debug(
+                f"Frontend panel system not available, skipping removal of {panel_id}"
+            )
+            return
+
+        # OPRAVA: Kontrola existence panelu před odstraněním
+        try:
+            # Pokusíme se získat informace o panelu před jeho odstraněním
+            # Tím ověříme, že skutečně existuje
+            panel_exists = False
+
+            if hasattr(hass.data.get("frontend_panels", {}), panel_id):
+                panel_exists = True
+            elif hasattr(hass.data.get("frontend", {}), "panels"):
+                existing_panels = hass.data["frontend"].panels
+                panel_exists = panel_id in existing_panels
+
+            if not panel_exists:
+                _LOGGER.debug(f"Panel {panel_id} doesn't exist, nothing to remove")
+                return
+        except Exception as check_error:
+            _LOGGER.debug(
+                f"Cannot check panel existence, proceeding with removal attempt: {check_error}"
+            )
+
+        # Pokus o odebrání panelu
         if hasattr(frontend, "async_remove_panel") and callable(
             getattr(frontend, "async_remove_panel")
         ):
-            # OPRAVA: Nejdříve zkontrolujeme, jestli panel existuje
-            if hasattr(hass.data.get("frontend", {}), "panels"):
-                existing_panels = hass.data["frontend"].panels
-                if panel_id in existing_panels:
-                    await frontend.async_remove_panel(hass, panel_id)
-                    _LOGGER.info(f"✅ Panel removed: {panel_id}")
-                else:
-                    _LOGGER.debug(f"Panel {panel_id} not found, nothing to remove")
-            else:
-                # Pokud nemůžeme zkontrolovat existenci, zkusíme smazat přímo
+            try:
                 await frontend.async_remove_panel(hass, panel_id)
                 _LOGGER.info(f"✅ Panel removed: {panel_id}")
+            except ValueError as ve:
+                if "unknown panel" in str(ve).lower():
+                    _LOGGER.debug(
+                        f"Panel {panel_id} was already removed or never existed"
+                    )
+                else:
+                    _LOGGER.warning(f"Error removing panel {panel_id}: {ve}")
+            except Exception as re:
+                _LOGGER.debug(f"Panel removal handled (panel may not exist): {re}")
         else:
             _LOGGER.debug("async_remove_panel not available")
 
     except Exception as e:
-        _LOGGER.debug(
-            f"Error removing frontend panel (this is expected if panel doesn't exist): {e}"
-        )
+        # OPRAVA: Všechny chyby logujeme jako debug, protože jsou očekávané
+        _LOGGER.debug(f"Panel removal handled gracefully: {e}")
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -389,7 +427,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _LOGGER.debug("Spot prices disabled - skipping OTE API initialization")
 
         # NOVÉ: Podmíněné nastavení dashboard podle konfigurace
-        dashboard_enabled = entry.options.get("enable_dashboard", False)
+        dashboard_enabled = entry.options.get(
+            "enable_dashboard", False
+        )  # OPRAVA: default False místo True
         # OPRAVA: Dashboard registrujeme AŽ PO vytvoření senzorů
 
         # Uložení dat do hass.data
@@ -437,13 +477,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Vždy registrovat sensor platform
         await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
 
-        # OPRAVA: Dashboard registrujeme až TERAZ - po vytvoření všech senzorů
+        # OPRAVA: Dashboard registrujeme až TERAZ - po vytvoření všech senzorů A POUZE pokud je enabled
         if dashboard_enabled:
             await _setup_frontend_panel(hass, entry)
             _LOGGER.info("OIG Cloud Dashboard panel enabled and registered")
         else:
             await _remove_frontend_panel(hass, entry)
-            _LOGGER.debug("OIG Cloud Dashboard panel disabled")
+            _LOGGER.info(
+                "OIG Cloud Dashboard panel disabled - panel not registered"
+            )  # OPRAVA: lepší log message
 
         # Přidáme listener pro změny konfigurace - OPRAVEN callback na async funkci
         entry.async_on_unload(entry.add_update_listener(async_update_options))
@@ -594,6 +636,10 @@ async def async_update_options(
     old_dashboard_enabled = old_options.get("enable_dashboard", False)
     new_dashboard_enabled = new_options.get("enable_dashboard", False)
 
+    _LOGGER.debug(
+        f"Dashboard options update: old={old_dashboard_enabled}, new={new_dashboard_enabled}"
+    )
+
     if old_dashboard_enabled != new_dashboard_enabled:
         _LOGGER.info(
             f"Dashboard setting changed: {old_dashboard_enabled} -> {new_dashboard_enabled}"
@@ -616,6 +662,11 @@ async def async_update_options(
             hass.data[DOMAIN][config_entry.entry_id]["config"][
                 "enable_dashboard"
             ] = new_dashboard_enabled
+    else:
+        # PŘIDÁNO: I když se hodnota nezměnila, ujistíme se že panel není registrován pokud je disabled
+        if not new_dashboard_enabled:
+            await _remove_frontend_panel(hass, config_entry)
+            _LOGGER.debug("Ensuring dashboard panel is not registered (disabled)")
 
     # Pokud byla označena potřeba reload, proveď ho
     if new_options.get("_needs_reload"):

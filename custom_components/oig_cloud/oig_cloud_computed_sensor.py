@@ -195,7 +195,11 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
                 usable = bat_p * 0.8
                 missing = bat_p * (1 - bat_c / 100)
                 remaining = usable - missing
-                if bat_power < 0:
+
+                # OPRAVA: Kontrola na plně nabitou baterii (100%)
+                if bat_c >= 100:
+                    return "Nabito"
+                elif bat_power < 0:
                     return self._format_time(remaining / abs(bat_power))
                 elif remaining == 0:
                     return "Vybito"

@@ -150,7 +150,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         ): bool,
         vol.Optional(
             "enable_dashboard",
-            default=True,
+            default=False,  # OPRAVA: změna z True na False
             description="Povolit webový dashboard s grafy",
         ): bool,  # NOVÉ: dashboard option
     }
@@ -222,6 +222,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     "enable_extended_fve_sensors": True,
                     "enable_extended_grid_sensors": True,
                     "disable_extended_stats_api": False,
+                    # OPRAVA: Explicitně zakázat battery prediction
+                    "enable_battery_prediction": False,
+                    # OPRAVA: Explicitně zakázat dashboard
+                    "enable_dashboard": user_input.get("enable_dashboard", False),
                 },
             )
 
@@ -436,7 +440,7 @@ class OigCloudOptionsFlowHandler(config_entries.OptionsFlow):
             step_id="extended_sensors",
             data_schema=vol.Schema(schema_fields),
             description_placeholders={
-                "current_state": "Povoleno" if extended_enabled else "Zakázáno",
+                "current_state": "Povolen" if extended_enabled else "Zakázáno",
                 "info": (
                     "⚠️ Rozšířené senzory jsou vypnuté - sub-moduly se aktivují po zapnutí"
                     if not extended_enabled
@@ -500,8 +504,8 @@ class OigCloudOptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(
                     "info_only",
                     default="back_to_menu",
-                    description="⚠️ MODUL VE VÝVOJI - Změny nejsou možné",
-                ): vol.In({"back_to_menu": "⬅️ Zpět do hlavního menu"})
+                    description="Modul ve vývoji - změny nejsou možné",
+                ): vol.In({"back_to_menu": "Zpět do hlavního menu"})
             }
         )
 
@@ -515,25 +519,7 @@ class OigCloudOptionsFlowHandler(config_entries.OptionsFlow):
                 "percentile": current_options.get("percentile_conf", 80.0),
                 "max_price": current_options.get("max_price_conf", 4.0),
                 "total_hours": current_options.get("total_hours", 24),
-                "dev_status": "🚧 MODUL VE VÝVOJI",
-                "info": (
-                    "⚠️ POUZE PRO ČTENÍ - MODUL VE VÝVOJI\n\n"
-                    "Predikce baterie je momentálně ve vývoji a není dostupná pro konfiguraci. "
-                    f"Aktuální stav: {('POVOLEN' if battery_enabled else 'ZAKÁZÁN')}"
-                    + (
-                        f"\n\nAktuální parametry:\n"
-                        f"• Min. kapacita: {current_options.get('min_capacity_percent', 20.0)}%\n"
-                        f"• Nabíjecí výkon: {current_options.get('home_charge_rate', 2800)}W\n"
-                        f"• Percentil: {current_options.get('percentile_conf', 80.0)}%\n"
-                        f"• Max. cena: {current_options.get('max_price_conf', 4.0)} CZK/kWh\n"
-                        f"• Horizont: {current_options.get('total_hours', 24)}h"
-                        if battery_enabled
-                        else ""
-                    )
-                ),
-                "requirements": "POŽADAVKY: Statistiky (📊) + Spotové ceny (💰) musí být zapnuté",
-                "features": "PLÁNOVANÉ FUNKCE: • Inteligentní plánování nabíjení • Optimalizace podle spotových cen • Predikce kapacity baterie • Automatické doporučení kdy nabíjet",
-                "timeline": "ČASOVÝ PLÁN: Modul bude dokončen v příští verzi integrace",
+                "info": "Predikce baterie je momentálně ve vývoji a není dostupná pro konfiguraci",
             },
         )
 
@@ -1444,8 +1430,8 @@ class OigCloudOptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(
                     "info_only",
                     default="back_to_menu",
-                    description="⚠️ MODUL VE VÝVOJI - Změny nejsou možné",
-                ): vol.In({"back_to_menu": "⬅️ Zpět do hlavního menu"})
+                    description="Modul ve vývoji - změny nejsou možné",
+                ): vol.In({"back_to_menu": "Zpět do hlavního menu"})
             }
         )
 
@@ -1454,15 +1440,6 @@ class OigCloudOptionsFlowHandler(config_entries.OptionsFlow):
             data_schema=schema,
             description_placeholders={
                 "current_state": ("Povolen" if dashboard_enabled else "Zakázán"),
-                "dev_status": "🚧 MODUL VE VÝVOJI",
-                "info": (
-                    "⚠️ POUZE PRO ČTENÍ - MODUL VE VÝVOJI\n\n"
-                    "Webový dashboard je momentálně ve vývoji a není dostupný pro konfiguraci. "
-                    f"Aktuální stav: {('POVOLEN' if dashboard_enabled else 'ZAKÁZÁN')}\n\n"
-                    "Dashboard bude automaticky dostupný v levém menu Home Assistant po dokončení vývoje."
-                ),
-                "features": "PLÁNOVANÉ FUNKCE:\n• Predikce kapacity baterie\n• Solární předpověď\n• Spotové ceny elektřiny\n• Interaktivní grafy s Apex Charts\n• Real-time monitoring\n• Exporty dat",
-                "timeline": "ČASOVÝ PLÁN: Dashboard bude dokončen v příští verzi integrace",
-                "access": "PŘÍSTUP: Po dokončení bude dostupný přes levé menu → 'OIG Dashboard'",
+                "info": "Webový dashboard je momentálně ve vývoji a není dostupný pro konfiguraci",
             },
         )

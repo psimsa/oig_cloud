@@ -169,7 +169,7 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "unit": UnitOfTime.HOURS,
         "icon": "mdi:battery-clock",
         "device_class": SensorDeviceClass.DURATION,
-        "sensor_type_category": "statistics",
+        "sensor_type_category": "battery_prediction",
     },
     "battery_prediction_needed_capacity": {
         "name": "Battery Needed Capacity Prediction",
@@ -178,7 +178,7 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "icon": "mdi:battery-plus",
         "device_class": SensorDeviceClass.ENERGY,
         "state_class": SensorStateClass.TOTAL,
-        "sensor_type_category": "statistics",
+        "sensor_type_category": "battery_prediction",
     },
     "battery_prediction_morning_soc": {
         "name": "Battery Morning SOC Prediction",
@@ -187,7 +187,7 @@ SENSOR_TYPES_STATISTICS: Dict[str, Dict[str, Any]] = {
         "icon": "mdi:battery-clock-outline",
         "device_class": SensorDeviceClass.BATTERY,
         "state_class": SensorStateClass.MEASUREMENT,
-        "sensor_type_category": "statistics",
+        "sensor_type_category": "battery_prediction",
     },
     # Hodinové reálné senzory - používají existující computed energy senzory
     "hourly_real_battery_charge_kwh": {
