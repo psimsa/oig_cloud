@@ -1,12 +1,10 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
-from homeassistant.const import EntityCategory
+from homeassistant.const import EntityCategory, UnitOfPower, UnitOfEnergy
 
+from typing import Dict, Any
 
-from typing import Dict
-
-
-SENSOR_TYPES_MISC: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClass]] = {
-     "device_lastcall": {
+SENSOR_TYPES_MISC: Dict[str, Dict[str, Any]] = {
+    "device_lastcall": {
         "name": "Last Call",
         "name_cs": "Poslední komunikace",
         "device_class": SensorDeviceClass.TIMESTAMP,
@@ -15,16 +13,27 @@ SENSOR_TYPES_MISC: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_key": "lastcall",
         "state_class": None,
         "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "data",
+    },
+    "real_data_update": {
+        "name": "Real Data Update",
+        "name_cs": "Skutečná aktualizace dat",
+        "device_class": SensorDeviceClass.TIMESTAMP,
+        "unit_of_measurement": None,
+        "state_class": None,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "computed",
     },
     "invertor_prm1_p_max_feed_grid": {
         "name": "Max Feed to Grid",
         "name_cs": "Maximální přetoky",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,
         "node_id": "invertor_prm1",
         "node_key": "p_max_feed_grid",
         "state_class": SensorStateClass.MEASUREMENT,
         "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "data",
     },
     "invertor_prms_to_grid": {
         "name": "Grid Delivery",
@@ -34,6 +43,94 @@ SENSOR_TYPES_MISC: Dict[str, Dict[str, str | SensorDeviceClass | SensorStateClas
         "node_id": "invertor_prms",
         "node_key": "to_grid",
         "state_class": None,
+        "entity_category": EntityCategory.DIAGNOSTIC,
         "options": ["Vypnuto / Off", "Zapnuto / On", "S omezením / Limited"],
+        "sensor_type_category": "data",
+    },
+    "installed_battery_capacity_kwh": {
+        "name": "Installed Battery Capacity",
+        "name_cs": "Baterie - instalovaná kapacita",
+        "device_class": SensorDeviceClass.ENERGY,
+        "unit_of_measurement": UnitOfEnergy.WATT_HOUR,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "node_id": "box_prms",
+        "node_key": "p_bat",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "data",
+    },
+    "installed_fve_power_wp": {
+        "name": "Installed FVE Power",
+        "name_cs": "FVE - Instalovaný výkon",
+        "device_class": SensorDeviceClass.POWER,
+        "unit_of_measurement": "Wp",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "node_id": "box_prms",
+        "node_key": "p_fve",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "data",
+    },
+    "box_prms_crct": {
+        "name": "Distribution Emergency Control",
+        "name_cs": "Krizové ovládání distribuce",
+        "device_class": SensorDeviceClass.ENUM,
+        "unit_of_measurement": None,
+        "state_class": None,
+        "node_id": "box_prms",
+        "node_key": "crct",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "options": ["Vypnuto / Off", "Zapnuto / On"],
+        "sensor_type_category": "data",
+    },
+    # Notification sensors - nová kategorie
+    "latest_notification": {
+        "name": "Latest Notification",
+        "name_cs": "Poslední notifikace",
+        "device_class": None,
+        "unit_of_measurement": None,
+        "state_class": None,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "notification",
+        "icon": "mdi:bell",
+    },
+    "bypass_status": {
+        "name": "Bypass Status",
+        "name_cs": "Stav bypassu",
+        "device_class": SensorDeviceClass.ENUM,
+        "unit_of_measurement": None,
+        "state_class": None,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "options": ["Ne", "Ano"],
+        "sensor_type_category": "notification",
+        "icon": "mdi:power-settings",
+    },
+    "notification_count_error": {
+        "name": "Error Notifications Count",
+        "name_cs": "Počet chybových notifikací",
+        "device_class": None,
+        "unit_of_measurement": "notifications",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "notification",
+        "icon": "mdi:alert-circle",
+    },
+    "notification_count_warning": {
+        "name": "Warning Notifications Count",
+        "name_cs": "Počet varovných notifikací",
+        "device_class": None,
+        "unit_of_measurement": "notifications",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "notification",
+        "icon": "mdi:alert",
+    },
+    "notification_count_unread": {
+        "name": "Unread Notifications Count",
+        "name_cs": "Počet nepřečtených notifikací",
+        "device_class": None,
+        "unit_of_measurement": "notifications",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "notification",
+        "icon": "mdi:bell-badge",
     },
 }

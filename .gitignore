@@ -178,3 +178,4 @@ blueprints/
 /.vs
 /wslvenv
 custom_components/oig_cloud/sensor_dump.json
+.DS_Store

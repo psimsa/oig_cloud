@@ -4,18 +4,288 @@
       "already_configured": "Zařízení je již nakonfigurováno"
     },
     "error": {
-      "cannot_connect": "Nepodařilo se připojit",
-      "invalid_auth": "Neplatné přihlašovací údaje",
-      "unknown": "Neočekávaná chyba"
+      "cannot_connect": "Nelze se připojit k OIG Cloud",
+      "invalid_auth": "Nesprávné přihlašovací údaje",
+      "unknown": "Neočekávaná chyba",
+      "invalid_coordinates": "Neplatné GPS souřadnice - zkontrolujte zeměpisnou šířku a délku",
+      "api_key_required_for_frequent_updates": "Pro režimy 'Každé 4 hodiny' a 'Každou hodinu' je potřeba zadat API klíč",
+      "no_strings_enabled": "Je potřeba zapnout alespoň jeden string panelů (String 1 nebo String 2)",
+      "invalid_kwp": "Výkon musí být mezi 0.1 a 15 kWp",
+      "invalid_declination": "Sklon panelů musí být mezi 0° (horizontálně) a 90° (vertikálně)",
+      "invalid_azimuth": "Orientace musí být mezi 0° a 360° (0°=sever, 180°=jih)",
+      "invalid_string1_params": "Zkontrolujte parametry String 1 - výkon, sklon a orientaci",
+      "invalid_string2_params": "Zkontrolujte parametry String 2 - výkon, sklon a orientaci",
+      "invalid_battery_params": "Zkontrolujte parametry battery prediction",
+      "invalid_capacity": "Minimální kapacita baterie musí být mezi 0% a 100%",
+      "invalid_charge_rate": "Nabíjecí výkon musí být mezi 1W a 10000W",
+      "invalid_percentile": "Percentil pro špičku musí být mezi 10% a 100%",
+      "invalid_hours": "Doba predikce musí být mezi 12 a 48 hodin",
+      "invalid_latitude": "Zeměpisná šířka musí být mezi -90° a 90°",
+      "invalid_longitude": "Zeměpisná délka musí být mezi -180° a 180°",
+      "invalid_spot_pricing_config": "Neplatná konfigurace spotových cen",
+      "invalid_positive_fee": "Poplatek pro kladné ceny musí být větší než 0%",
+      "invalid_negative_fee": "Poplatek pro záporné ceny musí být větší než 0%",
+      "invalid_fixed_fee": "Fixní poplatek musí být větší než 0 CZK/MWh",
+      "invalid_distribution_fee": "Distribuční poplatek nesmí být záporný",
+      "invalid_fixed_price": "Fixní cena musí být větší než 0 CZK/kWh",
+      "invalid_hour_range": "Hodiny musí být v rozsahu 0-23",
+      "invalid_hour_format": "Neplatný formát hodin. Použijte čárku jako oddělovač (např. 22,6)"
     },
     "step": {
       "user": {
-        "title": "Přihlášení do OIG",
-        "description": "Zadejte své přihlašovací jméno/e-mail a heslo pro přihlášení do OIG",
+        "title": "OIG Cloud - Čez Battery Box",
+        "description": "Připojte svou Čez Battery Box k Home Assistant",
         "data": {
-          "no_telemetry": "Zakázat sběr telemetrie (funkce v aktivním vývoji mohou být omezeny)",
+          "username": "E-mail / Uživatelské jméno",
           "password": "Heslo",
-          "username": "Přihlašovací jméno nebo e-mail"
+          "enable_solar_forecast": "Povolit solární předpověď",
+          "enable_statistics": "Povolit statistiky a analýzy",
+          "enable_pricing": "Povolit cenové senzory",
+          "enable_spot_prices": "Povolit spotové ceny elektřiny",
+          "enable_extended_sensors": "Povolit rozšířené senzory",
+          "enable_dashboard": "Povolit webový dashboard"
+        }
+      },
+      "menu": {
+        "title": "Konfigurace OIG Cloud",
+        "description": "Vyberte, co chcete konfigurovat",
+        "menu_options": {
+          "basic_config": "⚙️ Základní nastavení",
+          "extended_sensors": "📊 Rozšířené senzory",
+          "solar_forecast": "☀️ Předpověď výroby",
+          "statistics_config": "📈 Statistiky a analýzy",
+          "battery_prediction": "🔋 Chytré nabíjení",
+          "pricing_config": "💰 Cenové senzory",
+          "dashboard_config": "📈 Webový dashboard"
+        }
+      }
+    }
+  },
+  "options": {
+    "error": {
+      "cannot_connect": "Nelze se připojit k OIG Cloud",
+      "invalid_auth": "Nesprávné přihlašovací údaje",
+      "unknown": "Neočekávaná chyba",
+      "invalid_coordinates": "Neplatné GPS souřadnice - zkontrolujte zeměpisnou šířku a délku",
+      "api_key_required_for_frequent_updates": "Pro režimy 'Každé 4 hodiny' a 'Každou hodinu' je potřeba zadat API klíč",
+      "no_strings_enabled": "Je potřeba zapnout alespoň jeden string panelů (String 1 nebo String 2)",
+      "invalid_kwp": "Výkon musí být mezi 0.1 a 15 kWp",
+      "invalid_declination": "Sklon panelů musí být mezi 0° (horizontálně) a 90° (vertikálně)",
+      "invalid_azimuth": "Orientace musí být mezi 0° a 360° (0°=sever, 180°=jih)",
+      "invalid_string1_params": "Zkontrolujte parametry String 1 - výkon, sklon a orientaci",
+      "invalid_string2_params": "Zkontrolujte parametry String 2 - výkon, sklon a orientaci",
+      "invalid_battery_params": "Zkontrolujte parametry battery prediction",
+      "invalid_capacity": "Minimální kapacita baterie musí být mezi 0% a 100%",
+      "invalid_charge_rate": "Nabíjecí výkon musí být mezi 1W a 10000W",
+      "invalid_percentile": "Percentil pro špičku musí být mezi 10% a 100%",
+      "invalid_hours": "Doba predikce musí být mezi 12 a 48 hodin",
+      "invalid_latitude": "Zeměpisná šířka musí být mezi -90° a 90°",
+      "invalid_longitude": "Zeměpisná délka musí být mezi -180° a 180°",
+      "invalid_spot_pricing_config": "Neplatná konfigurace spotových cen",
+      "invalid_positive_fee": "Poplatek pro kladné ceny musí být větší než 0%",
+      "invalid_negative_fee": "Poplatek pro záporné ceny musí být větší než 0%",
+      "invalid_fixed_fee": "Fixní poplatek musí být větší než 0 CZK/MWh",
+      "invalid_distribution_fee": "Distribuční poplatek nesmí být záporný",
+      "invalid_fixed_price": "Fixní cena musí být větší než 0 CZK/kWh",
+      "invalid_hour_range": "Hodiny musí být v rozsahu 0-23",
+      "invalid_hour_format": "Neplatný formát hodin. Použijte čárku jako oddělovač (např. 22,6)"
+    },
+    "step": {
+      "menu": {
+        "title": "Konfigurace OIG Cloud",
+        "description": "Vyberte, co chcete konfigurovat",
+        "menu_options": {
+          "basic_config": "⚙️ Základní nastavení",
+          "extended_sensors": "📊 Rozšířené senzory",
+          "solar_forecast": "☀️ Předpověď výroby",
+          "statistics_config": "📈 Statistiky a analýzy",
+          "battery_prediction": "🔋 Chytré nabíjení",
+          "pricing_config": "💰 Cenové senzory",
+          "dashboard_config": "📈 Webový dashboard"
+        }
+      },
+      "init": {
+        "title": "🔧 Pokročilé funkce OIG Cloud",
+        "description": "Nastavte základní interval a povolte dodatečné funkce podle potřeb. ⚠️ Změna intervalu vyžaduje restart integrace.",
+        "data": {
+          "standard_scan_interval": "⏱️ Interval aktualizace (sekundy)",
+          "enable_statistics": "📊 Statistiky a analýzy",
+          "enable_extended_sensors": "🔧 Rozšířené senzory (vyžaduje nastavení)",
+          "enable_solar_forecast": "☀️ Solární předpověď (vyžaduje nastavení)",
+          "enable_pricing": "💰 Cenové informace (vyžaduje nastavení)",
+          "solar_forecast_mode": "🌞 Režim aktualizace"
+        },
+        "data_description": {
+          "standard_scan_interval": "Jak často aktualizovat základní data (doporučeno 30s, restart integrace po změně)",
+          "enable_statistics": "Medián spotřeby, predikce baterie, analýzy podle času",
+          "enable_extended_sensors": "Po zaškrtnutí budete vyzváni k nastavení intervalů a typů",
+          "enable_solar_forecast": "Po zaškrtnutí budete vyzváni k zadání API klíče a parametrů FVE",
+          "enable_pricing": "Po zaškrtnutí budete vyzváni k zadání vašich tarifů",
+          "solar_forecast_mode": "Jak často aktualizovat solární předpověď"
+        }
+      },
+      "extended_config": {
+        "title": "🔧 Konfigurace rozšířených senzorů",
+        "description": "Nastavte interval aktualizace a vyberte typy rozšířených senzorů. Tyto senzory poskytují detailní technické informace.",
+        "data": {
+          "extended_scan_interval": "⏱️ Interval aktualizace",
+          "enable_extended_battery_sensors": "🔋 Rozšířené údaje o baterii",
+          "enable_extended_fve_sensors": "☀️ Rozšířené údaje o FVE",
+          "enable_extended_grid_sensors": "⚡ Rozšířené údaje o síti"
+        },
+        "data_description": {
+          "extended_scan_interval": "Jak často načítat rozšířená data (doporučeno 300s)",
+          "enable_extended_battery_sensors": "Napětí, proudy, teplota a detailní stav baterie",
+          "enable_extended_fve_sensors": "Výkon a proudy jednotlivých stringů fotovoltaiky",
+          "enable_extended_grid_sensors": "Napětí, frekvence a výkon jednotlivých fází sítě"
+        }
+      },
+      "solar_forecast": {
+        "title": "☀️ Předpověď výroby FVE",
+        "description": "Aktuálně {current_state}. Režim: {current_mode}",
+        "data": {
+          "enable_solar_forecast": "Povolit solar forecast",
+          "solar_forecast_mode": "Režim aktualizace",
+          "solar_forecast_api_key": "Forecast.Solar API klíč (volitelné)",
+          "solar_forecast_latitude": "Zeměpisná šířka",
+          "solar_forecast_longitude": "Zeměpisná délka",
+          "solar_forecast_string1_enabled": "Povolit String 1",
+          "solar_forecast_string1_kwp": "String 1 - Výkon (kWp)",
+          "solar_forecast_string1_declination": "String 1 - Sklon (°)",
+          "solar_forecast_string1_azimuth": "String 1 - Azimut (°)",
+          "solar_forecast_string2_enabled": "Povolit String 2",
+          "solar_forecast_string2_kwp": "String 2 - Výkon (kWp)",
+          "solar_forecast_string2_declination": "String 2 - Sklon (°)",
+          "solar_forecast_string2_azimuth": "String 2 - Azimut (°)"
+        },
+        "data_description": {
+          "enable_solar_forecast": "Povolit solární předpověď pro optimalizaci baterie a predikce výroby",
+          "solar_forecast_mode": "Jak často aktualizovat solární předpověď",
+          "solar_forecast_api_key": "API klíč pro forecast.solar (volitelné, zvýší limity)",
+          "solar_forecast_latitude": "GPS zeměpisná šířka vaší FVE (-90 až 90)",
+          "solar_forecast_longitude": "GPS zeměpisná délka vaší FVE (-180 až 180)",
+          "solar_forecast_string1_enabled": "Zapnout první string panelů (musí být alespoň jeden)",
+          "solar_forecast_string1_kwp": "Instalovaný výkon 1. stringu v kWp",
+          "solar_forecast_string1_declination": "Sklon panelů 1. stringu od horizontály (0-90°)",
+          "solar_forecast_string1_azimuth": "Orientace panelů 1. stringu (0°=sever, 90°=východ, 180°=jih, 270°=západ)",
+          "solar_forecast_string2_enabled": "Zapnout druhý string panelů (volitelné)",
+          "solar_forecast_string2_kwp": "Instalovaný výkon 2. stringu v kWp",
+          "solar_forecast_string2_declination": "Sklon panelů 2. stringu od horizontály (0-90°)",
+          "solar_forecast_string2_azimuth": "Orientace panelů 2. stringu (0°=sever, 90°=východ, 180°=jih, 270°=západ)"
+        }
+      },
+      "basic_config": {
+        "title": "⚙️ Základní nastavení",
+        "description": "Konfigurace základních parametrů integrace",
+        "data": {
+          "standard_scan_interval": "Interval aktualizace základních dat (sekundy)",
+          "username": "Uživatelské jméno / E-mail",
+          "password": "Heslo"
+        },
+        "data_description": {
+          "standard_scan_interval": "Jak často načítat základní data z OIG Cloud (doporučeno 20-30s)",
+          "username": "E-mail nebo uživatelské jméno pro přihlášení do OIG Cloud",
+          "password": "Heslo pro OIG Cloud (pokud necháte prázdné, heslo se nezmění)"
+        }
+      },
+      "extended_sensors": {
+        "title": "📊 Rozšířené senzory",
+        "description": "Aktuálně {current_state}",
+        "data": {
+          "enable_extended_sensors": "Povolit rozšířené senzory",
+          "extended_scan_interval": "⏱️ Interval aktualizace rozšířených senzorů (sekundy)",
+          "disable_extended_stats_api": "🚫 Vypnout API volání extended stats",
+          "enable_extended_battery_sensors": "🔋 Rozšířené údaje o baterii",
+          "enable_extended_fve_sensors": "☀️ Rozšířené údaje o FVE",
+          "enable_extended_grid_sensors": "⚡ Rozšířené údaje o síti"
+        },
+        "data_description": {
+          "enable_extended_sensors": "Povolit rozšířené senzory pro detailní monitoring systému",
+          "extended_scan_interval": "Jak často načítat rozšířená data (vyšší hodnota = menší zátěž serveru)",
+          "disable_extended_stats_api": "Pokud máte problémy s HTTP 500 chybami, vypněte extended stats API",
+          "enable_extended_battery_sensors": "Napětí článků, proudy, teplota a detailní stav baterie",
+          "enable_extended_fve_sensors": "Výkon a proudy jednotlivých stringů fotovoltaiky",
+          "enable_extended_grid_sensors": "Napětí L1/L2/L3, frekvence sítě, výkon po fázích"
+        }
+      },
+      "statistics_config": {
+        "title": "📈 Statistiky a analýzy",
+        "description": "Aktuálně {current_state}",
+        "data": {
+          "enable_statistics": "Povolit statistické senzory",
+          "reconfigure_statistics": "Rekonfigurovat statistics (vymaže stará data)"
+        },
+        "data_description": {
+          "enable_statistics": "Medián spotřeby podle času, predikce baterie, analýzy spotřeby",
+          "reconfigure_statistics": "⚠️ Vymaže všechna uložená historická data a začne znovu"
+        }
+      },
+      "battery_prediction": {
+        "title": "🔋 Chytré nabíjení baterie",
+        "description": "Aktuálně {current_state}. Min. kapacita: {min_capacity}%, Nabíjecí výkon: {charge_rate}W",
+        "data": {
+          "enable_battery_prediction": "Povolit battery prediction",
+          "min_capacity_percent": "Minimální kapacita baterie (%)",
+          "home_charge_rate": "Nabíjecí výkon z sítě (W)",
+          "percentile_conf": "Percentil pro určení špičky (%)",
+          "max_price_conf": "Maximální cena pro nabíjení (CZK/kWh)",
+          "total_hours": "Počet hodin pro predikci"
+        },
+        "data_description": {
+          "enable_battery_prediction": "Inteligentní plánování nabíjení na základě spotových cen a spotřeby",
+          "min_capacity_percent": "Pod touto úrovní se spustí nabíjení ze sítě (doporučeno 15-25%)",
+          "home_charge_rate": "Maximální nabíjecí výkon vašeho systému ze sítě",
+          "percentile_conf": "Hodnoty nad tímto percentilem se považují za špičku (doporučeno 75-85%)",
+          "max_price_conf": "Nikdy nenabíjet ze sítě, pokud je cena vyšší než tato hodnota",
+          "total_hours": "Jak daleko do budoucna plánovat nabíjení (doporučeno 24-48h)"
+        }
+      },
+      "pricing_config": {
+        "title": "💰 Spotové ceny elektřiny",
+        "description": "Konfigurace spotových cen a výpočtu finálních cen elektřiny\n\nAktuální stav: {current_state}\n{info}",
+        "data": {
+          "enable_spot_prices": "Povolit spotové ceny elektřiny z OTE",
+          "spot_pricing_model": "Model výpočtu obchodní ceny",
+          "spot_positive_fee_percent": "Obchodní přirážka při kladné ceně (%)",
+          "spot_negative_fee_percent": "Obchodní přirážka při záporné ceně (%)",
+          "spot_fixed_fee_mwh": "Fixní obchodní poplatek (CZK/MWh)",
+          "fixed_commercial_price_vt": "Fixní obchodní cena VT (CZK/kWh)",
+          "fixed_commercial_price_nt": "Fixní obchodní cena NT (CZK/kWh)",
+          "dual_tariff_enabled": "Dvoutarifní sazba (VT/NT)",
+          "distribution_fee_vt_kwh": "Distribuční poplatek VT (CZK/kWh)",
+          "distribution_fee_nt_kwh": "Distribuční poplatek NT (CZK/kWh)",
+          "tariff_nt_start_weekday": "Začátky NT tarifu - pracovní dny",
+          "tariff_vt_start_weekday": "Začátky VT tarifu - pracovní dny",
+          "tariff_nt_start_weekend": "Začátky NT tarifu - víkend",
+          "tariff_vt_start_weekend": "Začátky VT tarifu - víkend",
+          "vat_rate": "Sazba DPH (%)"
+        },
+        "data_description": {
+          "enable_spot_prices": "Stahování a zpracování spotových cen elektřiny z OTE každý den ve 13:00",
+          "spot_pricing_model": "Jak se počítá obchodní cena z hrubé spotové ceny nebo použití fixních cen",
+          "spot_positive_fee_percent": "Při kladné spotové ceně: cena × (1 + procento/100). Např. 15% = cena × 1,15",
+          "spot_negative_fee_percent": "Při záporné spotové ceně: cena × (1 - procento/100). Např. 9% = cena × 0,91",
+          "spot_fixed_fee_mwh": "Konstantní poplatek v CZK za MWh přičtený ke spotové ceně",
+          "fixed_commercial_price_vt": "Fixní obchodní cena pro vysoký tarif v CZK/kWh ⚠️ ZADÁVEJTE BEZ DPH!",
+          "fixed_commercial_price_nt": "Fixní obchodní cena pro nízký tarif v CZK/kWh ⚠️ ZADÁVEJTE BEZ DPH!",
+          "dual_tariff_enabled": "Povolit dvoutarifní sazbu (VT/NT). Pokud ne, bude se používat pouze VT sazba",
+          "distribution_fee_vt_kwh": "Distribuční poplatek pro vysoký tarif v CZK/kWh ⚠️ ZADÁVEJTE BEZ DPH!",
+          "distribution_fee_nt_kwh": "Distribuční poplatek pro nízký tarif v CZK/kWh ⚠️ ZADÁVEJTE BEZ DPH!",
+          "tariff_nt_start_weekday": "Začátky NT tarifu v pracovní dny (pondělí-pátek), hodiny oddělené čárkou. Např: '22,2' = 22:00-6:00 a 2:00-6:00",
+          "tariff_vt_start_weekday": "Začátky VT tarifu v pracovní dny (pondělí-pátek), hodiny oddělené čárkou. Např: '6' = 6:00-22:00",
+          "tariff_nt_start_weekend": "Začátky NT tarifu o víkendu (sobota-neděle), hodiny oddělené čárkou. Např: '0' = celý víkend NT",
+          "tariff_vt_start_weekend": "Začátky VT tarifu o víkendu (sobota-neděle), hodiny oddělené čárkou. Prázdné = žádný VT o víkendu",
+          "vat_rate": "Sazba daně z přidané hodnoty v procentech (obvykle 21%)"
+        }
+      },
+      "dashboard_config": {
+        "title": "📈 Webový dashboard",
+        "description": "Aktuálně {current_state}",
+        "data": {
+          "enable_dashboard": "Povolit webový dashboard"
+        },
+        "data_description": {
+          "enable_dashboard": "Povolit webový dashboard s interaktivními grafy pro predikci baterie, solární předpověď a spotové ceny"
         }
       }
     }
@@ -67,19 +337,42 @@
       "Acknowledgement": {
         "description": "Beru na vědomí, že volání této služby povede ke změně parametrů živého systému. Přijímám plnou odpovědnost za změny a jakýkoli jejich očekávaný či neočekávaný dopad."
       }
+    },
+    "solar_forecast_mode": {
+      "options": {
+        "manual": "🔧 Pouze na vyžádání",
+        "hourly": "⏰ Každou hodinu",
+        "every_4h": "🕐 Každé 4 hodiny",
+        "daily": "📅 Jednou denně"
+      }
     }
   },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Konfigurace",
-        "description": "Nastavení integrace OIG Cloud",
-        "data": {
-          "update_interval": "Interval aktualizace (vteřiny)",
-          "no_telemetry": "Zakázat telemetrii (odhlášení ze sběru dat)",
-          "log_level": "Úroveň protokolování"
+  "services": {
+    "fetch_solar_forecast": {
+      "name": "🌞 Aktualizovat solární předpověď",
+      "description": "Manuálně načte nejnovější data solární předpovědi z API pro ladění a testování",
+      "fields": {
+        "entity_id": {
+          "name": "Solar forecast senzor",
+          "description": "Vyberte konkrétní solar forecast senzor k aktualizaci (volitelné)"
         }
       }
+    },
+    "set_box_mode": {
+      "name": "Nastavit režim Battery Box",
+      "description": "Změní provozní režim zařízení Battery Box"
+    },
+    "set_grid_delivery": {
+      "name": "Nastavit přetoky do sítě",
+      "description": "Povolí nebo zakáže přetoky energie do distribuční sítě"
+    },
+    "set_boiler_mode": {
+      "name": "Nastavit režim bojleru",
+      "description": "Změní způsob řízení nabíjení bojleru"
+    },
+    "set_formating_mode": {
+      "name": "Nabíjení baterie ze sítě",
+      "description": "Spustí okamžité nabíjení baterie ze sítě"
     }
   }
 }
