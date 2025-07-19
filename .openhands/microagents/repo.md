@@ -3,7 +3,7 @@
 # OIG Cloud Repository Summary
 
 ## Purpose
-This repository provides a Home Assistant integration for Čez Battery Box systems via OIG Cloud. The integration allows users to:
+This repository provides a Home Assistant integration for ČEZ Battery Box systems via OIG Cloud. The integration allows users to:
 - Monitor battery status, production, consumption, and historical data
 - Set operating modes and regulate grid overflow
 - Integrate with Home Assistant's Energy dashboard
