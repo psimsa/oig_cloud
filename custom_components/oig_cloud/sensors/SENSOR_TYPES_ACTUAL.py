@@ -84,4 +84,14 @@ SENSOR_TYPES_ACTUAL: Dict[str, Dict[str, Any]] = {
         "state_class": SensorStateClass.MEASUREMENT,
         "sensor_type_category": "computed",
     },
+    "actual_viz": {
+        "name": "viz",
+        "name_cs": "viz",
+        "device_class": None,
+        "unit_of_measurement": None,
+        "node_id": "actual",
+        "node_key": "viz",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "sensor_type_category": "data",
+    },
 }

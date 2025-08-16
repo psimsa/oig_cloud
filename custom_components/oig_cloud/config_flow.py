@@ -183,7 +183,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
                     ote_api = OteApi()
                     test_data = await ote_api.get_spot_prices()
-                    await ote_api.close()
+                    # OPRAVA: Odebrání neexistující close() metody - OteApi používá aiohttp session který se spravuje automaticky
                     if not test_data:
                         _LOGGER.warning("OTE API test failed, but continuing")
                 except Exception as e:

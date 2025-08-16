@@ -24,9 +24,7 @@ try:
     tracer = trace.get_tracer(__name__)
     _has_opentelemetry = True
 except ImportError:
-    _logger.warning(
-        "OpenTelemetry není nainstalován. Pro povolení telemetrie je nutné ručně nainstalovat balíček: pip install opentelemetry-exporter-otlp-proto-grpc==1.31.0"
-    )
+    _logger.debug("OpenTelemetry not available - using ServiceShield telemetry instead")
     tracer = None  # type: ignore
     SpanKind = None  # type: ignore
     _has_opentelemetry = False
@@ -92,11 +90,7 @@ class OigCloudApi:
 
     async def authenticate(self) -> bool:
         """Authenticate with the OIG Cloud API."""
-        if _has_opentelemetry and tracer:
-            with tracer.start_as_current_span("authenticate") as span:
-                return await self._authenticate_internal()
-        else:
-            return await self._authenticate_internal()
+        return await self._authenticate_internal()
 
     async def _authenticate_internal(self) -> bool:
         """Internal authentication method with proper error handling."""
@@ -155,11 +149,7 @@ class OigCloudApi:
                 self._logger.debug("Using cached stats")
                 return self.last_state
 
-            if _has_opentelemetry and tracer:
-                with tracer.start_as_current_span("get_stats") as span:
-                    return await self._get_stats_internal()
-            else:
-                return await self._get_stats_internal()
+            return await self._get_stats_internal()
 
     async def _get_stats_internal(self) -> Optional[Dict[str, Any]]:
         """Internal get stats method with proper error handling."""
@@ -221,181 +211,168 @@ class OigCloudApi:
 
     async def set_box_mode(self, mode: str) -> bool:
         """Set box mode (Home 1, Home 2, etc.)."""
-        if _has_opentelemetry and tracer:
-            with tracer.start_as_current_span("set_mode") as span:
-                try:
-                    self._logger.debug(f"Setting box mode to {mode}")
-                    return await self.set_box_params_internal("box_prms", "mode", mode)
-                except Exception as e:
-                    self._logger.error(f"Error: {e}", stack_info=True)
-                    raise e
-        else:
-            try:
-                self._logger.debug(f"Setting box mode to {mode}")
-                return await self.set_box_params_internal("box_prms", "mode", mode)
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
+        try:
+            self._logger.debug(f"Setting box mode to {mode}")
+            return await self.set_box_params_internal("box_prms", "mode", mode)
+        except Exception as e:
+            self._logger.error(f"Error: {e}", stack_info=True)
+            raise e
 
     async def set_grid_delivery_limit(self, limit: int) -> bool:
         """Set grid delivery limit."""
-        if _has_opentelemetry and tracer:
-            with tracer.start_as_current_span("set_grid_delivery_limit") as span:
-                try:
-                    self._logger.debug(f"Setting grid delivery limit to {limit}")
-                    return await self.set_box_params_internal(
-                        "invertor_prm1", "p_max_feed_grid", str(limit)
-                    )
-                except Exception as e:
-                    self._logger.error(f"Error: {e}", stack_info=True)
-                    raise e
-        else:
-            try:
-                self._logger.debug(f"Setting grid delivery limit to {limit}")
-                return await self.set_box_params_internal(
-                    "invertor_prm1", "p_max_feed_grid", str(limit)
-                )
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
+        try:
+            self._logger.debug(f"Setting grid delivery limit to {limit}")
+            return await self.set_box_params_internal(
+                "invertor_prm1", "p_max_feed_grid", str(limit)
+            )
+        except Exception as e:
+            self._logger.error(f"Error: {e}", stack_info=True)
+            raise e
 
     async def set_boiler_mode(self, mode: str) -> bool:
         """Set boiler mode."""
-        if _has_opentelemetry and tracer:
-            with tracer.start_as_current_span("set_boiler_mode") as span:
-                try:
-                    self._logger.debug(f"Setting boiler mode to {mode}")
-                    return await self.set_box_params_internal(
-                        "boiler_prms", "manual", mode
-                    )
-                except Exception as e:
-                    self._logger.error(f"Error: {e}", stack_info=True)
-                    raise e
-        else:
-            try:
-                self._logger.debug(f"Setting boiler mode to {mode}")
-                return await self.set_box_params_internal("boiler_prms", "manual", mode)
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
+        try:
+            self._logger.debug(f"Setting boiler mode to {mode}")
+            return await self.set_box_params_internal("boiler_prms", "manual", mode)
+        except Exception as e:
+            self._logger.error(f"Error: {e}", stack_info=True)
+            raise e
 
     async def set_ssr_rele_1(self, mode: str) -> bool:
         """Set SSR relay 1 mode."""
-        if _has_opentelemetry and tracer:
-            with tracer.start_as_current_span("set_ssr_rele_1") as span:
-                try:
-                    self._logger.debug(f"Setting SSR 1 to {mode}")
-                    return await self.set_box_params_internal(
-                        "boiler_prms", "ssr0", mode
-                    )
-                except Exception as e:
-                    self._logger.error(f"Error: {e}", stack_info=True)
-                    raise e
-        else:
-            try:
-                self._logger.debug(f"Setting SSR 1 to {mode}")
-                return await self.set_box_params_internal("boiler_prms", "ssr0", mode)
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
+        try:
+            self._logger.debug(f"Setting SSR 1 to {mode}")
+            return await self.set_box_params_internal("boiler_prms", "ssr0", mode)
+        except Exception as e:
+            self._logger.error(f"Error: {e}", stack_info=True)
+            raise e
 
     async def set_ssr_rele_2(self, mode: str) -> bool:
         """Set SSR relay 2 mode."""
-        if _has_opentelemetry and tracer:
-            with tracer.start_as_current_span("set_ssr_rele_2") as span:
-                try:
-                    self._logger.debug(f"Setting SSR 2 to {mode}")
-                    return await self.set_box_params_internal(
-                        "boiler_prms", "ssr1", mode
-                    )
-                except Exception as e:
-                    self._logger.error(f"Error: {e}", stack_info=True)
-                    raise e
-        else:
-            try:
-                self._logger.debug(f"Setting SSR 2 to {mode}")
-                return await self.set_box_params_internal("boiler_prms", "ssr1", mode)
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
+        try:
+            self._logger.debug(f"Setting SSR 2 to {mode}")
+            return await self.set_box_params_internal("boiler_prms", "ssr1", mode)
+        except Exception as e:
+            self._logger.error(f"Error: {e}", stack_info=True)
+            raise e
 
     async def set_ssr_rele_3(self, mode: str) -> bool:
         """Set SSR relay 3 mode."""
-        if _has_opentelemetry and tracer:
-            with tracer.start_as_current_span("set_ssr_rele_3") as span:
-                try:
-                    self._logger.debug(f"Setting SSR 3 to {mode}")
-                    return await self.set_box_params_internal(
-                        "boiler_prms", "ssr2", mode
-                    )
-                except Exception as e:
-                    self._logger.error(f"Error: {e}", stack_info=True)
-                    raise e
-        else:
-            try:
-                self._logger.debug(f"Setting SSR 3 to {mode}")
-                return await self.set_box_params_internal("boiler_prms", "ssr2", mode)
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
+        try:
+            self._logger.debug(f"Setting SSR 3 to {mode}")
+            return await self.set_box_params_internal("boiler_prms", "ssr2", mode)
+        except Exception as e:
+            self._logger.error(f"Error: {e}", stack_info=True)
+            raise e
 
     async def set_box_params_internal(
         self, table: str, column: str, value: str
     ) -> bool:
         """Internal method to set box parameters."""
-        if _has_opentelemetry and tracer:
-            with tracer.start_as_current_span("set_box_params_internal") as span:
-                async with self.get_session() as session:
-                    data: str = json.dumps(
-                        {
-                            "id_device": self.box_id,
-                            "table": table,
-                            "column": column,
-                            "value": value,
-                        }
-                    )
-                    _nonce: int = int(time.time() * 1000)
-                    target_url: str = (
-                        f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
+        async with self.get_session() as session:
+            data: str = json.dumps(
+                {
+                    "id_device": self.box_id,
+                    "table": table,
+                    "column": column,
+                    "value": value,
+                }
+            )
+            _nonce: int = int(time.time() * 1000)
+            target_url: str = f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
+
+            self._logger.debug(
+                f"Sending mode request to {target_url} with {data.replace(str(self.box_id), 'xxxxxx')}"
+            )
+
+            async with session.post(
+                target_url,
+                data=data,
+                headers={"Content-Type": "application/json"},
+            ) as response:
+                response_content: str = await response.text()
+                if response.status == 200:
+                    response_json: Dict[str, Any] = json.loads(response_content)
+                    message: str = response_json[0][2]
+                    self._logger.info(f"Response: {message}")
+                    return True
+                else:
+                    raise Exception(
+                        f"Error setting mode: {response.status}",
+                        response_content,
                     )
 
-                    self._logger.debug(
-                        f"Sending mode request to {target_url} with {data.replace(str(self.box_id), 'xxxxxx')}"
-                    )
+    async def set_grid_delivery(self, mode: int) -> bool:
+        """Set grid delivery mode."""
+        try:
+            if self._no_telemetry:
+                raise OigCloudApiError(
+                    "Tato funkce je ve vývoji a proto je momentálně dostupná pouze pro systémy s aktivní telemetrií."
+                )
 
-                    async with session.post(
-                        target_url,
-                        data=data,
-                        headers={"Content-Type": "application/json"},
-                    ) as response:
-                        response_content: str = await response.text()
-                        if response.status == 200:
-                            response_json: Dict[str, Any] = json.loads(response_content)
-                            message: str = response_json[0][2]
-                            self._logger.info(f"Response: {message}")
-                            return True
-                        else:
-                            raise Exception(
-                                f"Error setting mode: {response.status}",
-                                response_content,
-                            )
-        else:
+            self._logger.debug(f"Setting grid delivery to mode {mode}")
+
+            if not self.box_id:
+                raise OigCloudApiError("Box ID not available, fetch stats first")
+
             async with self.get_session() as session:
                 data: str = json.dumps(
                     {
                         "id_device": self.box_id,
-                        "table": table,
-                        "column": column,
-                        "value": value,
+                        "value": mode,
                     }
                 )
+
                 _nonce: int = int(time.time() * 1000)
                 target_url: str = (
-                    f"{self._base_url}{self._set_mode_url}?_nonce={_nonce}"
+                    f"{self._base_url}{self._set_grid_delivery_url}?_nonce={_nonce}"
+                )
+
+                self._logger.info(
+                    f"Sending grid delivery request to {target_url} for {data.replace(str(self.box_id), 'xxxxxx')}"
+                )
+
+                async with session.post(
+                    target_url,
+                    data=data,
+                    headers={"Content-Type": "application/json"},
+                ) as response:
+                    response_content: str = await response.text()
+
+                    if response.status == 200:
+                        response_json = json.loads(response_content)
+                        self._logger.debug(f"API response: {response_json}")
+                        return True
+                    else:
+                        raise OigCloudApiError(
+                            f"Error setting grid delivery: {response.status} - {response_content}"
+                        )
+        except OigCloudApiError:
+            raise
+        except Exception as e:
+            self._logger.error(f"Error: {e}", stack_info=True)
+            raise e
+
+    async def set_battery_formating(self, mode: str, limit: int) -> bool:
+        """Set battery formatting parameters."""
+        try:
+            self._logger.debug(f"Setting formatting battery to {limit} percent")
+            async with self.get_session() as session:
+                data: str = json.dumps(
+                    {
+                        "id_device": self.box_id,
+                        "column": "bat_ac",
+                        "value": limit,
+                    }
+                )
+
+                _nonce: int = int(time.time() * 1000)
+                target_url: str = (
+                    f"{self._base_url}{self._set_batt_formating_url}?_nonce={_nonce}"
                 )
 
                 self._logger.debug(
-                    f"Sending mode request to {target_url} with {data.replace(str(self.box_id), 'xxxxxx')}"
+                    f"Sending formatting battery request to {target_url} with {data.replace(str(self.box_id), 'xxxxxx')}"
                 )
 
                 async with session.post(
@@ -414,196 +391,51 @@ class OigCloudApi:
                             f"Error setting mode: {response.status}",
                             response_content,
                         )
+        except Exception as e:
+            self._logger.error(f"Error: {e}", stack_info=True)
+            raise
 
-    async def set_grid_delivery(self, mode: int) -> bool:
-        """Set grid delivery mode."""
-        if _has_opentelemetry and tracer:
-            with tracer.start_as_current_span("set_grid_delivery") as span:
-                try:
-                    if self._no_telemetry:
+    async def set_formating_mode(self, mode: str) -> bool:
+        """Set battery formatting mode."""
+        try:
+            self._logger.debug(f"Setting battery formatting mode to {mode}")
+
+            async with self.get_session() as session:
+                data: str = json.dumps(
+                    {
+                        "bat_ac": mode,
+                    }
+                )
+
+                _nonce: int = int(time.time() * 1000)
+                target_url: str = (
+                    f"{self._base_url}{self._set_batt_formating_url}?_nonce={_nonce}"
+                )
+
+                self._logger.info(f"Sending battery formatting request to {target_url}")
+
+                async with session.post(
+                    target_url,
+                    data=data,
+                    headers={"Content-Type": "application/json"},
+                ) as response:
+                    response_content: str = await response.text()
+
+                    if response.status == 200:
+                        response_json = json.loads(response_content)
+                        self._logger.debug(f"API response: {response_json}")
+                        return True
+                    else:
                         raise OigCloudApiError(
-                            "Tato funkce je ve vývoji a proto je momentálně dostupná pouze pro systémy s aktivní telemetrií."
+                            f"Error setting battery formatting mode: {response.status} - {response_content}"
                         )
-
-                    self._logger.debug(f"Setting grid delivery to mode {mode}")
-
-                    if not self.box_id:
-                        raise OigCloudApiError(
-                            "Box ID not available, fetch stats first"
-                        )
-
-                    async with self.get_session() as session:
-                        data: str = json.dumps(
-                            {
-                                "id_device": self.box_id,
-                                "value": mode,
-                            }
-                        )
-
-                        _nonce: int = int(time.time() * 1000)
-                        target_url: str = (
-                            f"{self._base_url}{self._set_grid_delivery_url}?_nonce={_nonce}"
-                        )
-
-                        self._logger.info(
-                            f"Sending grid delivery request to {target_url} for {data.replace(str(self.box_id), 'xxxxxx')}"
-                        )
-
-                        async with session.post(
-                            target_url,
-                            data=data,
-                            headers={"Content-Type": "application/json"},
-                        ) as response:
-                            response_content: str = await response.text()
-
-                            if response.status == 200:
-                                response_json = json.loads(response_content)
-                                self._logger.debug(f"API response: {response_json}")
-                                return True
-                            else:
-                                raise OigCloudApiError(
-                                    f"Error setting grid delivery: {response.status} - {response_content}"
-                                )
-                except OigCloudApiError:
-                    raise
-                except Exception as e:
-                    self._logger.error(f"Error: {e}", stack_info=True)
-                    raise e
-        else:
-            try:
-                if self._no_telemetry:
-                    raise OigCloudApiError(
-                        "Tato funkce je ve vývoji a proto je momentálně dostupná pouze pro systémy s aktivní telemetrií."
-                    )
-
-                self._logger.debug(f"Setting grid delivery to mode {mode}")
-
-                if not self.box_id:
-                    raise OigCloudApiError("Box ID not available, fetch stats first")
-
-                async with self.get_session() as session:
-                    data: str = json.dumps(
-                        {
-                            "id_device": self.box_id,
-                            "value": mode,
-                        }
-                    )
-
-                    _nonce: int = int(time.time() * 1000)
-                    target_url: str = (
-                        f"{self._base_url}{self._set_grid_delivery_url}?_nonce={_nonce}"
-                    )
-
-                    self._logger.info(
-                        f"Sending grid delivery request to {target_url} for {data.replace(str(self.box_id), 'xxxxxx')}"
-                    )
-
-                    async with session.post(
-                        target_url,
-                        data=data,
-                        headers={"Content-Type": "application/json"},
-                    ) as response:
-                        response_content: str = await response.text()
-
-                        if response.status == 200:
-                            response_json = json.loads(response_content)
-                            self._logger.debug(f"API response: {response_json}")
-                            return True
-                        else:
-                            raise OigCloudApiError(
-                                f"Error setting grid delivery: {response.status} - {response_content}"
-                            )
-            except OigCloudApiError:
-                raise
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise e
-
-    async def set_battery_formating(self, mode: str, limit: int) -> bool:
-        """Set battery formatting parameters."""
-        if _has_opentelemetry and tracer:
-            with tracer.start_as_current_span("set_batt_formating") as span:
-                try:
-                    self._logger.debug(f"Setting formatting battery to {limit} percent")
-                    async with self.get_session() as session:
-                        data: str = json.dumps(
-                            {
-                                "id_device": self.box_id,
-                                "column": "bat_ac",
-                                "value": limit,
-                            }
-                        )
-
-                        _nonce: int = int(time.time() * 1000)
-                        target_url: str = (
-                            f"{self._base_url}{self._set_batt_formating_url}?_nonce={_nonce}"
-                        )
-
-                        self._logger.debug(
-                            f"Sending formatting battery request to {target_url} with {data.replace(str(self.box_id), 'xxxxxx')}"
-                        )
-
-                        async with session.post(
-                            target_url,
-                            data=data,
-                            headers={"Content-Type": "application/json"},
-                        ) as response:
-                            response_content: str = await response.text()
-                            if response.status == 200:
-                                response_json: Dict[str, Any] = json.loads(
-                                    response_content
-                                )
-                                message: str = response_json[0][2]
-                                self._logger.info(f"Response: {message}")
-                                return True
-                            else:
-                                raise Exception(
-                                    f"Error setting mode: {response.status}",
-                                    response_content,
-                                )
-                except Exception as e:
-                    self._logger.error(f"Error: {e}", stack_info=True)
-                    raise
-        else:
-            try:
-                self._logger.debug(f"Setting formatting battery to {limit} percent")
-                async with self.get_session() as session:
-                    data: str = json.dumps(
-                        {
-                            "id_device": self.box_id,
-                            "column": "bat_ac",
-                            "value": limit,
-                        }
-                    )
-
-                    _nonce: int = int(time.time() * 1000)
-                    target_url: str = (
-                        f"{self._base_url}{self._set_batt_formating_url}?_nonce={_nonce}"
-                    )
-
-                    self._logger.debug(
-                        f"Sending formatting battery request to {target_url} with {data.replace(str(self.box_id), 'xxxxxx')}"
-                    )
-
-                    async with session.post(
-                        target_url,
-                        data=data,
-                        headers={"Content-Type": "application/json"},
-                    ) as response:
-                        response_content: str = await response.text()
-                        if response.status == 200:
-                            response_json: Dict[str, Any] = json.loads(response_content)
-                            message: str = response_json[0][2]
-                            self._logger.info(f"Response: {message}")
-                            return True
-                        else:
-                            raise Exception(
-                                f"Error setting mode: {response.status}",
-                                response_content,
-                            )
-            except Exception as e:
-                self._logger.error(f"Error: {e}", stack_info=True)
-                raise
+        except OigCloudApiError:
+            raise
+        except Exception as e:
+            self._logger.error(
+                f"Error setting battery formatting mode: {e}", stack_info=True
+            )
+            raise OigCloudApiError(f"Failed to set battery formatting mode: {e}") from e
 
     async def get_extended_stats(
         self, name: str, from_date: str, to_date: str

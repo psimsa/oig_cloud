@@ -176,16 +176,19 @@ async def async_setup_entry_services_with_shield(
         blocking: bool,
         context: Optional[Context],
     ) -> None:
-        limit: Optional[int] = service_data.get("limit")
-        if limit is not None and (limit > 100 or limit < 20):
-            raise vol.Invalid("Limit musí být v rozmezí 20–100")
-
         with tracer.start_as_current_span("async_set_formating_mode"):
             coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
             client: OigCloudApi = coordinator.api
             mode: Optional[str] = service_data.get("mode")
-            mode_value: Optional[int] = FORMAT_BATTERY.get(mode) if mode else None
-            await client.set_formating_mode(limit)
+            limit: Optional[int] = service_data.get("limit")
+
+            # OPRAVA: Podle původní logiky - použij limit pokud je zadán, jinak mode_value
+            if limit is not None:
+                await client.set_formating_mode(str(limit))
+            else:
+                mode_value: Optional[int] = FORMAT_BATTERY.get(mode) if mode else None
+                if mode_value is not None:
+                    await client.set_formating_mode(str(mode_value))
 
     # Kontrola, zda služby již nejsou registrované (kvůli vícenásobným entries)
     if not hass.services.has_service(DOMAIN, "set_box_mode"):
@@ -247,8 +250,8 @@ async def async_setup_entry_services_with_shield(
             schema=vol.Schema(
                 {
                     vol.Required("mode"): vol.In(["Nenabíjet", "Nabíjet"]),
-                    "limit": vol.Any(None, vol.Coerce(int)),
                     vol.Required("acknowledgement"): vol.In([True]),
+                    "limit": vol.Any(None, vol.Coerce(int)),
                 }
             ),
         )
@@ -261,8 +264,6 @@ async def async_setup_entry_services_with_shield(
 async def async_setup_entry_services(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Setup entry-specific services with optional shield protection."""
     _LOGGER.debug(f"Setting up entry services for {entry.entry_id}")
-
-    # Pokus o získání shield objektu
     shield = hass.data[DOMAIN].get("shield")
 
     if shield:
@@ -298,7 +299,6 @@ async def async_setup_entry_services_fallback(
         client: OigCloudApi = coordinator.api
         grid_mode: Optional[str] = call.data.get("mode")
         limit: Optional[int] = call.data.get("limit")
-
         if grid_mode is not None:
             mode: Optional[int] = GRID_DELIVERY.get(grid_mode)
             await client.set_grid_delivery(mode)
@@ -308,8 +308,16 @@ async def async_setup_entry_services_fallback(
     async def handle_set_formating_mode(call: ServiceCall) -> None:
         coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
         client: OigCloudApi = coordinator.api
+        mode: Optional[str] = call.data.get("mode")
         limit: Optional[int] = call.data.get("limit")
-        await client.set_formating_mode(limit)
+
+        # OPRAVA: Podle původní logiky - použij limit pokud je zadán, jinak mode_value
+        if limit is not None:
+            await client.set_formating_mode(str(limit))
+        else:
+            mode_value: Optional[int] = FORMAT_BATTERY.get(mode) if mode else None
+            if mode_value is not None:
+                await client.set_formating_mode(str(mode_value))
 
     # Kontrola, zda služby již nejsou registrované
     if not hass.services.has_service(DOMAIN, "set_box_mode"):
@@ -355,8 +363,8 @@ async def async_setup_entry_services_fallback(
                 handle_set_formating_mode,
                 {
                     vol.Required("mode"): vol.In(["Nenabíjet", "Nabíjet"]),
-                    "limit": vol.Any(None, vol.Coerce(int)),
                     vol.Required("acknowledgement"): vol.In([True]),
+                    "limit": vol.Any(None, vol.Coerce(int)),
                 },
             ),
         ]
@@ -390,5 +398,4 @@ async def async_unload_services(hass: HomeAssistant) -> None:
     for service in services_to_remove:
         if hass.services.has_service(DOMAIN, service):
             hass.services.async_remove(DOMAIN, service)
-
     _LOGGER.debug("All services unloaded")

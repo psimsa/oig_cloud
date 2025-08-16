@@ -112,6 +112,24 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
         data = self.coordinator.data
         pv_data = list(data.values())[0]
 
+        # OPRAVA: Kontrola existence "actual" dat pouze tam kde jsou potřeba
+        if (
+            self._sensor_type
+            in [
+                "time_to_empty",
+                "time_to_full",
+                "usable_battery_capacity",
+                "missing_battery_kwh",
+                "remaining_usable_capacity",
+            ]
+            and "actual" not in pv_data
+        ):
+            _LOGGER.warning(
+                f"[{self.entity_id}] Live Data nejsou zapnutá v OIG aplikaci. "
+                f"Zapněte Live Data v mobilní aplikaci OIG pro správnou funkci computed senzorů."
+            )
+            return None
+
         # Speciální handling pro real_data_update senzor
         if self._sensor_type == "real_data_update":
             if self._check_for_real_data_changes(pv_data):
@@ -132,6 +150,9 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
                 + pv_data["ac_in"]["aci_wt"]
             )
         if self._sensor_type == "actual_aci_wtotal":
+            # OPRAVA: Pouze zde kontrola actual
+            if "actual" not in pv_data:
+                return 0.0
             return float(
                 pv_data["actual"]["aci_wr"]
                 + pv_data["actual"]["aci_ws"]
@@ -140,6 +161,9 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
         if self._sensor_type == "dc_in_fv_total":
             return float(pv_data["dc_in"]["fv_p1"] + pv_data["dc_in"]["fv_p2"])
         if self._sensor_type == "actual_fv_total":
+            # OPRAVA: Pouze zde kontrola actual
+            if "actual" not in pv_data:
+                return 0.0
             return float(pv_data["actual"]["fv_p1"] + pv_data["actual"]["fv_p2"])
 
         if self._node_id == "boiler" or self._sensor_type == "boiler_current_w":
@@ -161,6 +185,15 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
 
         try:
             bat_p = float(pv_data["box_prms"]["p_bat"])
+
+            # OPRAVA: Kontrola actual pouze pro tyto hodnoty
+            if "actual" not in pv_data:
+                _LOGGER.warning(
+                    f"[{self.entity_id}] Live Data nejsou zapnutá v OIG aplikaci. "
+                    f"Zapněte Live Data v mobilní aplikaci OIG pro správnou funkci computed senzorů."
+                )
+                return None
+
             bat_c = float(pv_data["actual"]["bat_c"])  # Battery charge percentage
             bat_power = float(pv_data["actual"]["bat_p"])  # Battery power
 
@@ -215,6 +248,15 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
 
     def _accumulate_energy(self, pv_data: Dict[str, Any]) -> Optional[float]:
         try:
+            # OPRAVA: Kontrola existence "actual" dat
+            if "actual" not in pv_data:
+                _LOGGER.warning(
+                    f"[{self.entity_id}] Live Data nejsou zapnutá v OIG aplikaci. "
+                    f"Energy tracking senzory potřebují Live Data pro správnou funkci. "
+                    f"Zapněte Live Data v mobilní aplikaci OIG."
+                )
+                return None
+
             now = datetime.utcnow()
 
             bat_power = float(pv_data["actual"]["bat_p"])
@@ -294,6 +336,14 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
             return None
 
         try:
+            # OPRAVA: Kontrola existence "actual" dat
+            if "actual" not in pv_data:
+                _LOGGER.warning(
+                    f"[{self.entity_id}] Live Data nejsou zapnutá - nelze vypočítat spotřebu bojleru. "
+                    f"Zapněte Live Data v OIG aplikaci."
+                )
+                return None
+
             fv_power = float(pv_data["actual"]["fv_p1"]) + float(
                 pv_data["actual"]["fv_p2"]
             )
@@ -329,9 +379,13 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
             return None
 
     def _get_batt_power_charge(self, pv_data: Dict[str, Any]) -> float:
+        if "actual" not in pv_data:
+            return 0.0
         return max(float(pv_data["actual"]["bat_p"]), 0)
 
     def _get_batt_power_discharge(self, pv_data: Dict[str, Any]) -> float:
+        if "actual" not in pv_data:
+            return 0.0
         return max(-float(pv_data["actual"]["bat_p"]), 0)
 
     def _get_extended_fve_current_1(self, coordinator: Any) -> Optional[float]:
@@ -408,6 +462,14 @@ class OigCloudComputedSensor(OigCloudSensor, RestoreEntity):
     def _check_for_real_data_changes(self, pv_data: Dict[str, Any]) -> bool:
         """Zkontroluje, zda došlo ke skutečné změně v datech."""
         try:
+            # OPRAVA: Kontrola existence "actual" dat
+            if "actual" not in pv_data:
+                _LOGGER.warning(
+                    f"[{self.entity_id}] Live Data nejsou zapnutá - real data update nefunguje. "
+                    f"Zapněte Live Data v OIG aplikaci."
+                )
+                return False
+
             current_values = {}
 
             # Získej aktuální hodnoty klíčových senzorů

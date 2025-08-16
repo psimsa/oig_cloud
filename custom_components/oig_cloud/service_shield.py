@@ -500,20 +500,57 @@ class ServiceShield:
         for service_name, info in self.pending.items():
             _LOGGER.debug(f"[OIG Shield] Kontroluji pending službu: {service_name}")
 
-            if datetime.now() - info["called_at"] > timedelta(minutes=TIMEOUT_MINUTES):
-                _LOGGER.warning(f"[OIG Shield] Timeout pro službu {service_name}")
-                await self._log_event("timeout", service_name, info["params"])
-                # ߓ᠔elemetrie pro timeout
-                await self._log_telemetry(
-                    "timeout",
-                    service_name,
-                    {"params": info["params"], "entities": info["entities"]},
-                )
+            # OPRAVA: Speciální timeout pro formating_mode - 2 minuty místo 15 minut
+            timeout_minutes = (
+                2 if service_name == "oig_cloud.set_formating_mode" else TIMEOUT_MINUTES
+            )
+
+            if datetime.now() - info["called_at"] > timedelta(minutes=timeout_minutes):
+                if service_name == "oig_cloud.set_formating_mode":
+                    _LOGGER.info(
+                        f"[OIG Shield] Formating mode dokončeno po 2 minutách (automaticky)"
+                    )
+                    # Pro formating_mode považujeme timeout za úspěšné dokončení
+                    await self._log_event(
+                        "completed",
+                        service_name,
+                        {
+                            "params": info["params"],
+                            "entities": info["entities"],
+                            "original_states": info.get("original_states", {}),
+                        },
+                        reason="Formátování dokončeno (automaticky po 2 min)",
+                    )
+                    await self._log_telemetry(
+                        "completed",
+                        service_name,
+                        {
+                            "params": info["params"],
+                            "entities": info["entities"],
+                            "reason": "auto_timeout",
+                        },
+                    )
+                else:
+                    _LOGGER.warning(f"[OIG Shield] Timeout pro službu {service_name}")
+                    await self._log_event("timeout", service_name, info["params"])
+                    await self._log_telemetry(
+                        "timeout",
+                        service_name,
+                        {"params": info["params"], "entities": info["entities"]},
+                    )
                 finished.append(service_name)
                 continue
 
             all_ok = True
             for entity_id, expected_value in info["entities"].items():
+                # OPRAVA: Pro fiktivní formating entity nikdy nebudou "dokončené" před timeoutem
+                if entity_id.startswith("fake_formating_mode_"):
+                    all_ok = False
+                    _LOGGER.debug(
+                        f"[OIG Shield] Formating mode - čekám na timeout (zbývá {timeout_minutes - (datetime.now() - info['called_at']).total_seconds()/60:.1f} min)"
+                    )
+                    break
+
                 state = self.hass.states.get(entity_id)
                 current_value = state.state if state else None
 
@@ -548,7 +585,7 @@ class ServiceShield:
                     )
                     break
 
-            if all_ok:
+            if all_ok and not service_name == "oig_cloud.set_formating_mode":
                 _LOGGER.info(
                     f"[OIG Shield] Služba {service_name} byla úspěšně dokončena"
                 )
@@ -562,7 +599,6 @@ class ServiceShield:
                     },
                     reason="Změna provedena",
                 )
-                # ߓ᠔elemetrie pro dokončené požadavky
                 await self._log_telemetry(
                     "completed",
                     service_name,
@@ -727,6 +763,16 @@ class ServiceShield:
                 if entity.entity_id.endswith(suffix):
                     return entity.entity_id
             return None
+
+        # OPRAVA: Speciální handling pro set_formating_mode - nemá žádný senzor k ověření
+        if service_name == "oig_cloud.set_formating_mode":
+            # Vytvoříme fiktivní entitu pro 2minutové sledování
+            # Použijeme timestamp jako "entity_id" pro unikátnost
+            fake_entity_id = f"fake_formating_mode_{int(datetime.now().timestamp())}"
+            _LOGGER.info(
+                f"[OIG Shield] Formating mode - vytváří fiktivní entitu pro 2min sledování: {fake_entity_id}"
+            )
+            return {fake_entity_id: "completed_after_timeout"}
 
         if service_name == "oig_cloud.set_box_mode":
             expected_value = str(data.get("mode") or "").strip()
