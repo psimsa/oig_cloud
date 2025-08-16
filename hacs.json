@@ -2,5 +2,8 @@
 	"render_readme": true,
 	"hide_default_branch": true,
 	"name": "OIG Cloud (CBB - Čez Battery Box)",
-	"country": "CZ"
+	"country": "CZ",
+	"filename": "custom_components/oig_cloud/__init__.py",
+	"content_in_root": false,
+	"zip_release": false
 }

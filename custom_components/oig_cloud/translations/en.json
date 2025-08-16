@@ -11,73 +11,217 @@
     "step": {
       "user": {
         "title": "Login to OIG",
-        "description": "Enter your username/email and password to log in to OIG",
+        "description": "Enter your login/email and password for OIG Cloud",
         "data": {
-          "no_telemetry": "Disable telemetry collection (features under active development may be limited)",
+          "username": "Username or email",
           "password": "Password",
-          "username": "Username or email"
+          "no_telemetry": "Disable telemetry collection"
         }
       }
     }
   },
-  "selector": {
+  "services": {
     "set_box_mode": {
-      "options": {
-        "Home 1": "Home 1",
-        "Home 2": "Home 2",
-        "Home 3": "Home 3",
-        "Home UPS": "Home UPS"
-      },
-      "Acknowledgement": {
-        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+      "name": "Set Battery Box Mode",
+      "description": "Set the operational mode of the battery box.",
+      "fields": {
+        "mode": {
+          "name": "Battery Mode",
+          "description": "Select the battery mode: Home 1, Home 2, Home 3, or Home UPS."
+        },
+        "acknowledgement": {
+          "name": "Acknowledgement",
+          "description": "I acknowledge that calling this service modifies a live system. I take full responsibility for the changes and any effects."
+        }
       }
     },
     "set_grid_delivery": {
-      "options": {
-        "Vypnuto / Off": "Vypnuto / Off",
-        "Zapnuto / On": "Zapnuto / On",
-        "S omezením / Limited": "S omezením / Limited"
-      },
-      "Acknowledgement": {
-        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
-      },
-      "Warning": {
-        "description": "Before using this feature, familiarize yourself with the limitations available in the OIG Power / ČEZ Battery Box application."
+      "name": "Set Grid Delivery Mode",
+      "description": "Configure export of excess production to the grid. Ensure legal permissions are obtained.",
+      "fields": {
+        "mode": {
+          "name": "Grid Export Mode",
+          "description": "Choose whether grid export is allowed, limited, or disabled."
+        },
+        "limit": {
+          "name": "Grid Export Limit (W)",
+          "description": "Set the maximum allowed export to the grid in watts."
+        },
+        "acknowledgement": {
+          "name": "Acknowledgement",
+          "description": "I acknowledge that enabling this feature modifies a live system. I take full responsibility."
+        },
+        "warning": {
+          "name": "Export Warning",
+          "description": "Before enabling grid export, ensure you have DSO approval. Unauthorized export may lead to penalties."
+        }
       }
     },
     "set_boiler_mode": {
-      "options": {
-        "CBB": "CBB",
-        "Manual": "Manual"
-      },
-      "Acknowledgement": {
-        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+      "name": "Set Boiler Mode",
+      "description": "Switch boiler between automatic (CBB) and manual mode.",
+      "fields": {
+        "mode": {
+          "name": "Boiler Mode",
+          "description": "Select between CBB (automatic) or Manual operation."
+        },
+        "acknowledgement": {
+          "name": "Acknowledgement",
+          "description": "I acknowledge the risks associated with manual boiler mode and accept full responsibility."
+        }
       }
     },
     "set_formating_mode": {
-      "options": {
-        "Nenabíjet": "Nenabíjet",
-        "Nabíjet": "Nabíjet"
-      },
-      "Limit": {
-        "min": "min",
-        "max": "max",
-        "unit_of_measurement": "unit_of_measurement"
-      },
-      "Acknowledgement": {
-        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+      "name": "Set Battery Grid Charging",
+      "description": "Enable or disable immediate charging of the battery from the grid.",
+      "fields": {
+        "mode": {
+          "name": "Charging Mode",
+          "description": "Select to start or stop grid charging of the battery."
+        },
+        "limit": {
+          "name": "Target Charge (%)",
+          "description": "Set the target battery charge percentage."
+        },
+        "acknowledgement": {
+          "name": "Acknowledgement",
+          "description": "I acknowledge that starting battery charging from the grid modifies a live system and accept responsibility."
+        }
       }
     }
   },
   "options": {
     "step": {
-      "init": {
-        "title": "Configuration",
-        "description": "Adjust settings for your OIG Cloud integration",
+      "menu": {
+        "title": "OIG Cloud Configuration",
+        "description": "Select what you want to configure",
+        "menu_options": {
+          "basic_config": "⚙️ Basic Settings",
+          "extended_sensors": "📊 Extended Sensors",
+          "solar_forecast": "☀️ Solar Forecast",
+          "statistics_config": "📈 Statistics & Analytics",
+          "battery_prediction": "🔋 Battery Prediction",
+          "pricing_config": "💰 Pricing Sensors"
+        }
+      },
+      "basic_config": {
+        "title": "⚙️ Basic Settings",
+        "description": "Configuration of basic integration parameters",
         "data": {
-          "update_interval": "Update interval (seconds)",
-          "no_telemetry": "Disable telemetry (opt-out of data collection)",
-          "log_level": "Logging level"
+          "standard_scan_interval": "Basic data update interval (seconds)",
+          "username": "Username / Email",
+          "password": "Password"
+        },
+        "data_description": {
+          "standard_scan_interval": "How often to fetch basic data from OIG Cloud (recommended 20-30s)",
+          "username": "Email or username for OIG Cloud login",
+          "password": "Password for OIG Cloud (leave empty to keep unchanged)"
+        }
+      },
+      "extended_sensors": {
+        "title": "📊 Extended Sensors",
+        "description": "Currently {current_state}",
+        "data": {
+          "enable_extended_sensors": "Enable extended sensors",
+          "extended_scan_interval": "⏱️ Extended sensors update interval (seconds)",
+          "disable_extended_stats_api": "🚫 Disable extended stats API calls",
+          "enable_extended_battery_sensors": "🔋 Extended battery data",
+          "enable_extended_fve_sensors": "☀️ Extended PV data",
+          "enable_extended_grid_sensors": "⚡ Extended grid data"
+        },
+        "data_description": {
+          "enable_extended_sensors": "Enable extended sensors for detailed system monitoring",
+          "extended_scan_interval": "How often to fetch extended data (higher value = less server load)",
+          "disable_extended_stats_api": "If you have HTTP 500 errors, disable extended stats API",
+          "enable_extended_battery_sensors": "Cell voltages, currents, temperature and detailed battery status",
+          "enable_extended_fve_sensors": "Power and currents of individual PV strings",
+          "enable_extended_grid_sensors": "Voltages L1/L2/L3, grid frequency, power per phase"
+        }
+      },
+      "solar_forecast": {
+        "title": "☀️ Solar Forecast",
+        "description": "Currently {current_state}. Mode: {current_mode}",
+        "data": {
+          "enable_solar_forecast": "Enable solar forecast",
+          "solar_forecast_mode": "Update mode",
+          "solar_forecast_api_key": "Forecast.Solar API key (optional)",
+          "solar_forecast_latitude": "Latitude",
+          "solar_forecast_longitude": "Longitude",
+          "solar_forecast_string1_enabled": "Enable String 1",
+          "solar_forecast_string1_kwp": "String 1 - Power (kWp)",
+          "solar_forecast_string1_declination": "String 1 - Tilt (°)",
+          "solar_forecast_string1_azimuth": "String 1 - Azimuth (°)",
+          "solar_forecast_string2_enabled": "Enable String 2",
+          "solar_forecast_string2_kwp": "String 2 - Power (kWp)",
+          "solar_forecast_string2_declination": "String 2 - Tilt (°)",
+          "solar_forecast_string2_azimuth": "String 2 - Azimuth (°)"
+        },
+        "data_description": {
+          "enable_solar_forecast": "Enable solar forecast for battery optimization and production prediction",
+          "solar_forecast_mode": "How often to update solar forecast",
+          "solar_forecast_api_key": "API key for forecast.solar (optional, increases limits)",
+          "solar_forecast_latitude": "GPS latitude of your PV system (-90 to 90)",
+          "solar_forecast_longitude": "GPS longitude of your PV system (-180 to 180)",
+          "solar_forecast_string1_enabled": "Enable first panel string (at least one required)",
+          "solar_forecast_string1_kwp": "Installed power of 1st string in kWp",
+          "solar_forecast_string1_declination": "Tilt of 1st string panels from horizontal (0-90°)",
+          "solar_forecast_string1_azimuth": "Orientation of 1st string panels (0°=north, 90°=east, 180°=south, 270°=west)",
+          "solar_forecast_string2_enabled": "Enable second panel string (optional)",
+          "solar_forecast_string2_kwp": "Installed power of 2nd string in kWp",
+          "solar_forecast_string2_declination": "Tilt of 2nd string panels from horizontal (0-90°)",
+          "solar_forecast_string2_azimuth": "Orientation of 2nd string panels (0°=north, 90°=east, 180°=south, 270°=west)"
+        }
+      },
+      "statistics_config": {
+        "title": "Statistics & Analytics",
+        "description": "Currently {current_state}",
+        "data": {
+          "enable_statistics": "Enable statistical sensors",
+          "reconfigure_statistics": "Reconfigure statistics (deletes old data)"
+        },
+        "data_description": {
+          "enable_statistics": "Consumption median by time, battery prediction, consumption analysis",
+          "reconfigure_statistics": "⚠️ Deletes all stored historical data and starts over"
+        }
+      },
+      "battery_prediction": {
+        "title": "Battery Prediction",
+        "description": "Currently {current_state}. Min. capacity: {min_capacity}%, Charging power: {charge_rate}W",
+        "data": {
+          "enable_battery_prediction": "Enable battery prediction",
+          "min_capacity_percent": "Minimum battery capacity (%)",
+          "home_charge_rate": "Grid charging power (W)",
+          "percentile_conf": "Percentile for peak detection (%)",
+          "max_price_conf": "Maximum charging price (CZK/kWh)",
+          "total_hours": "Prediction hours"
+        },
+        "data_description": {
+          "enable_battery_prediction": "Intelligent charging planning based on spot prices and consumption",
+          "min_capacity_percent": "Below this level, grid charging starts (recommended 15-25%)",
+          "home_charge_rate": "Maximum charging power of your system from grid",
+          "percentile_conf": "Values above this percentile are considered peak (recommended 75-85%)",
+          "max_price_conf": "Never charge from grid if price is higher than this value",
+          "total_hours": "How far into future to plan charging (recommended 24-48h)"
+        }
+      },
+      "pricing_config": {
+        "title": "Spot Electricity Prices",
+        "description": "Configuration of spot prices and final price calculation\n\nCurrent state: {current_state}\n{info}",
+        "data": {
+          "enable_spot_prices": "Enable spot electricity prices from OTE",
+          "spot_pricing_model": "Price calculation model",
+          "spot_positive_fee_percent": "Fee for positive prices (%)",
+          "spot_negative_fee_percent": "Fee for negative prices (%)",
+          "spot_fixed_fee_mwh": "Fixed fee (CZK/MWh)",
+          "distribution_fee_kwh": "Distribution fee (CZK/kWh)"
+        },
+        "data_description": {
+          "enable_spot_prices": "Download and process spot electricity prices from OTE daily at 13:00",
+          "spot_pricing_model": "How commercial price is calculated from raw spot price",
+          "spot_positive_fee_percent": "For positive spot price: price × (1 + percent/100). E.g. 15% = price × 1.15",
+          "spot_negative_fee_percent": "For negative spot price: price × (1 - percent/100). E.g. 9% = price × 0.91",
+          "spot_fixed_fee_mwh": "Constant fee in CZK per MWh added to spot price (automatically converted to kWh)",
+          "distribution_fee_kwh": "Distribution fee added to final price (usually 1-2 CZK/kWh)"
         }
       }
     }

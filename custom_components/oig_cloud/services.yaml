@@ -2,43 +2,43 @@ set_box_mode:
   name: Set BatteryBox Mode
   description: |
     Set the mode of the device.
-    Please note upon successfully calling the service, it usually takes up to 10 minutes for the changes to be reflected 
+    Please note upon successfully calling the service, it usually takes up to 10 minutes for the changes to be reflected
     in the BBox and the UI, but occasionally may take up to an hour.
     You can check whether the call was successful in the OIG web or mobile app in the Notifications section.
   fields:
-    Mode:
+    mode:
       description: The mode to set
-      example: "Home 1"
       selector:
         select:
           options:
-            - "Home 1"
-            - "Home 2"
-            - "Home 3"
-            - "Home UPS"
-    Acknowledgement:
+            - Home 1
+            - Home 2
+            - Home 3
+            - Home UPS
+    acknowledgement:
       description: |
         I acknowledge that calling the service will result in parameter modification of a live system.
         I take on full responsibility for the changes and any effect they may have, expected or otherwise.
-        Beru na vědomí, že volání této služby povede ke změně parametrů živého systému. 
+        Beru na vědomí, že volání této služby povede ke změně parametrů živého systému.
         Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
+      required: true
       selector:
         boolean:
 
 set_grid_delivery:
   name: Nastavení přetoků
   description: |
-    Povolení nebo zakázání přetoků do distribuční sítě. Přetoky je možné zcela vypnout, zapnout, nebo zapnout s limitem. 
+    Povolení nebo zakázání přetoků do distribuční sítě. Přetoky je možné zcela vypnout, zapnout, nebo zapnout s limitem.
     K použití této funkce musí být nainstalován odpovídající firmware a může trvat delší dobu, než se nastavení projeví.
     V případě nastavení limitu je třeba provést 2 změny - nastavení boxu do režimu omezení přetoků a následně nastavení
-    limitu přetoků. V aktuální verzi (omezení oig) je třeba, aby proběhly postupně. Musí proběhnout ve výše uvedeném 
+    limitu přetoků. V aktuální verzi (omezení oig) je třeba, aby proběhly postupně. Musí proběhnout ve výše uvedeném
     pořadí a před nastavením limitu přetoků je třeba, aby byla již akceptována změna režimu přetoků. Nastavení je tedy
-    třeba provést ve dvou krocích: Nejprve nastavit režim přetoků na "S omezením," poté skrze automatizaci počkat na změnu 
-    režimu přetoků (viz. příslušný senzor) a následně opakovaným voláním služby nastavit limit přetoků. 
-    Berte prosím v úvahu, že v mezičase může dojít k nadměrnému exportu do sítě. Příklad nastavení lze nalézt na 
+    třeba provést ve dvou krocích: Nejprve nastavit režim přetoků na "S omezením," poté skrze automatizaci počkat na změnu
+    režimu přetoků (viz. příslušný senzor) a následně opakovaným voláním služby nastavit limit přetoků.
+    Berte prosím v úvahu, že v mezičase může dojít k nadměrnému exportu do sítě. Příklad nastavení lze nalézt na
     https://raw.githubusercontent.com/psimsa/oig_cloud/main/docs/grid_delivery_script_sample.yaml
   fields:
-    Mode:
+    mode:
       description: Režim přetoků
       selector:
         select:
@@ -46,23 +46,23 @@ set_grid_delivery:
             - Vypnuto / Off
             - Zapnuto / On
             - S omezením / Limited
-    Limit:
-      description: Omezení přetoků
-      example: 1000
+    limit:
+      description: Nastavení limitu výkonu přetoků (W)
       selector:
         number:
           min: 1
           max: 9999
-          unit_of_measurement: W
-    Acknowledgement:
+          unit_of_measurement: "W"
+    acknowledgement:
       description: |
         I acknowledge that calling the service will result in parameter modification of a live system.
         I take on full responsibility for the changes and any effect they may have, expected or otherwise.
         Beru na vědomí, že volání této služby povede ke změně parametrů živého systému.
         Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
+      required: true
       selector:
         boolean:
-    Upozornění:
+    warning:
       description: |
         Před použitím této funkce se seznamte s omezeními dostupnými v aplikaci OIG Power / ČEZ Battery Box.
         AKTIVACÍ PŘETOKŮ NA ZAŘÍZENÍ BATTERY BOX BERETE NA VĚDOMÍ NÍŽE UVEDENÉ A PŘEBÍRÁTE NA SEBE
@@ -76,34 +76,36 @@ set_grid_delivery:
         Jako majitel zařízení BATTERY BOX máte možnost sám aktivovat nebo deaktivovat povolení přetoků. Pokud
         byste provedli povolení přetoků dříve, než povolují PPDS, hrozí Vám ze strany provozovatele DS udělení pokuty
         dle platného ceníku. Data o aktivaci přetoků zařízení samo automaticky archivuje, je proto možné vždy doložit,
-        kdy byl na zařízení takový příkaz zadán. V případě, že již máte platné povolení pro dodávky přetoků do DS 
-        a rozhodli jste se navýšit dodatečně výkon Vaší FVE, jste povinni zajistit si od provozovatele DS nové SoP 
-        a PPP, odpovídající navýšenému výkonu. Do té doby nejste oprávněni posílat přebytek z navýšeného výkonu do DS 
-        s rizikem pokuty od provozovatele DS. Plné znění tohoto upozornění naleznete na 
+        kdy byl na zařízení takový příkaz zadán. V případě, že již máte platné povolení pro dodávky přetoků do DS
+        a rozhodli jste se navýšit dodatečně výkon Vaší FVE, jste povinni zajistit si od provozovatele DS nové SoP
+        a PPP, odpovídající navýšenému výkonu. Do té doby nejste oprávněni posílat přebytek z navýšeného výkonu do DS
+        s rizikem pokuty od provozovatele DS. Plné znění tohoto upozornění naleznete na
         https://drive.google.com/viewerng/viewer?embedded=true&url=https://www.oigpower.cz/cez/pretoky-sankce.pdf
+      required: true
       selector:
         boolean:
 
 set_boiler_mode:
   name: Nastavení manuálního nabíjení bojleru
   description: |
-    Tímto parametrem obejdete nastavení CBB ohledně řízení přetoků do bojleru a výkon patrony je v plném režimu 
-    bez ohledu na HDO a nebo výrobu FVE. Defaultně je SSR, kdy si plně CBB řídí nabíjení bojleru podle HDO a přetoků. 
+    Tímto parametrem obejdete nastavení CBB ohledně řízení přetoků do bojleru a výkon patrony je v plném režimu
+    bez ohledu na HDO a nebo výrobu FVE. Defaultně je SSR, kdy si plně CBB řídí nabíjení bojleru podle HDO a přetoků.
     Nastavení Manual všechno toto obchází.
   fields:
-    Mode:
+    mode:
       description: Režim bojleru
       selector:
         select:
           options:
             - CBB
             - Manual
-    Acknowledgement:
+    acknowledgement:
       description: |
         I acknowledge that calling the service will result in parameter modification of a live system.
         I take on full responsibility for the changes and any effect they may have, expected or otherwise.
         Beru na vědomí, že volání této služby povede ke změně parametrů živého systému.
         Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
+      required: true
       selector:
         boolean:
 
@@ -112,26 +114,42 @@ set_formating_mode:
   description: |
     Tímto parametrem nastavujete okamžité spuštění nabíjení baterige ze sítě na stanovenou hodnotu limitu.
   fields:
-    Mode:
-      description: Nabíjení baterie z GRIDU
+    mode:
+      description: Režim nabíjení
       selector:
         select:
           options:
             - Nenabíjet
             - Nabíjet
-    Limit:
-      description: Cílové procento nabití baterie
-      example: 100
+    limit:
+      description: Cílové procento nabití
       selector:
         number:
           min: 25
           max: 100
           unit_of_measurement: "%"
-    Acknowledgement:
+    acknowledgement:
       description: |
         I acknowledge that calling the service will result in parameter modification of a live system.
         I take on full responsibility for the changes and any effect they may have, expected or otherwise.
         Beru na vědomí, že volání této služby povede ke změně parametrů živého systému.
         Přebírám plnou odpovědnost za změny a jakýkoli jejich účinek, očekávaný nebo neočekávaný a to i v případě chyby.
+      required: true
       selector:
         boolean:
+
+# Solar forecast služby pro ladění
+update_solar_forecast:
+  name: "🌞 Aktualizovat Solar Forecast"
+  description: "Manuálně aktualizuje data solární předpovědi z forecast.solar API. Lze použít kdykoliv bez ohledu na nastavený interval."
+  fields:
+    entity_id:
+      name: "Solar Forecast Entity"
+      description: "Konkrétní solar forecast senzor k aktualizaci (volitelné - pokud neuvedete, aktualizují se všechny)"
+      required: false
+      example: "sensor.oig_2206237016_solar_forecast"
+      selector:
+        entity:
+          filter:
+            integration: oig_cloud
+            domain: sensor

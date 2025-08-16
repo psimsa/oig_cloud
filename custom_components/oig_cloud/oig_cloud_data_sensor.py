@@ -1,82 +1,388 @@
-"""Data sensor implementation for OIG Cloud integration."""
 import logging
-from typing import Any, Dict, Final, Optional, Union, cast
+from datetime import datetime
+from typing import Any, Dict, Optional, Union
 
-from .coordinator import OigCloudDataUpdateCoordinator
-from .models import OigCloudDeviceData
-from .oig_cloud_sensor import OigCloudSensor
-from .shared.shared import GridMode
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.components.sensor import SensorEntity
+from homeassistant.core import callback
+
+
+# Importujeme pouze GridMode bez zbytku shared modulu
+class GridMode:
+    """Grid mode constants to avoid import issues."""
+
+    ON = "Zapnuto"
+    OFF = "Vypnuto"
+    LIMITED = "Omezeno"
+
 
 _LOGGER = logging.getLogger(__name__)
 
-# Language translations for different states
-_LANGS: Final[Dict[str, Dict[str, str]]] = {
-    "on": {
-        "en": "On",
-        "cs": "Zapnuto",
-    },
-    "off": {
-        "en": "Off",
-        "cs": "Vypnuto",
-    },
-    "unknown": {
-        "en": "Unknown",
-        "cs": "Neznámý",
-    },
-    "changing": {
-        "en": "Changing in progress",
-        "cs": "Probíhá změna",
-    },
-    "Zapnuto/On": {
-        "en": "On",
-        "cs": "Zapnuto",
-    },
-    "Vypnuto/Off": {
-        "en": "Off",
-        "cs": "Vypnuto",
-    },
+_LANGS: Dict[str, Dict[str, str]] = {
+    "on": {"en": "On", "cs": "Zapnuto"},
+    "off": {"en": "Off", "cs": "Vypnuto"},
+    "unknown": {"en": "Unknown", "cs": "Neznámý"},
+    "changing": {"en": "Changing in progress", "cs": "Probíhá změna"},
+    "Zapnuto/On": {"en": "On", "cs": "Zapnuto"},
+    "Vypnuto/Off": {"en": "Off", "cs": "Vypnuto"},
 }
 
 
-class OigCloudDataSensor(OigCloudSensor):
-    """Sensor that reads a value directly from the OIG Cloud API data."""
+class OigCloudDataSensor(CoordinatorEntity, SensorEntity):
+    """Representation of an OIG Cloud sensor."""
+
+    def __init__(
+        self,
+        coordinator: Any,
+        sensor_type: str,
+        extended: bool = False,
+        notification: bool = False,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator)
+        self._sensor_type = sensor_type
+        self._extended = extended
+        self._notification = notification
+        self._last_state: Optional[Union[float, str]] = None  # Uložíme si poslední stav
+
+        # Načteme sensor config
+        try:
+            from .sensor_types import SENSOR_TYPES
+
+            self._sensor_config = SENSOR_TYPES.get(sensor_type, {})
+        except ImportError:
+            self._sensor_config = {}
+
+        # Správná lokalizace názvů - preferujeme český název
+        name_cs = self._sensor_config.get("name_cs")
+        name_en = self._sensor_config.get("name")
+
+        # Preferujeme český název, fallback na anglický, fallback na sensor_type
+        self._attr_name = name_cs or name_en or sensor_type
+
+        # Základní atributy
+        self._attr_native_unit_of_measurement = self._sensor_config.get(
+            "unit_of_measurement"
+        )
+        self._attr_icon = self._sensor_config.get("icon")
+        self._attr_device_class = self._sensor_config.get("device_class")
+        self._attr_state_class = self._sensor_config.get("state_class")
+
+        # Přidání entity_category z konfigurace
+        self._attr_entity_category = self._sensor_config.get("entity_category")
+
+        # Entity ID - KLÍČOVÉ: Tady se vytváří entity ID z sensor_type!
+        if coordinator.data:
+            self._box_id = list(coordinator.data.keys())[0]
+            # DŮLEŽITÉ: Entity ID používá sensor_type (anglický klíč)
+            self.entity_id = f"sensor.oig_{self._box_id}_{sensor_type}"
 
     @property
-    def state(self) -> Optional[Union[float, str]]:
-        """Return the state of the sensor."""
-        _LOGGER.debug(f"Getting state for {self.entity_id}")
-        
-        # Use the helper method from the parent class to get the node value
-        node_value = self.get_node_value()
-        if node_value is None:
+    def unique_id(self) -> str:
+        """Return a unique ID for this entity."""
+        return f"oig_cloud_{self._box_id}_{self._sensor_type}"
+
+    @property
+    def device_info(self) -> Any:
+        """Return device info."""
+        from homeassistant.helpers.entity import DeviceInfo
+        from .const import DOMAIN, DEFAULT_NAME
+
+        if not self.coordinator.data:
             return None
-            
-        language: str = self.hass.config.language
-        
-        # Process special cases
-        if self._sensor_type == "box_prms_mode":
-            return self._get_mode_name(node_value, language)
 
-        if self._sensor_type == "invertor_prms_to_grid":
-            try:
-                box_id = list(self.coordinator.data.keys())[0]
-                pv_data = self.coordinator.data[box_id]
-                return self._grid_mode(pv_data, node_value, language)
-            except (KeyError, IndexError) as e:
-                _LOGGER.warning(f"Error processing grid mode: {e}")
-                return _LANGS["unknown"][language]
+        data = self.coordinator.data
+        box_id = list(data.keys())[0]
 
-        if self._sensor_type in ["boiler_ssr1", "boiler_ssr2", "boiler_ssr3", "boiler_manual_mode"]:
-            return self._get_ssrmode_name(node_value, language)
+        return DeviceInfo(
+            identifiers={(DOMAIN, box_id)},
+            name=f"{DEFAULT_NAME} {box_id}",
+            manufacturer="OIG",
+            model=DEFAULT_NAME,
+        )
 
-        # Try to convert to float for numeric values
+    @property
+    def should_poll(self) -> bool:
+        # Všechny senzory používají coordinator - NEPOTŘEBUJEME polling
+        return False
+
+    async def async_update(self) -> None:
+        # ODSTRANÍME - coordinator se stará o všechny aktualizace
+        # Extended i běžné senzory se aktualizují automaticky přes coordinator
+        pass
+
+    @property
+    def state(self) -> Any:
+        """Return the state of the sensor."""
         try:
-            return float(node_value)
-        except (ValueError, TypeError):
-            return node_value
-        
-    def _get_mode_name(self, node_value: int, language: str) -> str:
-        """Convert box mode number to human-readable name."""
+            # Notification sensors - OPRAVA: Debug logování + lepší diagnostika
+            if self._sensor_type == "latest_notification":
+                notification_manager = getattr(
+                    self.coordinator, "notification_manager", None
+                )
+                _LOGGER.debug(
+                    f"[{self.entity_id}] Notification manager check: {notification_manager is not None}"
+                )
+                if notification_manager is None:
+                    _LOGGER.warning(
+                        f"[{self.entity_id}] Notification manager is None - notifications not initialized"
+                    )
+                    return None
+                return notification_manager.get_latest_notification_message()
+
+            elif self._sensor_type == "bypass_status":
+                notification_manager = getattr(
+                    self.coordinator, "notification_manager", None
+                )
+                if notification_manager is None:
+                    _LOGGER.debug(
+                        f"[{self.entity_id}] Notification manager is None for bypass status"
+                    )
+                    return None
+                return notification_manager.get_bypass_status()
+
+            elif self._sensor_type == "notification_count_error":
+                notification_manager = getattr(
+                    self.coordinator, "notification_manager", None
+                )
+                if notification_manager is None:
+                    return None
+                return notification_manager.get_notification_count("error")
+
+            elif self._sensor_type == "notification_count_warning":
+                notification_manager = getattr(
+                    self.coordinator, "notification_manager", None
+                )
+                if notification_manager is None:
+                    return None
+                return notification_manager.get_notification_count("warning")
+
+            elif self._sensor_type == "notification_count_unread":
+                notification_manager = getattr(
+                    self.coordinator, "notification_manager", None
+                )
+                if notification_manager is None:
+                    return None
+                return notification_manager.get_unread_count()
+
+            if self.coordinator.data is None:
+                return None
+
+            data = self.coordinator.data
+            if not data:
+                return None
+
+            box_id = list(data.keys())[0]
+            pv_data = data[box_id]
+
+            # Extended logika
+            try:
+                from .sensor_types import SENSOR_TYPES
+
+                sensor_config = SENSOR_TYPES.get(self._sensor_type, {})
+                if sensor_config.get("sensor_type_category") == "extended":
+                    return self._get_extended_value_for_sensor()
+            except ImportError:
+                pass
+
+            # Získáme raw hodnotu z parent
+            raw_value = self.get_node_value()
+            if raw_value is None:
+                return None
+
+            # SPECIÁLNÍ ZPRACOVÁNÍ pro určité typy senzorů
+            if self._sensor_type == "box_prms_mode":
+                return self._get_mode_name(raw_value, "cs")
+            elif self._sensor_type == "invertor_prms_to_grid":
+                if isinstance(raw_value, (int, float, str)):
+                    return self._grid_mode(pv_data, raw_value, "cs")
+                else:
+                    _LOGGER.warning(
+                        f"[{self.entity_id}] Invalid raw_value type for grid mode: {type(raw_value)}"
+                    )
+                    return None
+            elif "ssr" in self._sensor_type:
+                return self._get_ssrmode_name(raw_value, "cs")
+            elif self._sensor_type == "boiler_manual_mode":
+                return self._get_boiler_mode_name(raw_value, "cs")
+            elif self._sensor_type == "boiler_is_use":
+                return self._get_on_off_name(raw_value, "cs")
+            elif self._sensor_type == "box_prms_crct":
+                return self._get_on_off_name(raw_value, "cs")
+
+            # Pro ostatní senzory vrátíme raw hodnotu přímo
+            return raw_value
+
+        except Exception as e:
+            _LOGGER.error(
+                f"Error getting state for {self.entity_id}: {e}", exc_info=True
+            )
+            return None
+
+    @property
+    def extra_state_attributes(self) -> Dict[str, Any]:
+        """Return extra state attributes."""
+        attributes = {}
+
+        # Notification sensors - OPRAVA: Kontrola existence notification_manager
+        if self._sensor_type == "latest_notification":
+            notification_manager = getattr(
+                self.coordinator, "notification_manager", None
+            )
+            if notification_manager is not None:
+                latest = notification_manager.get_latest_notification()
+                if latest:
+                    attributes.update(
+                        {
+                            "notification_id": latest.id,
+                            "notification_type": latest.type,
+                            "timestamp": latest.timestamp.isoformat(),
+                            "device_id": latest.device_id,
+                            "severity": latest.severity,
+                            "read": latest.read,
+                        }
+                    )
+
+        elif self._sensor_type == "bypass_status":
+            notification_manager = getattr(
+                self.coordinator, "notification_manager", None
+            )
+            if notification_manager is not None:
+                attributes["last_check"] = datetime.now().isoformat()
+
+        elif self._sensor_type.startswith("notification_count_"):
+            notification_manager = getattr(
+                self.coordinator, "notification_manager", None
+            )
+            if notification_manager is not None:
+                attributes.update(
+                    {
+                        "total_notifications": len(notification_manager._notifications),
+                        "last_update": datetime.now().isoformat(),
+                    }
+                )
+
+        # Společné atributy pro notifikační senzory
+        attributes.update(
+            {
+                "sensor_category": "notification",
+                "integration": "oig_cloud",
+            }
+        )
+
+        return attributes
+
+    def _get_extended_value_for_sensor(self) -> Optional[float]:
+        """Získá hodnotu pro extended senzor podle typu."""
+        sensor_type = self._sensor_type
+
+        # Mapování sensor_type na extended_key
+        if "battery" in sensor_type:
+            return self._get_extended_value("extended_batt", sensor_type)
+        elif "fve" in sensor_type:
+            if "current" in sensor_type:
+                return self._compute_fve_current(sensor_type)
+            else:
+                return self._get_extended_value("extended_fve", sensor_type)
+        elif "grid" in sensor_type:
+            return self._get_extended_value("extended_grid", sensor_type)
+        elif "load" in sensor_type:
+            return self._get_extended_value("extended_load", sensor_type)
+
+        return None
+
+    def _get_extended_value(
+        self, extended_key: str, sensor_type: str
+    ) -> Optional[float]:
+        """Extended data jsou na top level coordinator.data."""
+        try:
+            if not self.coordinator.data:
+                return None
+
+            extended_data = self.coordinator.data.get(extended_key)
+            if not extended_data:
+                return None
+
+            items = extended_data.get("items", [])
+            if not items:
+                return None
+
+            last_values = items[-1]["values"]
+
+            mapping = {
+                # battery
+                "extended_battery_voltage": 0,
+                "extended_battery_current": 1,
+                "extended_battery_capacity": 2,
+                "extended_battery_temperature": 3,
+                # fve
+                "extended_fve_voltage_1": 0,
+                "extended_fve_voltage_2": 1,
+                "extended_fve_current": 2,
+                "extended_fve_power_1": 3,
+                "extended_fve_power_2": 4,
+                # grid
+                "extended_grid_voltage": 0,
+                "extended_grid_power": 1,
+                "extended_grid_consumption": 2,
+                "extended_grid_delivery": 3,
+                # load
+                "extended_load_l1_power": 0,
+                "extended_load_l2_power": 1,
+                "extended_load_l3_power": 2,
+            }
+
+            index = mapping.get(sensor_type)
+            if index is None:
+                _LOGGER.warning(f"Unknown extended sensor mapping for {sensor_type}")
+                return None
+
+            if index >= len(last_values):
+                _LOGGER.warning(f"Index {index} out of range for extended values")
+                return None
+
+            return last_values[index]
+
+        except (KeyError, IndexError, TypeError) as e:
+            _LOGGER.error(f"Error getting extended value for {sensor_type}: {e}")
+            return None
+
+    def _compute_fve_current(self, sensor_type: str) -> Optional[float]:
+        """Extended data jsou na top level coordinator.data."""
+        try:
+            if not self.coordinator.data:
+                return None
+
+            extended_fve = self.coordinator.data.get("extended_fve")
+            if not extended_fve or not extended_fve.get("items"):
+                return 0.0
+
+            last_values = extended_fve["items"][-1]["values"]
+
+            if sensor_type == "extended_fve_current_1":
+                # Index 3 = power_1, Index 0 = voltage_1
+                power = float(last_values[3])  # extended_fve_power_1
+                voltage = float(last_values[0])  # extended_fve_voltage_1
+            elif sensor_type == "extended_fve_current_2":
+                # Index 4 = power_2, Index 1 = voltage_2
+                power = float(last_values[4])  # extended_fve_power_2
+                voltage = float(last_values[1])  # extended_fve_voltage_2
+            else:
+                return None
+
+            if voltage != 0:
+                current = power / voltage
+                _LOGGER.debug(
+                    f"{sensor_type}: {current:.3f}A (P={power}W, U={voltage}V)"
+                )
+                return round(current, 3)
+            else:
+                return 0.0
+        except (KeyError, TypeError, ZeroDivisionError, IndexError) as e:
+            _LOGGER.error(f"Error computing {sensor_type}: {e}", exc_info=True)
+            return None
+
+    def _get_mode_name(self, node_value: Any, language: str) -> str:
         if node_value == 0:
             return "Home 1"
         elif node_value == 1:
@@ -86,61 +392,148 @@ class OigCloudDataSensor(OigCloudSensor):
         elif node_value == 3:
             return "Home UPS"
         return _LANGS["unknown"][language]
-    
-    def _grid_mode(self, pv_data: Dict[str, Any], node_value: Any, language: str) -> str:
-        """Determine grid delivery mode based on multiple parameters."""
-        try:
-            # Get required parameters with safe fallbacks
-            grid_enabled: int = pv_data.get("box_prms", {}).get("crcte", 0)
-            to_grid: int = int(node_value) if node_value is not None else 0
-            max_grid_feed: int = pv_data.get("invertor_prm1", {}).get("p_max_feed_grid", 0)
-            
-            # For typed data model (future usage)
-            if isinstance(pv_data, OigCloudDeviceData):
-                grid_enabled = pv_data.box_prms.crcte
-                to_grid = pv_data.invertor_prms.to_grid
-                max_grid_feed = pv_data.invertor_prm1.p_max_feed_grid
 
-            # Different logic for queen/non-queen models
-            if pv_data.get("queen", False):
-                return self._grid_mode_queen(grid_enabled, to_grid, max_grid_feed, language)
+    def _grid_mode(
+        self, pv_data: Dict[str, Any], node_value: Any, language: str
+    ) -> str:
+        try:
+            # Bezpečné získání hodnot s proper error handling
+            if "box_prms" not in pv_data or "crcte" not in pv_data["box_prms"]:
+                _LOGGER.warning(f"[{self.entity_id}] Missing box_prms.crcte in data")
+                return _LANGS["unknown"][language]
+
+            if (
+                "invertor_prm1" not in pv_data
+                or "p_max_feed_grid" not in pv_data["invertor_prm1"]
+            ):
+                _LOGGER.warning(
+                    f"[{self.entity_id}] Missing invertor_prm1.p_max_feed_grid in data"
+                )
+                return _LANGS["unknown"][language]
+
+            grid_enabled = int(pv_data["box_prms"]["crcte"])
+            to_grid = int(node_value) if node_value is not None else 0
+            max_grid_feed = int(pv_data["invertor_prm1"]["p_max_feed_grid"])
+
+            if "queen" in pv_data and bool(pv_data["queen"]):
+                return self._grid_mode_queen(
+                    grid_enabled, to_grid, max_grid_feed, language
+                )
             return self._grid_mode_king(grid_enabled, to_grid, max_grid_feed, language)
-        except (KeyError, ValueError, TypeError, AttributeError) as e:
-            _LOGGER.warning(f"Error calculating grid mode: {e}")
+
+        except (KeyError, ValueError, TypeError) as e:
+            _LOGGER.error(f"[{self.entity_id}] Error determining grid mode: {e}")
             return _LANGS["unknown"][language]
 
-    def _grid_mode_queen(self, grid_enabled: int, to_grid: int, max_grid_feed: int, language: str) -> str:
-        """Determine grid mode for Queen models."""
-        vypnuto = 0 == to_grid and 0 == max_grid_feed
-        zapnuto = 1 == to_grid
-        limited = 0 == to_grid and 0 < max_grid_feed
-
-        if vypnuto:
-            return GridMode.OFF.value
-        elif limited:
-            return GridMode.LIMITED.value
-        elif zapnuto:
-            return GridMode.ON.value
+    def _grid_mode_queen(
+        self, grid_enabled: int, to_grid: int, max_grid_feed: int, language: str
+    ) -> str:
+        if 0 == to_grid and 0 == max_grid_feed:
+            return GridMode.OFF
+        elif 0 == to_grid and 0 < max_grid_feed:
+            return GridMode.LIMITED
+        elif 1 == to_grid:
+            return GridMode.ON
         return _LANGS["changing"][language]
 
-    def _grid_mode_king(self, grid_enabled: int, to_grid: int, max_grid_feed: int, language: str) -> str:
-        """Determine grid mode for King/regular models."""
-        vypnuto = 0 == grid_enabled and 0 == to_grid
-        zapnuto = 1 == grid_enabled and 1 == to_grid and 10000 == max_grid_feed
-        limited = 1 == grid_enabled and 1 == to_grid and 9999 >= max_grid_feed
-
-        if vypnuto:
-            return GridMode.OFF.value
-        elif limited:
-            return GridMode.LIMITED.value
-        elif zapnuto:
-            return GridMode.ON.value
+    def _grid_mode_king(
+        self, grid_enabled: int, to_grid: int, max_grid_feed: int, language: str
+    ) -> str:
+        if 0 == grid_enabled and 0 == to_grid:
+            return GridMode.OFF
+        elif 1 == grid_enabled and 1 == to_grid and 10000 == max_grid_feed:
+            return GridMode.ON
+        elif 1 == grid_enabled and 1 == to_grid and 9999 >= max_grid_feed:
+            return GridMode.LIMITED
         return _LANGS["changing"][language]
 
-    def _get_ssrmode_name(self, node_value: int, language: str) -> str:
-        """Convert SSR mode number to human-readable name."""
+    def _get_ssrmode_name(self, node_value: Any, language: str) -> str:
         if node_value == 0:
             return "Vypnuto/Off"
         elif node_value == 1:
             return "Zapnuto/On"
         return _LANGS["unknown"][language]
+
+    def _get_boiler_mode_name(self, node_value: Any, language: str) -> str:
+        if node_value == 0:
+            return "CBB"
+        elif node_value == 1:
+            return "Manuální"
+        return _LANGS["unknown"][language]
+
+    def _get_on_off_name(self, node_value: Any, language: str) -> str:
+        if node_value == 0:
+            return _LANGS["off"][language]
+        elif node_value == 1:
+            return _LANGS["on"][language]
+        return _LANGS["unknown"][language]
+
+    def get_node_value(self) -> Optional[Any]:
+        """Get value from coordinator data using node_id and node_key."""
+        try:
+            if not self.coordinator.data:
+                return None
+
+            data = self.coordinator.data
+            box_data = list(data.values())[0] if data else None
+
+            if not box_data:
+                return None
+
+            node_id = self._sensor_config.get("node_id")
+            node_key = self._sensor_config.get("node_key")
+
+            if not node_id or not node_key:
+                return None
+
+            if node_id in box_data:
+                node_data = box_data[node_id]
+                if node_key in node_data:
+                    value = node_data[node_key]
+                    # ODSTRANIT zbytečný debug
+                    return value
+
+            return None
+
+        except (KeyError, TypeError, IndexError):
+            return None
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        if self.coordinator.data:
+            # Uložíme si starou hodnotu PŘED aktualizací
+            old_value = self._last_state
+
+            # Aktualizujeme available status
+            self._attr_available = True
+
+            # Získáme novou hodnotu pomocí state property
+            new_value = self.state
+
+            # Uložíme si novou hodnotu pro příští porovnání
+            self._last_state = new_value
+
+            # Log value updates for debugging - vždy vypisuj obě hodnoty
+            if old_value != new_value:
+                _LOGGER.debug(
+                    "[%s] Data updated: %s -> %s (sensor_type: %s)",
+                    self.entity_id,
+                    old_value,
+                    new_value,
+                    self._sensor_type,
+                )
+            else:
+                _LOGGER.debug(
+                    "[%s] Data unchanged, previous: %s, current: %s (sensor_type: %s)",
+                    self.entity_id,
+                    old_value,
+                    new_value,
+                    self._sensor_type,
+                )
+
+        else:
+            self._attr_available = False
+            _LOGGER.debug("[%s] No coordinator data available", self.entity_id)
+
+        self.async_write_ha_state()

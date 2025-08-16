@@ -2,7 +2,8 @@
   "domain": "oig_cloud",
   "name": "OIG Cloud (Čez Battery Box)",
   "codeowners": [
-    "@psimsa"
+    "@psimsa",
+    "Muriel2Horak"
   ],
   "config_flow": true,
   "dependencies": [],
@@ -10,10 +11,10 @@
   "homekit": {},
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/psimsa/oig_cloud/issues",
-  "requirements": [
-    "opentelemetry-exporter-otlp-proto-grpc==1.28.0"
-  ],
+  "requirements": [],
   "ssdp": [],
-  "version": "1.0.5-live-data2",
-  "zeroconf": []
+  "version": "2.0.1-alpha3",
+  "zeroconf": [],
+  "country": ["CZ"],
+  "homeassistant": "2022.0.0"
 }
