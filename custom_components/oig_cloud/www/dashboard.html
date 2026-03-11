@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OIG Cloud Dashboard</title>
+    <!-- Version: 2024-10-23-extreme-cards -->
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+        integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g"
+        crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"
+        integrity="sha384-cVMg8E3QFwTvGCDuK+ET4PD341jF3W8nO1auiXfuZNQkzbUUiBGLsIQUE+b1mxws"
+        crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"
+        integrity="sha384-y49Zu59jZHJL/PLKgZPv3k2WI9c0Yp3pWB76V8OBVCb0QBKS8l4Ff3YslzHVX76Y"
+        crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"
+        integrity="sha384-zPzbVRXfR492Sd5D+HydTYCxxgHAfgVO8KERbLlpeH5unsmbAEXrscGUUqLZG9BM"
+        crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"
+        integrity="sha384-oNtu+d18330MVFpltUTve1DatxCkkctlpA2AC3GulbVFOSqhHdDat3qHse/Lbuek"
+        crossorigin="anonymous"></script>
+
+    <!-- Styles with cache busting -->
+    <link rel="stylesheet" href="css/variables.css?v=20251215-013">
+    <link rel="stylesheet" href="css/02-layout.css?v=20251215-013">
+    <link rel="stylesheet" href="css/03-typography.css?v=20251215-013">
+    <link rel="stylesheet" href="css/utils/animations.css?v=20251215-013">
+    <link rel="stylesheet" href="css/components/buttons.css?v=20251215-013">
+    <link rel="stylesheet" href="css/components/cards.css?v=20251215-013">
+    <link rel="stylesheet" href="css/components/tiles.css?v=20251215-013">
+    <link rel="stylesheet" href="css/components/modals.css?v=20251215-013">
+    <link rel="stylesheet" href="dashboard-styles.css?v=20251215-013">
+    <link rel="stylesheet" href="css/features/today-plan-tile.css?v=20251215-013">
+    <link rel="stylesheet" href="css/features/detail-tabs.css?v=20251215-013">
+    <link rel="stylesheet" href="css/features/battery-health.css?v=20251215-013">
+    <link rel="stylesheet" href="css/features/custom-tiles.css?v=20251215-013">
+    <link rel="stylesheet" href="css/features/balancing-card.css?v=20251215-013">
+</head>
+
+<body>
+    <!-- Global tooltip (pozicovaný mimo flow) -->
+    <div id="global-tooltip"></div>
+    <div id="global-tooltip-arrow"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1>⚡ Energetické Toky</h1>
+
+            <!-- ČHMÚ Weather Warning Badge -->
+            <div class="chmu-warning-badge" id="chmu-warning-badge" onclick="toggleChmuWarningModal()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                <span class="chmu-icon" id="chmu-icon">✓</span>
+                <span class="chmu-text" id="chmu-text">Bez výstrah</span>
+            </div>
+
+            <div class="time" id="current-time">--:--:--</div>
+            <div class="last-update" id="last-update-header">Aktualizováno: --</div>
+        </div>
+
+        <!-- ČHMÚ Warning Modal -->
+        <div class="chmu-modal" id="chmu-modal" onclick="closeChmuWarningModal(event)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+            <div class="chmu-modal-content" onclick="event.stopPropagation()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                <div class="chmu-modal-header">
+                    <h3 id="chmu-modal-title">🌦️ Meteorologická Výstraha ČHMÚ</h3>
+                    <button class="chmu-modal-close" onclick="closeChmuWarningModal()">&times;</button>
+                </div>
+                <div class="chmu-modal-body" id="chmu-modal-body">
+                    <!-- Dynamicky generováno JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="dashboard-tabs">
+            <div class="dashboard-tab active" onclick="switchTab('flow')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">⚡ Toky</div>
+            <div class="dashboard-tab" onclick="switchTab('pricing')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">💰 Predikce a statistiky</div>
+            <div class="dashboard-tab" id="dashboard-tab-boiler" style="display:none" onclick="switchTab('boiler')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">🔥 Bojler & Auto</div>
+            <div class="layout-controls">
+                <button id="edit-layout-btn" class="btn-layout-edit" onclick="toggleEditMode()" data-tooltip="Upravit rozmístění boxů">
+                    🔧
+                </button>
+                <button id="reset-layout-btn" class="btn-layout-reset" onclick="resetLayout(getCurrentBreakpoint())" data-tooltip="Obnovit výchozí rozmístění">
+                    ↺
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab: Flow (existing content) -->
+        <div id="flow-tab" class="tab-content active">
+
+            <!-- Control Panel -->
+            <div class="control-panel minimized" id="control-panel">
+                <div class="panel-header" onclick="toggleControlPanel()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                    <h3>⚙️ Ovládání
+                        <span class="info-bubble" onclick="event.stopPropagation()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">❓
+                            <span class="info-bubble-tooltip">
+                                <strong>Ovládací panel</strong>
+                                Zde můžete měnit režimy systému v reálném čase. Všechny změny jsou chráněny
+                                ServiceShield systémem pro bezpečné API volání.
+                                <ul>
+                                    <li><strong>Režim střídače:</strong> Home 1-4 režimy</li>
+                                    <li><strong>Dodávka do sítě:</strong> On/Off/Limited</li>
+                                    <li><strong>Bojler:</strong> Inteligentní/Manuální</li>
+                                </ul>
+                                Změny jsou vidět ve frontě požadavků níže.
+                            </span>
+                        </span>
+                    </h3>
+                    <button class="btn-minimize" onclick="event.stopPropagation(); toggleControlPanel()">
+                        <span id="panel-toggle-icon">+</span>
+                    </button>
+                </div>
+
+                <div class="panel-content">
+                    <!-- Box Mode -->
+                    <div class="control-section">
+                        <h4>Režim střídače</h4>
+                        <div class="button-group">
+                            <button onclick="setBoxMode('Home 1')" id="btn-mode-home1"
+                                title="Home 1: Standardní režim pro běžný provoz">🏠 Home 1</button>
+                            <button onclick="setBoxMode('Home 2')" id="btn-mode-home2"
+                                title="Home 2: Optimalizovaný režim pro úsporu energie">🔋 Home 2</button>
+                            <button onclick="setBoxMode('Home 3')" id="btn-mode-home3"
+                                title="Home 3: Preferuje nabíjení baterie z FVE">☀️ Home 3</button>
+                            <button onclick="setBoxMode('Home UPS')" id="btn-mode-ups"
+                                title="Home UPS: Záložní režim s nepřerušitelným napájením">⚡ Home UPS</button>
+                        </div>
+                    </div>
+
+                    <!-- Grid Delivery -->
+                    <div class="control-section">
+                        <h4>Dodávka do sítě</h4>
+                        <div class="button-group">
+                            <button onclick="setGridDelivery('Vypnuto / Off')" id="btn-grid-off"
+                                title="Vypnuto: Nevytváří přetoky do sítě">🚫 Vypnuto</button>
+                            <button onclick="setGridDelivery('Zapnuto / On')" id="btn-grid-on"
+                                title="Zapnuto: Povolena dodávka přebytků do distribuční sítě">💧 Zapnuto</button>
+                            <button onclick="setGridDelivery('S omezením / Limited')" id="btn-grid-limited"
+                                title="Omezeno: Dodávka do sítě s definovaným limitem výkonu">🚰 S omezením</button>
+                        </div>
+                    </div> <!-- Battery Formating -->
+                    <div class="control-section">
+                        <h4>Nabíjení baterie ze sítě</h4>
+                        <div class="button-group">
+                            <button onclick="showChargeBatteryDialog()" id="charge-battery-btn"
+                                title="Nabít baterii na cílové SoC">⚡ Nabít na SoC</button>
+                        </div>
+                    </div>
+
+                    <!-- Boiler -->
+                    <div class="control-section" id="boiler-control-section">
+                        <h4>Režim bojleru</h4>
+                        <div class="button-group">
+                            <button onclick="setBoilerMode('CBB')" id="btn-boiler-cbb"
+                                title="CBB: Inteligentní ohřev podle podmínek (FVE, baterie, tarif)">🤖
+                                Inteligentní</button>
+                            <button onclick="setBoilerMode('Manual')" id="btn-boiler-manual"
+                                title="Manuální: Ruční ovládání bojleru bez automatiky">👤 Manuální</button>
+                        </div>
+                    </div>
+
+                    <!-- Custom Tiles Settings - KOMPAKTNÍ -->
+                    <div class="control-section" style="padding: 10px 15px;">
+                        <h4 style="margin-bottom: 8px; font-size: 14px;">📊 Vlastní dlaždice</h4>
+                        <div
+                            style="display: grid; grid-template-columns: 80px 80px 1fr; gap: 8px; align-items: center;">
+                            <input type="number" id="tiles-left-count" min="0" max="4" value="4"
+                                onchange="updateTileCount('left', this.value)" title="Počet dlaždic vlevo (0-4)"
+                                style="width: 100%; padding: 6px; background: var(--bg-secondary); border: 1px solid var(--border-primary); border-radius: 4px; color: var(--text-primary); text-align: center;">
+                            <input type="number" id="tiles-right-count" min="0" max="4" value="4"
+                                onchange="updateTileCount('right', this.value)" title="Počet dlaždic vpravo (0-4)"
+                                style="width: 100%; padding: 6px; background: var(--bg-secondary); border: 1px solid var(--border-primary); border-radius: 4px; color: var(--text-primary); text-align: center;">
+                            <div style="display: flex; gap: 6px;">
+                                <button onclick="toggleTilesVisibility()" id="btn-tiles-toggle"
+                                    style="flex: 1; padding: 6px 8px; background: var(--button-bg); border: 1px solid var(--button-border); border-radius: 4px; cursor: pointer; font-size: 12px; color: var(--text-primary);"
+                                    title="Zobrazit/skrýt sekci">
+                                    👁️
+                                </button>
+                                <button onclick="resetAllTiles()"
+                                    style="flex: 1; padding: 6px 8px; background: rgba(244, 67, 54, 0.2); border: 1px solid rgba(244, 67, 54, 0.5); border-radius: 4px; cursor: pointer; font-size: 12px; color: var(--text-primary);"
+                                    title="Smazat všechny dlaždice">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shield Queue -->
+                    <div class="control-section" id="shield-queue-section"
+                        style="width: 100%; display: block; margin-right: 0;">
+                        <div id="shield-queue-container" style="text-align: left; width: 100%;">
+                            <div style="text-align: center; opacity: 0.5; padding: 20px;">
+                                Načítání...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flow-canvas">
+                <!-- SVG for connection lines -->
+                <svg class="connections" id="connections">
+                    <!-- Lines will be drawn dynamically -->
+                </svg>
+
+                <!-- Custom Tiles Section - uvnitř flow canvas -->
+                <div class="custom-tiles-section">
+                    <div class="tiles-container">
+                        <!-- Left Block -->
+                        <div class="tiles-block" id="tiles-left">
+                            <div class="tiles-grid">
+                                <!-- 4 tiles will be rendered here dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Right Block -->
+                        <div class="tiles-block" id="tiles-right">
+                            <div class="tiles-grid">
+                                <!-- 4 tiles will be rendered here dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Solar -->
+                <div class="node solar">
+                    <div class="solar-forecast-today entity-value" id="solar-forecast-today-corner"
+                        data-entity="solar_forecast" data-tooltip="Dnešní předpověď"
+                        onclick="openEntityDialog(getSensorId('solar_forecast'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                        <span class="forecast-icon">🔮</span>
+                        <span class="forecast-value" id="solar-forecast-today-value">-- kWh</span>
+                    </div>
+                    <div class="solar-forecast-tomorrow entity-value" id="solar-forecast-tomorrow-corner"
+                        data-entity="solar_forecast_tomorrow" data-tooltip="Zítřejší předpověď"
+                        onclick="openEntityDialog(getSensorId('solar_forecast_tomorrow'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                        <span class="forecast-icon">🌅</span>
+                        <span class="forecast-value" id="solar-forecast-tomorrow-value">-- kWh</span>
+                    </div>
+                    <div class="node-icon solar-icon-dynamic" id="solar-icon-dynamic">☀️</div>
+                    <div class="node-label">Solár</div>
+                    <div class="node-value entity-value" id="solar-power" data-entity="actual_fv_total"
+                        data-tooltip="Aktuální výkon FVE (oba stringy)"
+                        onclick="openEntityDialog(getSensorId('actual_fv_total'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">-- W</div>
+                    <div class="node-subvalue entity-value" id="solar-today" data-flip-pad="none" data-entity="dc_in_fv_ad"
+                        data-tooltip="Vyrobeno dnes celkem" onclick="openEntityDialog(getSensorId('dc_in_fv_ad'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">Dnes:
+                        -- kWh</div>
+                    <div class="node-details">
+                        <div class="solar-columns">
+                            <div class="solar-column">
+                                <div class="detail-subheader">🏭 String 1</div>
+                                <div class="detail-row">
+                                    <span class="detail-icon">⚡</span>
+                                    <span class="detail-value entity-value" id="solar-s1-volt"
+                                        data-entity="extended_fve_voltage_1" data-tooltip="String 1 - Napětí"
+                                        onclick="openEntityDialog(getSensorId('extended_fve_voltage_1'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--V</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-icon">〰️</span>
+                                    <span class="detail-value entity-value" id="solar-s1-amp"
+                                        data-entity="extended_fve_current_1" data-tooltip="String 1 - Proud"
+                                        onclick="openEntityDialog(getSensorId('extended_fve_current_1'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--A</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-icon">⚡</span>
+                                    <span class="detail-value entity-value" id="solar-s1" data-entity="dc_in_fv_p1"
+                                        data-tooltip="String 1 - Výkon"
+                                        onclick="openEntityDialog(getSensorId('dc_in_fv_p1'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">-- W</span>
+                                </div>
+                            </div>
+                            <div class="solar-column">
+                                <div class="detail-subheader">🏭 String 2</div>
+                                <div class="detail-row">
+                                    <span class="detail-icon">⚡</span>
+                                    <span class="detail-value entity-value" id="solar-s2-volt"
+                                        data-entity="extended_fve_voltage_2" data-tooltip="String 2 - Napětí"
+                                        onclick="openEntityDialog(getSensorId('extended_fve_voltage_2'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--V</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-icon">〰️</span>
+                                    <span class="detail-value entity-value" id="solar-s2-amp"
+                                        data-entity="extended_fve_current_2" data-tooltip="String 2 - Proud"
+                                        onclick="openEntityDialog(getSensorId('extended_fve_current_2'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--A</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-icon">⚡</span>
+                                    <span class="detail-value entity-value" id="solar-s2" data-entity="dc_in_fv_p2"
+                                        data-tooltip="String 2 - Výkon"
+                                        onclick="openEntityDialog(getSensorId('dc_in_fv_p2'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">-- W</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Battery -->
+                <div class="node battery">
+                    <div class="battery-current-indicator entity-value" id="battery-current-indicator"
+                        data-entity="extended_battery_current" data-tooltip="Proud baterie"
+                        onclick="openEntityDialog(getSensorId('extended_battery_current'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                        <span style="font-size: 12px;">〰️</span>
+                        <span id="battery-current-value">-- A</span>
+                    </div>
+                    <!-- Battery Balancing Indicator - nový indikátor pod proudem -->
+                    <div class="battery-balancing-indicator" id="battery-balancing-indicator" style="display: none;"
+                        data-tooltip-html="">
+                        <span class="balancing-icon" id="balancing-icon">⚖️</span>
+                        <span class="balancing-text" id="balancing-text">Balancuje...</span>
+                    </div>
+                    <div class="battery-voltage-indicator entity-value" id="battery-voltage-indicator"
+                        data-entity="extended_battery_voltage" data-tooltip="Napětí baterie"
+                        onclick="openEntityDialog(getSensorId('extended_battery_voltage'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                        <span style="font-size: 10px;">⚡</span>
+                        <span id="battery-voltage-value">-- V</span>
+                    </div>
+                    <div class="battery-temp-indicator entity-value" id="battery-temp-indicator"
+                        data-entity="extended_battery_temperature" data-tooltip="Teplota baterie"
+                        onclick="openEntityDialog(getSensorId('extended_battery_temperature'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                        <span class="battery-temp-icon" id="battery-temp-icon">🌡️</span>
+                        <span id="battery-temp-value">-- °C</span>
+                    </div>
+                    <!-- Grid Charging Indicator - vedle teploty -->
+                    <div class="battery-grid-charging-indicator entity-value" id="battery-grid-charging-indicator"
+                        data-entity="grid_charging_planned">
+                        <span style="font-size: 12px;">⚡🔌</span>
+                    </div>
+                    <div class="node-icon">
+                        <svg class="battery-icon-svg" id="battery-icon-svg" viewBox="0 0 50 80" width="35" height="56">
+                            <defs>
+                                <!-- Gradient od červené přes žlutou do zelené (zdola nahoru) -->
+                                <linearGradient id="battery-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#f44336;stop-opacity:1" />
+                                    <stop offset="25%" style="stop-color:#ff9800;stop-opacity:1" />
+                                    <stop offset="50%" style="stop-color:#ffeb3b;stop-opacity:1" />
+                                    <stop offset="75%" style="stop-color:#8bc34a;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#4caf50;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <!-- Baterie obrys -->
+                            <rect x="5" y="10" width="40" height="60" rx="4" ry="4" class="battery-outline" fill="none"
+                                stroke="currentColor" stroke-width="2" />
+                            <!-- Terminál nahoře -->
+                            <rect x="18" y="2" width="14" height="8" rx="2" ry="2" class="battery-terminal"
+                                fill="currentColor" />
+                            <!-- Vyplnění baterie (zdola nahoru) s gradientem -->
+                            <rect x="8" y="13" width="34" height="54" rx="2" ry="2" id="battery-fill"
+                                class="battery-fill" fill="url(#battery-gradient)" />
+                            <!-- Grid charging blesk (skrytý, zobrazí se při nabíjení ze sítě) -->
+                            <text x="25" y="45" class="battery-lightning" id="battery-lightning" text-anchor="middle"
+                                dominant-baseline="middle">⚡</text>
+                        </svg>
+                    </div>
+                    <div class="node-label">Baterie</div>
+                    <div class="node-value entity-value" id="battery-soc" data-flip-pad="none" data-entity="batt_bat_c"
+                        data-tooltip="Stav nabití baterie" onclick="openEntityDialog(getSensorId('batt_bat_c'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">-- %
+                    </div>
+                    <div class="node-subvalue entity-value" id="battery-power" data-entity="batt_batt_comp_p"
+                        data-tooltip="Aktuální výkon baterie"
+                        onclick="openEntityDialog(getSensorId('batt_batt_comp_p'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">-- W</div>
+                    <div class="node-status" id="battery-status">--</div>
+                    <div class="node-details">
+                        <div class="detail-group">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <!-- ENERGIE sloupec -->
+                                <div>
+                                    <div class="detail-subheader">⚡ Energie</div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Nabíjení:</span>
+                                        <span class="detail-value entity-value" id="battery-charge-total"
+                                            data-entity="computed_batt_charge_energy_today"
+                                            data-tooltip="Nabito dnes celkem"
+                                            onclick="openEntityDialog(getSensorId('computed_batt_charge_energy_today'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--
+                                            kWh</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">└ z FVE:</span>
+                                        <span class="detail-value entity-value" id="battery-charge-solar"
+                                            data-entity="computed_batt_charge_fve_energy_today"
+                                            data-tooltip="Nabito z FVE dnes"
+                                            onclick="openEntityDialog(getSensorId('computed_batt_charge_fve_energy_today'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--
+                                            kWh</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">└ ze sítě:</span>
+                                        <span class="detail-value entity-value" id="battery-charge-grid"
+                                            data-entity="computed_batt_charge_grid_energy_today"
+                                            data-tooltip="Nabito ze sítě dnes"
+                                            onclick="openEntityDialog(getSensorId('computed_batt_charge_grid_energy_today'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--
+                                            kWh</span>
+                                    </div>
+                                    <div class="detail-row" style="margin-top: 10px;">
+                                        <span class="detail-label">Vybíjení:</span>
+                                        <span class="detail-value entity-value" id="battery-discharge-total"
+                                            data-entity="computed_batt_discharge_energy_today"
+                                            data-tooltip="Vybito dnes celkem"
+                                            onclick="openEntityDialog(getSensorId('computed_batt_discharge_energy_today'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--
+                                            kWh</span>
+                                    </div>
+                                </div>
+
+                                <!-- PLÁNOVANÉ sloupec -->
+                                <div>
+                                    <div class="detail-subheader">🔌 Plánované</div>
+                                    <div class="grid-charging-plan-section" id="grid-charging-plan-section"
+                                        style="display: none;">
+                                        <div class="detail-row">
+                                            <span class="detail-label">Dobití:</span>
+                                            <span class="detail-value" id="grid-charging-energy">-- kWh</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">Cena:</span>
+                                            <span class="detail-value" id="grid-charging-cost">-- Kč</span>
+                                        </div>
+                                        <div class="detail-row" id="grid-charging-window-row">
+                                            <span class="detail-label">Okno:</span>
+                                            <span class="detail-value" id="grid-charging-window">--</span>
+                                        </div>
+                                        <div class="detail-row" id="grid-charging-duration-row">
+                                            <span class="detail-label">Délka:</span>
+                                            <span class="detail-value" id="grid-charging-duration">--</span>
+                                        </div>
+                                        <div class="detail-row" id="grid-charging-current-row" style="display: none;">
+                                            <span class="detail-label">Probíhá:</span>
+                                            <span class="detail-value" id="grid-charging-current">--</span>
+                                        </div>
+                                        <div class="detail-row" id="grid-charging-next-row" style="display: none;">
+                                            <span class="detail-label">Další:</span>
+                                            <span class="detail-value" id="grid-charging-next">--</span>
+                                        </div>
+                                        <div class="detail-row" id="target-warning-row" style="display: none;">
+                                            <span class="detail-label"></span>
+                                            <span class="detail-value" id="target-warning-indicator"
+                                                  data-tooltip-html=""
+                                                  style="font-size: 0.9em; font-weight: bold; cursor: help;">
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inverter Center -->
+                <div class="node inverter" id="inverter-box">
+                    <div class="inverter-bypass-indicator entity-value" id="inverter-bypass-indicator"
+                        data-entity="bypass_status" data-tooltip="Bypass"
+                        onclick="openEntityDialog(getSensorId('bypass_status'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                        <span id="inverter-bypass-icon">🌉</span>
+                    </div>
+                    <div class="inverter-bypass-label" id="inverter-bypass-label" style="display: none;">Bypass</div>
+                    <div class="inverter-temp-indicator entity-value" id="inverter-temp-indicator"
+                        data-entity="box_temp" data-tooltip="Teplota střídače"
+                        onclick="openEntityDialog(getSensorId('box_temp'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                        <span class="inverter-temp-icon" id="inverter-temp-icon">🌡️</span>
+                        <span id="inverter-temp-value">-- °C</span>
+                    </div>
+                    <!-- Mode change indicator -->
+                    <div class="mode-change-indicator" id="mode-change-indicator" style="display: none;">
+                        <span class="spinner"></span>
+                        <span id="mode-change-text">→ --</span>
+                    </div>
+                    <!-- Grid limit change indicator (for limit changes) -->
+                    <div class="grid-limit-indicator" id="grid-limit-indicator" style="display: none;">
+                        <span class="spinner"></span>
+                        <span id="grid-limit-text">→ --W</span>
+                    </div>
+                    <!-- Grid delivery change indicator moved to "Přetoky do sítě" section -->
+                    <div class="node-icon">🔄</div>
+                    <div class="node-label">Střídač</div>
+                    <div class="node-value entity-value" id="inverter-mode" data-entity="box_prms_mode"
+                        data-tooltip="Režim střídače" onclick="openEntityDialog(getSensorId('box_prms_mode'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--</div>
+                    <div class="node-status planner-mode-badge" id="planner-mode-badge"
+                        data-tooltip="Stav automatického přepínání režimů podle plánu">Režim plánovače: --</div>
+                    <div class="node-details">
+                        <div class="detail-group">
+                            <div class="detail-subheader" style="display: flex; align-items: center; gap: 8px;">
+                                <span>🌊 Přetoky do sítě</span>
+                                <!-- Grid delivery change indicator -->
+                                <div class="grid-change-indicator" id="grid-change-indicator" style="display: none;">
+                                    <span class="spinner"></span>
+                                    <span id="grid-change-text">💧 --</span>
+                                </div>
+                            </div>
+                            <div class="detail-row"
+                                style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px; align-items: center;">
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <span class="detail-icon" id="grid-export-icon">💧</span>
+                                    <span class="detail-value entity-value" id="inverter-grid-export-mode"
+                                        data-entity="invertor_prms_to_grid" data-tooltip="Režim dodávky do sítě"
+                                        onclick="openEntityDialog(getSensorId('invertor_prms_to_grid'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--</span>
+                                </div>
+                                <div
+                                    style="display: flex; align-items: center; gap: 5px; white-space: nowrap; position: relative;">
+                                    <span class="detail-label">LIMIT:</span>
+                                    <span class="detail-value entity-value" id="inverter-export-limit"
+                                        data-entity="invertor_prm1_p_max_feed_grid" data-tooltip="Limit přetoků"
+                                        onclick="openEntityDialog(getSensorId('invertor_prm1_p_max_feed_grid'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--
+                                        kW</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="detail-group">
+                            <div class="detail-subheader">🔔 Notifikace</div>
+                            <div class="detail-row">
+                                <span class="detail-icon">📨</span>
+                                <span class="detail-value entity-value notification-badge"
+                                    id="inverter-notifications-unread" data-entity="notification_count_unread"
+                                    data-tooltip="Nepřečtené notifikace"
+                                    onclick="openEntityDialog(getSensorId('notification_count_unread'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--</span>
+                                <span class="detail-icon">❌</span>
+                                <span class="detail-value entity-value notification-badge"
+                                    id="inverter-notifications-error" data-entity="notification_count_error"
+                                    data-tooltip="Chybové notifikace"
+                                    onclick="openEntityDialog(getSensorId('notification_count_error'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid -->
+                <div class="node grid-node" id="grid-box">
+                    <div class="node-icon" id="grid-icon" style="filter: brightness(1.5) contrast(1.2);">🔌</div>
+                    <div class="node-label">Síť</div>
+                    <div class="node-tariff entity-value" id="grid-tariff-indicator" data-entity="current_tariff"
+                        data-tooltip="Aktuální tarif" onclick="openEntityDialog(getSensorId('current_tariff'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--</div>
+                    <div class="node-frequency entity-value" id="grid-freq-indicator" data-entity="ac_in_aci_f"
+                        data-tooltip="Frekvence sítě" onclick="openEntityDialog(getSensorId('ac_in_aci_f'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">-- Hz</div>
+                    <div class="node-value entity-value" id="grid-power" data-entity="actual_aci_wtotal"
+                        data-tooltip="Aktuální celkový výkon ze sítě (všechny fáze)"
+                        onclick="openEntityDialog(getSensorId('actual_aci_wtotal'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">-- W</div>
+                    <div class="node-phases">
+                        <div class="phase-row-group">
+                            <span class="phase-value entity-value" id="grid-l1-power-main" data-entity="actual_aci_wr"
+                                data-tooltip="L1 výkon"
+                                onclick="openEntityDialog(getSensorId('actual_aci_wr'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--W</span>
+                            <span class="phase-separator">|</span>
+                            <span class="phase-value entity-value" id="grid-l2-power-main" data-entity="actual_aci_ws"
+                                data-tooltip="L2 výkon"
+                                onclick="openEntityDialog(getSensorId('actual_aci_ws'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--W</span>
+                            <span class="phase-separator">|</span>
+                            <span class="phase-value entity-value" id="grid-l3-power-main" data-entity="actual_aci_wt"
+                                data-tooltip="L3 výkon"
+                                onclick="openEntityDialog(getSensorId('actual_aci_wt'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--W</span>
+                        </div>
+                        <div class="phase-row-group">
+                            <span class="phase-value entity-value" id="grid-l1-volt-main" data-entity="ac_in_aci_vr"
+                                data-tooltip="L1 napětí"
+                                onclick="openEntityDialog(getSensorId('ac_in_aci_vr'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--V</span>
+                            <span class="phase-separator">|</span>
+                            <span class="phase-value entity-value" id="grid-l2-volt-main" data-entity="ac_in_aci_vs"
+                                data-tooltip="L2 napětí"
+                                onclick="openEntityDialog(getSensorId('ac_in_aci_vs'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--V</span>
+                            <span class="phase-separator">|</span>
+                            <span class="phase-value entity-value" id="grid-l3-volt-main" data-entity="ac_in_aci_vt"
+                                data-tooltip="L3 napětí"
+                                onclick="openEntityDialog(getSensorId('ac_in_aci_vt'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--V</span>
+                        </div>
+                    </div>
+                    <div class="node-status" id="grid-status">--</div>
+                    <div class="node-details">
+                        <div class="detail-group">
+                            <div class="detail-subheader">⚡ Energie</div>
+                            <div class="detail-row detail-row-quad">
+                                <span class="detail-icon">⬇️</span>
+                                <span class="detail-value entity-value" id="grid-import" data-entity="ac_in_ac_ad"
+                                    data-tooltip="Import ze sítě"
+                                    onclick="openEntityDialog(getSensorId('ac_in_ac_ad'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">-- kWh</span>
+                                <span class="detail-icon">⬆️</span>
+                                <span class="detail-value entity-value" id="grid-export" data-entity="ac_in_ac_pd"
+                                    data-tooltip="Export do sítě"
+                                    onclick="openEntityDialog(getSensorId('ac_in_ac_pd'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">-- kWh</span>
+                            </div>
+                        </div>
+                        <div class="detail-group">
+                            <div class="detail-subheader">💰 Ceny</div>
+                            <div class="detail-row detail-row-quad">
+                                <span class="detail-icon">⬇️</span>
+                                <span class="detail-value entity-value" id="grid-spot-price"
+                                    data-entity="spot_price_current_15min" data-tooltip="Nákupní cena"
+                                    onclick="openEntityDialog(getSensorId('spot_price_current_15min'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">-- Kč/kWh</span>
+                                <span class="detail-icon">⬆️</span>
+                                <span class="detail-value entity-value" id="grid-export-price"
+                                    data-entity="export_price_current_15min" data-tooltip="Prodejní cena"
+                                    onclick="openEntityDialog(getSensorId('export_price_current_15min'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--
+                                    Kč/kWh</span>
+                            </div>
+                        </div>
+                        <div class="detail-group" style="display: none;">
+                            <div class="detail-subheader">⚡ Fáze</div>
+                            <div class="detail-row">
+                                <span class="detail-icon">L1</span>
+                                <span class="detail-value entity-value" id="grid-l1-volt" data-entity="ac_in_aci_vr"
+                                    data-tooltip="L1 napětí"
+                                    onclick="openEntityDialog(getSensorId('ac_in_aci_vr'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--V</span>
+                                <span class="detail-value entity-value" id="grid-l1-power" data-entity="actual_aci_wr"
+                                    data-tooltip="L1 výkon"
+                                    onclick="openEntityDialog(getSensorId('actual_aci_wr'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--W</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-icon">L2</span>
+                                <span class="detail-value entity-value" id="grid-l2-volt" data-entity="ac_in_aci_vs"
+                                    data-tooltip="L2 napětí"
+                                    onclick="openEntityDialog(getSensorId('ac_in_aci_vs'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--V</span>
+                                <span class="detail-value entity-value" id="grid-l2-power" data-entity="actual_aci_ws"
+                                    data-tooltip="L2 výkon"
+                                    onclick="openEntityDialog(getSensorId('actual_aci_ws'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--W</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-icon">L3</span>
+                                <span class="detail-value entity-value" id="grid-l3-volt" data-entity="ac_in_aci_vt"
+                                    data-tooltip="L3 napětí"
+                                    onclick="openEntityDialog(getSensorId('ac_in_aci_vt'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--V</span>
+                                <span class="detail-value entity-value" id="grid-l3-power" data-entity="actual_aci_wt"
+                                    data-tooltip="L3 výkon"
+                                    onclick="openEntityDialog(getSensorId('actual_aci_wt'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--W</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- House -->
+                <div class="node house">
+                    <!-- Boiler mode change indicator -->
+                    <div class="boiler-change-indicator" id="boiler-change-indicator" style="display: none;">
+                        <span class="spinner"></span>
+                        <span id="boiler-change-text">🌡️ --</span>
+                    </div>
+                    <div class="node-icon">🏠</div>
+                    <div class="node-label">Spotřeba</div>
+                    <div class="node-value entity-value" id="house-power" data-entity="actual_aco_p"
+                        data-tooltip="Aktuální celková spotřeba domácnosti"
+                        onclick="openEntityDialog(getSensorId('actual_aco_p'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">-- W</div>
+                    <div class="node-subvalue entity-value" id="house-today" data-flip-pad="none" data-entity="ac_out_en_day"
+                        data-tooltip="Spotřeba dnes celkem" onclick="openEntityDialog(getSensorId('ac_out_en_day'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                        Dnes: -- kWh</div>
+                    <div class="node-phases">
+                        <span class="phase-value" id="house-l1-main">--W</span>
+                        <span class="phase-separator">|</span>
+                        <span class="phase-value" id="house-l2-main">--W</span>
+                        <span class="phase-separator">|</span>
+                        <span class="phase-value" id="house-l3-main">--W</span>
+                    </div>
+                    <div class="node-details" id="house-details">
+                        <div class="detail-group" id="boiler-detail-section" style="display: none;">
+                            <div class="detail-subheader">🔥 Bojler</div>
+                            <div class="detail-row" style="justify-content: flex-start;">
+                                <span class="detail-icon">⚡</span>
+                                <span class="detail-label">Výkon:</span>
+                                <span class="detail-value entity-value" id="house-boiler-power"
+                                    data-entity="boiler_current_cbb_w" data-tooltip="Aktuální výkon bojleru"
+                                    onclick="openEntityDialog(getSensorId('boiler_current_cbb_w'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">-- W</span>
+                            </div>
+                            <div class="detail-row" style="justify-content: flex-start;">
+                                <span class="detail-icon">📊</span>
+                                <span class="detail-label">Nabito:</span>
+                                <span class="detail-value entity-value" id="house-boiler-today"
+                                    data-entity="boiler_day_w" data-tooltip="Energie nabita do bojleru dnes"
+                                    onclick="openEntityDialog(getSensorId('boiler_day_w'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">-- Wh</span>
+                            </div>
+                            <div class="detail-row" style="justify-content: flex-start;">
+                                <span class="detail-icon" id="boiler-mode-icon">🤖</span>
+                                <span class="detail-label">Režim:</span>
+                                <span class="detail-value entity-value" id="house-boiler-mode"
+                                    data-entity="boiler_manual_mode" data-tooltip="Režim bojleru"
+                                    onclick="openEntityDialog(getSensorId('boiler_manual_mode'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Particles container -->
+                <div id="particles"></div>
+            </div>
+        </div>
+        <!-- End Flow Tab -->
+
+        <!-- INCLUDE: Boiler Tab -->
+        <script>
+            async function _shouldShowBoilerAutoTab() {
+                const entryId = new URLSearchParams(window.location.search).get('entry_id');
+                if (!entryId) return false; // safer default: keep hidden if we can't determine
+                try {
+                    if (typeof fetchWithAuth !== 'function') {
+                        throw new Error('fetchWithAuth not ready');
+                    }
+                    const res = await fetchWithAuth(`/api/oig_cloud/${entryId}/modules`);
+                    if (!res.ok) return false;
+                    const cfg = await res.json();
+                    return !!(cfg && (cfg.enable_boiler || cfg.enable_auto));
+                } catch (e) {
+                    console.warn('[Dashboard] Failed to read modules config:', e);
+                    return false;
+                }
+            }
+
+            async function _initBoilerAutoTab() {
+                const show = await _shouldShowBoilerAutoTab();
+                const tabButton = document.getElementById('dashboard-tab-boiler');
+                if (!show) {
+                    if (tabButton) tabButton.style.display = 'none';
+                    return;
+                }
+
+                if (tabButton) tabButton.style.display = '';
+
+                fetch('boiler-tab.html')
+                    .then(response => response.text())
+                    .then(html => {
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = html;
+                        const boilerTab = tempDiv.firstElementChild;
+                        document.getElementById('pricing-tab').insertAdjacentElement('beforebegin', boilerTab);
+                    })
+                    .catch(err => console.error('[Dashboard] Failed to load boiler-tab.html:', err));
+            }
+
+            // Wait until core api helpers are loaded (dashboard injects scripts later in the HTML).
+            (function _bootBoilerTab(tries = 0) {
+                if (typeof fetchWithAuth === 'function') {
+                    _initBoilerAutoTab();
+                    return;
+                }
+                if (tries >= 40) { // ~10s
+                    console.warn('[Dashboard] Boiler tab init skipped: fetchWithAuth not available');
+                    return;
+                }
+                setTimeout(() => _bootBoilerTab(tries + 1), 250);
+            })();
+        </script>
+
+        <!-- Tab: Pricing & Forecast -->
+        <div id="pricing-tab" class="tab-content">
+            <!-- Compact loading indicator (top-right corner) -->
+            <div id="pricing-loading-overlay" style="display: none; position: fixed; top: 75px; right: 20px; z-index: 1000; background: rgba(33, 150, 243, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(33, 150, 243, 0.3); border-radius: 8px; padding: 8px 12px; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                <div style="font-size: 1.1em; animation: spin 1s linear infinite;">⏳</div>
+                <div style="font-size: 0.85em; color: var(--text-primary); font-weight: 500;">Načítání...</div>
+            </div>
+
+            <!-- Top cards row: Pozitivní metriky + Today Plan -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <!-- Nejlevnější období NÁKUPU -->
+                <div class="stat-card"
+                    style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(76, 175, 80, 0.05) 100%); border: 1px solid rgba(76, 175, 80, 0.3); min-height: 160px;">
+                    <div class="stat-label" style="color: #4CAF50; font-weight: 600;">🟢 Nejlevnější nákup</div>
+                    <div class="stat-value" id="cheapest-buy-price" style="font-size: 1.8em; margin: 10px 0;">--</div>
+                    <div id="cheapest-buy-time"
+                        style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 8px; min-height: 20px;">
+                        --</div>
+                    <canvas id="cheapest-buy-chart"
+                        style="height: 40px; max-height: 40px; margin-top: auto; display: block; align-self: flex-end;"></canvas>
+                </div>
+
+                <!-- Nejlepší období PRODEJE (nejvyšší cena) -->
+                <div class="stat-card"
+                    style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(76, 175, 80, 0.05) 100%); border: 1px solid rgba(76, 175, 80, 0.3); min-height: 160px;">
+                    <div class="stat-label" style="color: #4CAF50; font-weight: 600;">📈 Nejlepší prodej</div>
+                    <div class="stat-value" id="best-export-price" style="font-size: 1.8em; margin: 10px 0;">--</div>
+                    <div id="best-export-time"
+                        style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 8px; min-height: 20px;">
+                        --</div>
+                    <canvas id="best-export-chart"
+                        style="height: 40px; max-height: 40px; margin-top: auto; display: block; align-self: flex-end;"></canvas>
+                </div>
+
+                <!-- Unified Cost Tile - PLAN_VS_ACTUAL_UX_REDESIGN_V2.md Fáze 1 -->
+                <div id="cost-comparison-tile-container" class="stat-card cost-card">
+                    <div class="cost-card-placeholder">
+                        <span class="cost-card-title">💰 Nákladový přehled</span>
+                        <span class="cost-card-loading">Načítání…</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grid Charging Card - ponechat když je aktiv -->
+            <div class="stat-card" id="grid-charging-card" style="display: none; margin-bottom: 15px;">
+                <div class="stat-label">📱 Plánované nabíjení ze sítě</div>
+                <div class="stat-value" id="grid-charging-summary" style="font-size: 0.9em; line-height: 1.4;">
+                    <div id="grid-charging-total">--</div>
+                    <div id="grid-charging-cost-summary"
+                        style="font-size: 0.8em; color: var(--text-secondary); margin-top: 5px;">--</div>
+                </div>
+            </div>
+
+            <!-- Nápověda ovládání mimo graf -->
+            <div class="chart-control-bar">
+                <span class="chart-control-tip">
+                    💡 <strong>Ovládání grafu:</strong> Myší označte oblast pro zoom • Kolečka zoom in/out • Shift+tažení = posun
+                </span>
+                <div class="chart-control-actions">
+                    <button class="chart-control-btn" onclick="resetChartZoom()">🔍 Reset Zoom</button>
+                    <button class="chart-control-btn" id="datalabel-toggle-btn" onclick="toggleDatalabelMode()">
+                        📊 Ceny: <span id="datalabel-mode-text">Auto</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="chart-container" style="height: 520px;">
+                <div class="chart-title">
+                    📊 Ceny elektřiny & Předpovědi
+                    <span id="chart-plan-pill" class="chart-plan-pill">Standardní</span>
+                </div>
+                <div class="chart-wrapper"><canvas id="combined-chart"></canvas></div>
+            </div>
+
+            <!-- Battery Efficiency Statistics -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; margin-top: 20px;">
+                <div class="stat-card"
+                    style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(76, 175, 80, 0.05) 100%); border: 1px solid rgba(76, 175, 80, 0.3); min-height: 160px;">
+                    <div class="stat-label" style="color: #4CAF50; font-weight: 600;">⚡ Efektivita nabíjení</div>
+                    <div id="battery-efficiency-period-label" style="font-size: 0.7em; color: var(--text-secondary); margin-top: 2px;">--</div>
+                    <div class="stat-value" id="battery-efficiency-main" style="font-size: 1.8em; margin: 10px 0;">--</div>
+                    <div id="battery-efficiency-trend"
+                        style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 8px; min-height: 20px;">
+                        --</div>
+                    <div style="font-size: 0.75em; color: var(--text-secondary); margin-bottom: 5px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>⚡ Nabito:</span>
+                            <span id="battery-charge-value" style="color: var(--text-primary);">--</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>🔌 Vybito:</span>
+                            <span id="battery-discharge-value" style="color: var(--text-primary);">--</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>📉 Ztráty:</span>
+                            <span id="battery-losses-value" style="color: #FF5722; font-weight: 600;">--</span>
+                        </div>
+                    </div>
+                    <!-- Gradient bar comparison místo grafu -->
+                    <div style="height: 40px; margin-top: 5px; position: relative; border-radius: 4px; overflow: hidden; background: rgba(76, 175, 80, 0.1);">
+                        <div id="battery-efficiency-bar-last" style="position: absolute; left: 0; top: 0; height: 100%; background: linear-gradient(90deg, rgba(76, 175, 80, 0.6) 0%, rgba(76, 175, 80, 0.4) 100%); transition: width 0.3s ease;">
+                        </div>
+                        <div id="battery-efficiency-bar-current" style="position: absolute; right: 0; top: 0; height: 100%; background: linear-gradient(90deg, rgba(33, 150, 243, 0.4) 0%, rgba(33, 150, 243, 0.6) 100%); transition: width 0.3s ease;">
+                        </div>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.7em; color: var(--text-primary); font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.3); display: flex; gap: 15px;">
+                            <span id="battery-efficiency-bar-last-label">--</span>
+                            <span style="opacity: 0.5;">|</span>
+                            <span id="battery-efficiency-bar-current-label">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Planned Consumption (Adaptive Load Profiles) -->
+                <div class="stat-card"
+                    style="background: linear-gradient(135deg, rgba(33, 150, 243, 0.15) 0%, rgba(33, 150, 243, 0.05) 100%); border: 1px solid rgba(33, 150, 243, 0.3); min-height: 160px;">
+                    <div class="stat-label" style="color: #2196F3; font-weight: 600;">📊 Plánovaná spotřeba</div>
+                    <!-- Profil nahoru -->
+                    <div id="consumption-profile-display" style="font-size: 0.7em; color: var(--text-secondary); margin-top: 2px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-height: 2.6em;" title="Zbývá dnes + celý zítřek">
+                        --
+                    </div>
+                    <div class="stat-value" id="planned-consumption-main" style="font-size: 1.8em; margin: 10px 0;">--</div>
+                    <div id="planned-consumption-trend"
+                        style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 8px; min-height: 20px;">
+                        --</div>
+                    <div style="font-size: 0.75em; color: var(--text-secondary); margin-bottom: 5px;">
+                        <!-- Kompaktní grid pro Dnes/Zítra -->
+                        <div style="display: grid; grid-template-columns: auto 1fr; gap: 4px 8px; align-items: baseline;">
+                            <span style="opacity: 0.7;">Dnes spotřeba:</span>
+                            <span id="planned-today-consumed-kwh" style="color: var(--text-primary); font-weight: 500; text-align: right;">--</span>
+
+                            <span style="opacity: 0.7; padding-left: 12px;">└ plán:</span>
+                            <span id="planned-today-remaining-kwh" style="color: var(--text-primary); font-weight: 500; text-align: right;">--</span>
+
+                            <span style="opacity: 0.7; margin-top: 4px;">Zítra:</span>
+                            <span id="planned-tomorrow-kwh" style="color: var(--text-primary); font-weight: 500; text-align: right; margin-top: 4px;">--</span>
+                        </div>
+                    </div>
+                    <!-- Gradient bar místo grafu -->
+                    <div style="height: 40px; margin-top: 5px; position: relative; border-radius: 4px; overflow: hidden; background: rgba(33, 150, 243, 0.1);">
+                        <div id="planned-consumption-bar-today" style="position: absolute; left: 0; top: 0; height: 100%; background: linear-gradient(90deg, rgba(33, 150, 243, 0.6) 0%, rgba(33, 150, 243, 0.4) 100%); transition: width 0.3s ease;">
+                        </div>
+                        <div id="planned-consumption-bar-tomorrow" style="position: absolute; right: 0; top: 0; height: 100%; background: linear-gradient(90deg, rgba(156, 39, 176, 0.4) 0%, rgba(156, 39, 176, 0.6) 100%); transition: width 0.3s ease;">
+                        </div>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.7em; color: var(--text-primary); font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.3); display: flex; gap: 15px;">
+                            <span id="planned-bar-today-label">--</span>
+                            <span style="opacity: 0.5;">|</span>
+                            <span id="planned-bar-tomorrow-label">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Battery Balancing Card -->
+                <div class="stat-card" id="battery-balancing-card"
+                    style="background: linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(255, 152, 0, 0.05) 100%); border: 1px solid rgba(255, 152, 0, 0.3); min-height: 160px;">
+                    <div id="balancing-card-title" class="stat-label" style="color: #FF9800; font-weight: 600;">🔋 Vyrovnání baterie</div>
+                    <div id="balancing-status-label" style="font-size: 0.7em; color: var(--text-secondary); margin-top: 2px;">--</div>
+
+                    <!-- Velké číslo - dny do balancingu -->
+                    <div class="stat-value" style="margin: 10px 0;">
+                        <span id="balancing-days-number" style="font-size: 1.8em; font-weight: bold;">--</span>
+                        <span id="balancing-days-unit" style="font-size: 0.9em; color: var(--text-secondary); margin-left: 5px;">dní</span>
+                    </div>
+
+                    <div id="balancing-details" style="font-size: 0.75em; color: var(--text-secondary); margin-bottom: 5px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                            <span>📅 Poslední:</span>
+                            <span id="balancing-last-date-short" style="color: var(--text-primary);">--</span>
+                        </div>
+                        <div id="balancing-planned-short" style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                            <span>⏰ Plánováno:</span>
+                            <span id="balancing-planned-time-short" style="color: var(--text-primary);">--</span>
+                        </div>
+                        <div id="balancing-cost-short" style="display: flex; justify-content: space-between;">
+                            <span>💰 Náklady:</span>
+                            <span id="balancing-cost-value-short" style="color: var(--text-primary);">--</span>
+                        </div>
+                    </div>
+
+                    <!-- Timeline bar -->
+                    <div style="height: 40px; margin-top: 5px; position: relative; border-radius: 4px; overflow: hidden; background: rgba(255, 152, 0, 0.1);">
+                        <div id="balancing-timeline-bar" style="position: absolute; left: 0; top: 0; height: 100%; transition: width 0.3s ease;">
+                            <!-- JS vyplní progress -->
+                        </div>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.7em; color: var(--text-primary); font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">
+                            <span id="balancing-timeline-label">--</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        <!-- End Pricing Tab -->
+
+        <!-- Mode Timeline Dialog -->
+        <div id="mode-timeline-dialog" class="dialog-overlay" style="display: none;" onclick="closeModeTimelineDialog()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+            <div class="dialog-content timeline-dialog" onclick="event.stopPropagation()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                <div class="dialog-header">
+                    <div class="dialog-header-left">
+                        <h3>📅 Optimalizovaný plán režimů (72h)</h3>
+                        <div class="timeline-header-controls">
+                            <div class="auto-mode-toggle" id="auto-mode-toggle">
+                                <label class="auto-mode-switch">
+                                    <input type="checkbox" id="auto-mode-toggle-input">
+                                    <span class="auto-mode-switch-track"></span>
+                                </label>
+                                <div class="auto-mode-toggle-text">
+                                    <span class="auto-mode-toggle-title">Auto přepínání</span>
+                                    <span class="auto-mode-toggle-status" id="auto-mode-toggle-status">Načítám…</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="dialog-close close-timeline-dialog" onclick="closeModeTimelineDialog()">&times;</button>
+                </div>
+
+                <div class="dialog-body">
+                    <!-- Tabs Navigation -->
+                    <div class="timeline-tabs">
+                        <button class="timeline-tab timeline-tab-btn" data-tab="yesterday">
+                            📊 VČERA
+                        </button>
+                        <button class="timeline-tab timeline-tab-btn active" data-tab="today">
+                            📆 DNES
+                        </button>
+                        <button class="timeline-tab timeline-tab-btn" data-tab="tomorrow">
+                            📅 ZÍTRA
+                        </button>
+                        <button class="timeline-tab timeline-tab-btn" data-tab="compare">
+                            📊 48H
+                        </button>
+                        <button class="timeline-tab timeline-tab-btn" data-tab="detail">
+                            💎 DETAIL
+                        </button>
+                        <button class="timeline-tab timeline-tab-btn" data-tab="history">
+                            📈 HISTORIE
+                        </button>
+                    </div>
+
+                    <!-- Tab Content - YESTERDAY -->
+                    <div id="timeline-yesterday-content" class="timeline-tab-content">
+                        <div id="yesterday-timeline-container">
+                            <!-- Filled by TimelineDialog.renderYesterdayTab() -->
+                        </div>
+                    </div>
+
+                    <!-- Tab Content - TODAY -->
+                    <div id="timeline-today-content" class="timeline-tab-content active">
+                        <div id="today-timeline-container">
+                            <!-- Filled by TimelineDialog.renderTodayTab() -->
+                        </div>
+                    </div>
+
+                    <!-- Tab Content - TOMORROW -->
+                    <div id="timeline-tomorrow-content" class="timeline-tab-content">
+                        <div id="tomorrow-timeline-container">
+                            <!-- Filled by TimelineDialog.renderTomorrowTab() -->
+                        </div>
+                    </div>
+
+                    <!-- Tab Content - COMPARE 48H -->
+                    <div id="timeline-compare-content" class="timeline-tab-content">
+                        <div id="compare-timeline-container">
+                            <!-- Filled by TimelineDialog.renderCompareTab() -->
+                        </div>
+                    </div>
+
+                    <!-- Tab Content - DETAIL (FÁZE 6) -->
+                    <div id="timeline-detail-content" class="timeline-tab-content">
+                        <div id="detail-timeline-container">
+                            <!-- Filled by TimelineDialog.renderDetailTab() -->
+                        </div>
+                    </div>
+
+                    <!-- Tab Content - HISTORY -->
+                    <div id="timeline-history-content" class="timeline-tab-content">
+                        <div id="history-timeline-container">
+                            <!-- Filled by TimelineDialog.renderHistoryTab() -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- /timeline-dialog-overlay -->
+    </div>
+    <!-- /pricing-tab -->
+</div>
+<!-- /container -->
+
+        <!-- Extrahovaný JavaScript -->
+        <!-- Dashboard moduly (musí být před core) -->
+        <script>
+            // Dynamic cache busting
+            const v = Date.now();
+            const scripts = [
+                // Core
+                'js/core/utils.js',
+                'js/core/api.js',
+                'js/core/state-watcher.js',
+
+                // Components
+                'js/components/shield.js',
+                'js/components/tiles.js',
+                'js/components/dialog.js',
+                'js/components/grid-charging.js',
+
+                // Features
+                'js/features/timeline.js',
+                'js/features/pricing.js',
+                'js/features/boiler.js',
+                'js/features/flow.js',
+                'js/features/battery-health.js',
+                'js/features/analytics.js',
+                'js/features/chmu.js',
+                'js/features/detail-tabs.js',
+
+                // Layout
+                'js/layout/layout-manager.js',
+
+                // Core (must be last)
+                'js/core/core.js'
+            ];
+            scripts.forEach(src => {
+                const script = document.createElement('script');
+                script.src = `${src}?v=${v}`;
+                document.write(script.outerHTML);
+            });
+        </script>
+
+        <!-- Prefetch timeline data on load -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('[Dashboard] Prefetching timeline data...');
+
+                // Prefetch detail_tabs for all days
+                const days = ['yesterday', 'today', 'tomorrow'];
+                const sn = INVERTER_SN;
+
+                days.forEach(day => {
+                    fetchWithAuth(`/api/oig_cloud/battery_forecast/${sn}/detail_tabs?tab=${day}`)
+                        .then(r => r.ok ? r.json() : null)
+                        .then(data => {
+                            if (data) {
+                                console.log(`[Dashboard] Prefetched ${day} data:`, data.mode_blocks?.length, 'blocks');
+                            }
+                        })
+                        .catch(err => console.warn(`[Dashboard] Prefetch ${day} failed:`, err));
+                });
+            });
+        </script>
+</body>
+
+</html>

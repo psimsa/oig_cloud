@@ -1,0 +1,348 @@
+<!-- Tab: Bojler & Auto -->
+<div id="boiler-tab" class="tab-content">
+
+    <!-- Boiler Control Panel -->
+    <div class="boiler-control-panel minimized" id="boiler-control-panel">
+        <div class="panel-header" onclick="toggleBoilerControlPanel()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+            <h3>🛠️ Pokročilé ovládání (Debug)
+                <span class="info-bubble" onclick="event.stopPropagation()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">❓
+                    <span class="info-bubble-tooltip">
+                        <strong>⚠️ Automatický režim</strong>
+                        Bojler funguje plně automaticky! Systém:
+                        <ul>
+                            <li>🤖 <strong>Automaticky plánuje</strong> ohřev každých 5 minut</li>
+                            <li>⏰ <strong>Cíl:</strong> Do deadline (20:00) být nahřátý na cílovou teplotu</li>
+                            <li>💰 <strong>Optimalizuje:</strong> Podle spotových cen a profilu spotřeby</li>
+                        </ul>
+                        <strong>Tlačítka níže jsou jen pro debug/override:</strong>
+                        <ul>
+                            <li><strong>Naplánovat:</strong> Manuálně přeplánovat (normálně automatické)</li>
+                            <li><strong>Aplikovat:</strong> Spustit plán ručně (normálně automatické)</li>
+                            <li><strong>Zrušit:</strong> Zrušit aktuální plán</li>
+                        </ul>
+                    </span>
+                </span>
+            </h3>
+            <button class="btn-minimize" onclick="event.stopPropagation(); toggleBoilerControlPanel()">
+                <span id="boiler-panel-toggle-icon">+</span>
+            </button>
+        </div>
+
+        <div class="panel-content">
+            <!-- Boiler Actions -->
+            <div class="control-section">
+                <h4>⚠️ Manuální akce (override)</h4>
+                <div class="button-group">
+                    <button onclick="planBoilerHeating()" id="btn-plan-boiler"
+                        title="[DEBUG] Manuálně přeplánovat - normálně se děje automaticky každých 5 min">
+                        📅 Přeplánovat (debug)
+                    </button>
+                    <button onclick="applyBoilerPlan()" id="btn-apply-boiler"
+                        title="[DEBUG] Spustit plán ručně - normálně automatické">
+                        ✅ Aplikovat ručně
+                    </button>
+                    <button onclick="cancelBoilerPlan()" id="btn-cancel-boiler"
+                        title="Zrušit aktuální automatický plán topení">
+                        ❌ Zrušit plán
+                    </button>
+                </div>
+            </div>
+
+            <!-- Boiler Status Info -->
+            <div class="control-section">
+                <h4>Stav bojleru</h4>
+                <div class="boiler-status-grid">
+                    <div class="status-card">
+                        <div class="status-label">SOC</div>
+                        <div class="status-value entity-value" id="boiler-soc-value"
+                            data-entity="boiler_soc"
+                            data-tooltip="State of Charge - úroveň nabití (0-100%)"
+                            onclick="openEntityDialog(getSensorId('boiler_soc'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                            -- %
+                        </div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-label">Teplota horní</div>
+                        <div class="status-value entity-value" id="boiler-temp-top-value"
+                            data-entity="boiler_temperature_top"
+                            data-tooltip="Teplota v horní zóně bojleru"
+                            onclick="openEntityDialog(getSensorId('boiler_temperature_top'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                            -- °C
+                        </div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-label">Energie potřebná</div>
+                        <div class="status-value entity-value" id="boiler-energy-required-value"
+                            data-entity="boiler_energy_required"
+                            data-tooltip="Energie potřebná k dosažení cílové teploty"
+                            onclick="openEntityDialog(getSensorId('boiler_energy_required'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                            -- kWh
+                        </div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-label">Náklady plánu</div>
+                        <div class="status-value entity-value" id="boiler-plan-cost-value"
+                            data-entity="boiler_plan_cost"
+                            data-tooltip="Celkové náklady na naplánovaný ohřev"
+                            onclick="openEntityDialog(getSensorId('boiler_plan_cost'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                            -- Kč
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW: Energy Breakdown -->
+            <div class="control-section">
+                <h4>Rozpad energie</h4>
+                <div class="boiler-status-grid">
+                    <div class="status-card">
+                        <div class="status-label">Ze sítě</div>
+                        <div class="status-value" id="boiler-grid-energy-value"
+                            data-tooltip="Energie ze sítě (kWh + náklady)">
+                            -- kWh (-- Kč)
+                        </div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-label">Alternativa</div>
+                        <div class="status-value" id="boiler-alt-energy-value"
+                            data-tooltip="Energie z alternativního zdroje">
+                            -- kWh (-- Kč)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW: Predicted Usage -->
+            <div class="control-section">
+                <h4>Plánované odběry</h4>
+                <div class="boiler-predicted-usage" id="boiler-predicted-usage">
+                    <div class="usage-item">
+                        <span class="usage-label">Předpokládaná spotřeba:</span>
+                        <span class="usage-value" id="boiler-predicted-today">-- kWh</span>
+                    </div>
+                    <div class="usage-item">
+                        <span class="usage-label">Píky spotřeby:</span>
+                        <span class="usage-value" id="boiler-peak-hours">--</span>
+                    </div>
+                    <div class="usage-item">
+                        <span class="usage-label">≈ objem vody (40°C):</span>
+                        <span class="usage-value" id="boiler-water-liters">-- L</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW: Heating Ratio -->
+            <div class="control-section">
+                <h4>Poměr dohřevu</h4>
+                <div class="heating-ratio-container">
+                    <div class="ratio-bar">
+                        <div class="ratio-grid" id="boiler-ratio-grid" style="width: 0%"
+                            data-tooltip="Podíl elektřiny ze sítě">
+                        </div>
+                        <div class="ratio-alt" id="boiler-ratio-alt" style="width: 0%"
+                            data-tooltip="Podíl alternativního zdroje">
+                        </div>
+                    </div>
+                    <div class="ratio-labels">
+                        <span id="boiler-ratio-grid-label">0% síť</span>
+                        <span id="boiler-ratio-alt-label">0% alternativa</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Boiler Plan Info -->
+            <div class="control-section">
+                <h4>Informace o plánu</h4>
+                <div class="boiler-plan-info" id="boiler-plan-info">
+                    <div class="plan-info-row">
+                        <span class="plan-info-label">Digest:</span>
+                        <span class="plan-info-value" id="boiler-plan-digest">--</span>
+                    </div>
+                    <div class="plan-info-row">
+                        <span class="plan-info-label">Slotů:</span>
+                        <span class="plan-info-value" id="boiler-plan-slots">--</span>
+                    </div>
+                    <div class="plan-info-row">
+                        <span class="plan-info-label">Topení aktivní:</span>
+                        <span class="plan-info-value" id="boiler-plan-active-slots">--</span>
+                    </div>
+                    <div class="plan-info-row">
+                        <span class="plan-info-label">Od:</span>
+                        <span class="plan-info-value" id="boiler-plan-start">--</span>
+                    </div>
+                    <div class="plan-info-row">
+                        <span class="plan-info-label">Do:</span>
+                        <span class="plan-info-value" id="boiler-plan-end">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Boiler Visual Section (Grade Thermometer + Profiling Charts) -->
+    <div class="boiler-visual-section">
+        <div class="visual-grid">
+            <!-- Grade Thermometer -->
+            <div class="grade-thermometer-container">
+                <h3>🌡️ Vizualizace bojleru</h3>
+                <div class="boiler-tank">
+                    <div class="temperature-scale">
+                        <div class="scale-marker" style="top: 0%"><span>70°C</span></div>
+                        <div class="scale-marker" style="top: 16.67%"><span>60°C</span></div>
+                        <div class="scale-marker" style="top: 33.33%"><span>50°C</span></div>
+                        <div class="scale-marker" style="top: 50%"><span>40°C</span></div>
+                        <div class="scale-marker" style="top: 66.67%"><span>30°C</span></div>
+                        <div class="scale-marker" style="top: 83.33%"><span>20°C</span></div>
+                        <div class="scale-marker" style="top: 100%"><span>10°C</span></div>
+                    </div>
+                    <div class="water-container">
+                        <div class="water-level" id="boiler-water-level" style="height: 0%"></div>
+                        <div class="target-line" id="boiler-target-line" style="bottom: 83.33%">
+                            <span class="target-label">Cíl</span>
+                        </div>
+                        <div class="sensor-marker sensor-top" id="boiler-sensor-top" style="bottom: 0%">
+                            <span class="sensor-label">--°C</span>
+                        </div>
+                        <div class="sensor-marker sensor-bottom" id="boiler-sensor-bottom" style="bottom: 0%">
+                            <span class="sensor-label">--°C</span>
+                        </div>
+                    </div>
+                    <div class="grade-label" id="boiler-grade-label">0% nahřáto</div>
+                </div>
+            </div>
+
+            <!-- NEW: Advanced Visualizations -->
+            <div class="boiler-advanced-viz">
+                <!-- Category Selector -->
+                <div class="category-selector-container" style="margin: 20px 0;">
+                    <label style="font-weight: bold; margin-right: 10px;">Profil:</label>
+                    <select id="boiler-category-select" onchange="onBoilerCategoryChange()"
+                            style="padding: 8px 12px; font-size: 14px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);">
+                        <option value="">Načítání...</option>
+                    </select>
+                </div>
+
+                <!-- Heatmap 7×24 -->
+                <div class="heatmap-section-new" style="margin: 30px 0; background: var(--card-background-color); padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h3 style="margin-bottom: 15px;">🗓️ Heatmapa spotřeby (7 dní × 24 hodin)</h3>
+                    <canvas id="boiler-heatmap-chart" style="max-height: 300px;"></canvas>
+                </div>
+
+                <!-- Timeline -->
+                <div class="timeline-section-new" style="margin: 30px 0; background: var(--card-background-color); padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h3 style="margin-bottom: 15px;">⚡ Plán ohřevu - Doporučené zdroje</h3>
+                    <canvas id="boiler-timeline-chart" style="max-height: 250px;"></canvas>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="boiler-stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 30px 0;">
+                    <div class="stat-card" style="background: var(--card-background-color); padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h4 style="font-size: 14px; color: var(--secondary-text); margin-bottom: 8px;">Celková spotřeba dnes</h4>
+                        <div id="boiler-total-consumption" class="stat-value" style="font-size: 24px; font-weight: bold;">-</div>
+                    </div>
+                    <div class="stat-card" style="background: var(--card-background-color); padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h4 style="font-size: 14px; color: var(--secondary-text); margin-bottom: 8px;">Z FVE</h4>
+                        <div id="boiler-fve-consumption" class="stat-value" style="font-size: 24px; font-weight: bold; color: #4CAF50;">-</div>
+                    </div>
+                    <div class="stat-card" style="background: var(--card-background-color); padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h4 style="font-size: 14px; color: var(--secondary-text); margin-bottom: 8px;">Ze sítě</h4>
+                        <div id="boiler-grid-consumption" class="stat-value" style="font-size: 24px; font-weight: bold; color: #FF9800;">-</div>
+                    </div>
+                    <div class="stat-card" style="background: var(--card-background-color); padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h4 style="font-size: 14px; color: var(--secondary-text); margin-bottom: 8px;">Odhadovaná cena</h4>
+                        <div id="boiler-estimated-cost" class="stat-value" style="font-size: 24px; font-weight: bold; color: #2196F3;">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profiling Chart -->
+            <div class="profiling-chart-container">
+                <h3>📊 Profil spotřeby (týden)</h3>
+                <canvas id="boiler-profile-chart" style="max-height: 300px;"></canvas>
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Dnes:</span>
+                        <span class="stat-value" id="profile-stat-today">-- kWh</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Píky:</span>
+                        <span class="stat-value" id="profile-stat-peaks">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Sledováno:</span>
+                        <span class="stat-value" id="profile-stat-days">7 dní</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Heatmap -->
+        <div class="heatmap-section">
+            <h3>🗓️ Mapa spotřeby (7 dní)</h3>
+            <div class="heatmap-container" id="boiler-heatmap">
+                <!-- Bude generováno JavaScriptem -->
+            </div>
+            <div class="heatmap-legend">
+                <span class="legend-item"><span class="legend-color low"></span> Nízká</span>
+                <span class="legend-item"><span class="legend-color medium"></span> Střední</span>
+                <span class="legend-item"><span class="legend-color high"></span> Vysoká</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Boiler Chart Section -->
+    <div class="chart-section">
+        <div class="chart-container">
+            <canvas id="boiler-chart" style="max-height: 500px;"></canvas>
+        </div>
+    </div>
+
+    <!-- Boiler Profile Section -->
+    <div class="boiler-profile-section">
+        <h3>⚙️ Profil bojleru</h3>
+        <div class="profile-grid">
+            <div class="profile-card">
+                <div class="profile-label">Objem</div>
+                <div class="profile-value entity-value" id="boiler-profile-volume"
+                    data-tooltip="Objem bojleru v litrech">
+                    -- L
+                </div>
+            </div>
+            <div class="profile-card">
+                <div class="profile-label">Výkon topení</div>
+                <div class="profile-value entity-value" id="boiler-profile-heater-power"
+                    data-tooltip="Jmenovitý výkon topného tělesa">
+                    -- W
+                </div>
+            </div>
+            <div class="profile-card">
+                <div class="profile-label">Cílová teplota</div>
+                <div class="profile-value entity-value" id="boiler-profile-target-temp"
+                    data-tooltip="Cílová teplota pro plánování">
+                    -- °C
+                </div>
+            </div>
+            <div class="profile-card">
+                <div class="profile-label">Deadline</div>
+                <div class="profile-value entity-value" id="boiler-profile-deadline"
+                    data-tooltip="Čas do kterého musí být bojler nahřátý">
+                    --:--
+                </div>
+            </div>
+            <div class="profile-card">
+                <div class="profile-label">Stratifikace</div>
+                <div class="profile-value entity-value" id="boiler-profile-stratification"
+                    data-tooltip="Režim modelování stratifikace (simple_avg / two_zone)">
+                    --
+                </div>
+            </div>
+            <div class="profile-card">
+                <div class="profile-label">Koeficient K</div>
+                <div class="profile-value entity-value" id="boiler-profile-k-constant"
+                    data-tooltip="Koeficient tepelné kapacity (kWh/K)">
+                    --
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

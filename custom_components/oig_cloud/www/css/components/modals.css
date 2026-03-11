@@ -1,0 +1,224 @@
+/* ===================================
+   MODALS & DIALOGS COMPONENT STYLES
+   - Dialog overlays & content
+   - Toast notifications
+   - Acknowledgement dialogs
+   =================================== */
+
+/* Base dialog overlay */
+.dialog-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgb(0, 0, 0, 0.8);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.dialog-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.4em;
+}
+
+.dialog-close {
+    background: rgb(255, 255, 255, 0.1);
+    border: 1px solid rgb(255, 255, 255, 0.2);
+    color: var(--text-primary);
+    font-size: 28px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.dialog-close:hover {
+    background: rgb(244, 67, 54, 0.3);
+    border-color: #F44336;
+    transform: rotate(90deg);
+}
+
+.dialog-body {
+    padding: 25px;
+}
+
+.dialog-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text-primary);
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.dialog-input:focus {
+    border-color: var(--input-focus-border);
+    outline: none;
+}
+
+/* Toast notification container */
+.notification-toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 400px;
+    max-width: 500px;
+    background: var(--dialog-bg);
+    border: 2px solid var(--dialog-border);
+    border-radius: 16px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 20px 60px var(--shadow-strong);
+    z-index: 10000;
+    animation: popIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes popIn {
+    0% {
+        transform: translate(-50%, -50%) scale(0.7);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+}
+
+.toast-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.toast-header strong {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.toast-body {
+    padding: 16px 24px 20px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--toast-body-text);
+}
+
+.toast-success {
+    border-color: var(--toast-success-border);
+    box-shadow: var(--toast-success-shadow);
+}
+
+.toast-success .toast-header {
+    border-bottom-color: var(--toast-success-border-light);
+}
+
+.toast-error {
+    border-color: var(--toast-error-border);
+    box-shadow: var(--toast-error-shadow);
+}
+
+.toast-error .toast-header {
+    border-bottom-color: var(--toast-error-border-light);
+}
+
+.toast-warning {
+    border-color: var(--toast-warning-border);
+    box-shadow: var(--toast-warning-shadow);
+}
+
+.toast-warning .toast-header {
+    border-bottom-color: var(--toast-warning-border-light);
+}
+
+/* Custom acknowledgement dialog */
+.ack-dialog-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--modal-backdrop);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(4px);
+}
+
+.ack-dialog {
+    background: var(--modal-bg);
+    border: 1px solid var(--modal-border);
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: var(--modal-shadow);
+}
+
+.ack-dialog-header {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--modal-header-text);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ack-dialog-body {
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    color: var(--modal-body-text);
+}
+
+.ack-dialog-warning {
+    background: var(--modal-warning-bg);
+    border: 1px solid var(--modal-warning-border);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--modal-warning-text);
+}
+
+.ack-checkbox-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 12px;
+    background: var(--modal-checkbox-bg);
+    border-radius: 8px;
+}
+
+.ack-checkbox-wrapper input[type="checkbox"] {
+    margin-top: 3px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.ack-checkbox-wrapper label {
+    flex: 1;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--modal-checkbox-label);
+    cursor: pointer;
+}

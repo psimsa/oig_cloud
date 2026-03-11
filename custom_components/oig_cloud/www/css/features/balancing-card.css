@@ -1,0 +1,38 @@
+/* ===================================
+   BALANCING CARD STYLES
+
+   Styly pro dlaždici vyrovnání baterie v pricing tabu
+   =================================== */
+
+/* Zajištění jednotné výšky všech stat-card v pricing tabu */
+#pricing-tab > div:has(> .stat-card) {
+    display: grid;
+}
+
+#pricing-tab > div > .stat-card {
+    min-height: 240px; /* Jednotná minimální výška pro všechny dlaždice */
+    height: 100%; /* Roztáhne na celou výšku gridu */
+}
+
+/* Gradient bar vždy dole */
+#pricing-tab .stat-card > div:last-child {
+    margin-top: auto !important;
+}
+
+/* Battery balancing card specifické styly */
+#battery-balancing-card {
+    display: flex;
+    flex-direction: column;
+}
+
+#battery-balancing-card #balancing-details {
+    flex: 1; /* Vyplní prostor nad gradient barem */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+/* Timeline bar na spodku */
+#battery-balancing-card > div:last-child {
+    margin-top: auto;
+}

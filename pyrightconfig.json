@@ -1,0 +1,30 @@
+{
+  "include": ["custom_components/oig_cloud", "tests"],
+  "exclude": ["**/node_modules", "**/__pycache__", ".git", "htmlcov"],
+  "ignore": ["custom_components/oig_cloud/lib"],
+  "defineConstant": {
+    "DEBUG": true
+  },
+  "stubPath": "typings",
+  "venvPath": ".",
+  "venv": ".venv",
+  "reportMissingImports": "none",
+  "reportMissingTypeStubs": false,
+  "reportReturnType": "none",
+  "reportArgumentType": "none",
+  "reportOptionalOperand": "none",
+  "pythonVersion": "3.12",
+  "pythonPlatform": "All",
+  "executionEnvironments": [
+    {
+      "root": "custom_components/oig_cloud",
+      "pythonVersion": "3.12",
+      "extraPaths": ["custom_components"]
+    },
+    {
+      "root": "tests",
+      "pythonVersion": "3.12",
+      "extraPaths": ["custom_components"]
+    }
+  ]
+}

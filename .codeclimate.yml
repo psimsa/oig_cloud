@@ -1,0 +1,5 @@
+version: "2"
+exclude_patterns:
+  - "custom_components/oig_cloud/www/**"
+  - "custom_components/oig_cloud/lib/**"
+  - "custom_components/oig_cloud/oig_cloud_battery_forecast.py"

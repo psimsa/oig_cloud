@@ -1,0 +1,1031 @@
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* === THEME VARIABLES === */
+
+        /* Tmavý režim (výchozí) */
+        body {
+            /* Pozadí */
+            --bg-primary: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            --bg-secondary: rgb(255, 255, 255, 0.05);
+            --bg-tertiary: rgb(255, 255, 255, 0.03);
+            --bg-hover: rgb(255, 255, 255, 0.1);
+            --bg-active: rgb(76, 175, 80, 0.3);
+            --bg-disabled: rgb(255, 255, 255, 0.02);
+
+            /* Text */
+            --text-primary: #fff;
+            --text-secondary: rgb(255, 255, 255, 0.7);
+            --text-tertiary: rgb(255, 255, 255, 0.5);
+            --text-disabled: rgb(255, 255, 255, 0.3);
+
+            /* Borders */
+            --border-primary: rgb(255, 255, 255, 0.15);
+            --border-secondary: rgb(255, 255, 255, 0.1);
+            --border-tertiary: rgb(255, 255, 255, 0.05);
+
+            /* Shadows */
+            --shadow-color: rgb(0, 0, 0, 0.4);
+            --shadow-strong: rgb(0, 0, 0, 0.7);
+            --shadow-light: rgb(0, 0, 0, 0.2);
+
+            /* Dialog */
+            --dialog-bg: #1a1f3a;
+            --dialog-border: rgb(156, 39, 176, 0.5);
+
+            /* Komponenty specifické barvy */
+            --solar-bg: linear-gradient(135deg, rgb(255, 213, 79, 0.15) 0%, rgb(255, 179, 0, 0.08) 100%);
+            --solar-border: rgb(255, 213, 79, 0.4);
+            --solar-accent: rgb(255, 193, 7, 0.95);
+            --grid-bg: linear-gradient(135deg, rgb(66, 165, 245, 0.15) 0%, rgb(33, 150, 243, 0.08) 100%);
+            --grid-border: rgb(66, 165, 245, 0.4);
+            --battery-bg: linear-gradient(135deg, rgb(76, 175, 80, 0.15) 0%, rgb(56, 142, 60, 0.08) 100%);
+            --battery-border: rgb(76, 175, 80, 0.4);
+            --house-bg: linear-gradient(135deg, rgb(240, 98, 146, 0.15) 0%, rgb(233, 30, 99, 0.08) 100%);
+            --house-border: rgb(240, 98, 146, 0.4);
+            --inverter-bg: linear-gradient(135deg, rgb(149, 117, 205, 0.15) 0%, rgb(126, 87, 194, 0.08) 100%);
+            --inverter-border: rgb(149, 117, 205, 0.4);
+
+            /* === LAYOUT POSITIONS - Default for Desktop === */
+
+            /* Solar - Top Center */
+            --solar-top: 40px;
+            --solar-left: 50%;
+            --solar-transform: translateX(-50%);
+
+            /* Grid - Left Middle */
+            --grid-top: 50%;
+            --grid-left: 80px;
+            --grid-transform: translateY(-50%);
+
+            /* Battery - Bottom Center */
+            --battery-top: auto;
+            --battery-bottom: 120px;
+            --battery-left: 50%;
+            --battery-transform: translateX(-50%);
+
+            /* House - Right Middle */
+            --house-top: 50%;
+            --house-right: 80px;
+            --house-transform: translateY(-50%);
+
+            /* Inverter - Center Hub */
+            --inverter-top: 50%;
+            --inverter-left: 50%;
+            --inverter-transform: translate(-50%, -50%);
+
+            /* Status colors */
+            --status-charging-bg: rgb(33, 150, 243, 0.3);
+            --status-charging-text: #42a5f5;
+            --status-discharging-bg: rgb(255, 152, 0, 0.3);
+            --status-discharging-text: #ffb74d;
+            --status-idle-bg: rgb(76, 175, 80, 0.3);
+            --status-idle-text: #81c784;
+            --status-importing-bg: rgb(244, 67, 54, 0.3);
+            --status-importing-text: #e57373;
+            --status-exporting-bg: rgb(76, 175, 80, 0.3);
+            --status-exporting-text: #81c784;
+
+            /* UI elements */
+            --dialog-bg: linear-gradient(135deg, rgb(30, 41, 59, 0.98) 0%, rgb(15, 23, 42, 0.98) 100%);
+            --dialog-border: rgb(66, 165, 245, 0.4);
+            --button-bg: rgb(255, 255, 255, 0.1);
+            --button-border: rgb(255, 255, 255, 0.2);
+            --button-hover: rgb(255, 255, 255, 0.2);
+            --button-active-border: rgb(76, 175, 80, 0.6);
+            --input-bg: rgb(255, 255, 255, 0.05);
+            --input-border: rgb(255, 255, 255, 0.2);
+            --input-focus-border: #42a5f5;
+
+            /* Warnings and alerts */
+            --warning-bg: rgb(255, 193, 7, 0.2);
+            --warning-text: #ffc107;
+            --warning-bg-transparent: rgb(255, 193, 7, 0.6);
+            --warning-text-transparent: rgb(255, 193, 7, 0.9);
+            --error-bg: rgb(244, 67, 54, 0.2);
+            --error-text: #e57373;
+            --error-bg-transparent: rgb(244, 67, 54, 0.8);
+            --error-text-transparent: rgb(244, 67, 54, 1);
+            --info-bg: rgb(33, 150, 243, 0.2);
+            --info-text: #42a5f5;
+
+            /* Animace - transparentní varianty */
+            --status-idle-bg-transparent: rgb(59, 130, 246, 0.7);
+            --status-idle-bg-semi: rgb(59, 130, 246, 0.4);
+
+            /* Indicator badges */
+            --indicator-warning-bg: linear-gradient(135deg, rgb(255, 193, 7, 0.95), rgb(255, 152, 0, 0.95));
+            --indicator-warning-border: rgb(255, 193, 7, 0.8);
+            --indicator-warning-shadow: rgb(255, 193, 7, 0.4);
+            --indicator-info-bg: linear-gradient(135deg, rgb(33, 150, 243, 0.95), rgb(25, 118, 210, 0.95));
+            --indicator-info-border: rgb(33, 150, 243, 0.8);
+            --indicator-info-shadow: rgb(33, 150, 243, 0.4);
+            --indicator-text: #1a1a2e;
+            --spinner-border: rgb(26, 26, 46, 0.3);
+            --spinner-border-top: #1a1a2e;
+
+            /* Tooltips */
+            --tooltip-bg: rgb(0, 0, 0, 0.95);
+            --tooltip-bg-secondary: rgb(50, 50, 50, 0.95);
+            --tooltip-border: rgb(0, 0, 0, 0.95);
+            --tooltip-border-secondary: rgb(50, 50, 50, 0.95);
+
+            /* Control panel */
+            --control-panel-bg: rgb(10, 14, 39, 0.98);
+            --control-panel-border: rgb(66, 165, 245, 0.3);
+
+            /* Success/Error text colors */
+            --success-text: #4caf50;
+            --error-text-alt: #f33;
+
+            /* Header */
+            --header-gradient: linear-gradient(135deg, #ffd54f 0%, #ffb300 100%);
+
+            /* Toast notifications */
+            --toast-body-text: rgb(255, 255, 255, 0.85);
+            --toast-success-border: rgb(76, 175, 80, 0.6);
+            --toast-success-border-light: rgb(76, 175, 80, 0.2);
+            --toast-success-shadow: 0 20px 60px rgb(0, 0, 0, 0.7), 0 0 0 1px rgb(76, 175, 80, 0.2);
+            --toast-error-border: rgb(244, 67, 54, 0.6);
+            --toast-error-border-light: rgb(244, 67, 54, 0.2);
+            --toast-error-shadow: 0 20px 60px rgb(0, 0, 0, 0.7), 0 0 0 1px rgb(244, 67, 54, 0.2);
+            --toast-warning-border: rgb(255, 152, 0, 0.6);
+            --toast-warning-border-light: rgb(255, 152, 0, 0.2);
+            --toast-warning-shadow: 0 20px 60px rgb(0, 0, 0, 0.7), 0 0 0 1px rgb(255, 152, 0, 0.2);
+
+            /* Modal */
+            --modal-backdrop: rgb(0, 0, 0, 0.7);
+            --modal-bg: linear-gradient(135deg, rgb(30, 41, 59, 0.98) 0%, rgb(15, 23, 42, 0.98) 100%);
+            --modal-border: rgb(100, 116, 139, 0.3);
+            --modal-shadow: 0 20px 60px rgb(0, 0, 0, 0.5);
+            --modal-header-text: rgb(255, 255, 255, 0.95);
+            --modal-body-text: rgb(255, 255, 255, 0.8);
+            --modal-warning-bg: rgb(255, 152, 0, 0.1);
+            --modal-warning-border: rgb(255, 152, 0, 0.3);
+            --modal-warning-text: rgb(255, 193, 7, 0.95);
+            --modal-checkbox-bg: rgb(100, 116, 139, 0.1);
+            --modal-checkbox-label: rgb(255, 255, 255, 0.9);
+            --modal-button-cancel-bg: rgb(100, 116, 139, 0.2);
+            --modal-button-cancel-hover: rgb(100, 116, 139, 0.3);
+            --modal-button-cancel-text: rgb(255, 255, 255, 0.8);
+            --modal-button-confirm-bg: linear-gradient(135deg, rgb(59, 130, 246, 0.8) 0%, rgb(29, 78, 216, 0.8) 100%);
+            --modal-button-confirm-hover: linear-gradient(135deg, rgb(59, 130, 246, 1) 0%, rgb(29, 78, 216, 1) 100%);
+            --modal-button-confirm-shadow: 0 4px 12px rgb(59, 130, 246, 0.4);
+
+            /* Shield states */
+            --shield-idle-bg: rgb(76, 175, 80, 0.2);
+            --shield-idle-border: rgb(76, 175, 80, 0.4);
+            --shield-idle-text: #4caf50;
+            --shield-idle-shadow: 0 0 10px rgb(76, 175, 80, 0.3), 0 0 20px rgb(76, 175, 80, 0.5);
+            --shield-pending-bg: rgb(255, 193, 7, 0.4);
+            --shield-pending-border: rgb(255, 193, 7, 0.7);
+            --shield-pending-text: #ffc107;
+            --shield-pending-shadow: 0 0 10px rgb(255, 193, 7, 0.3), 0 0 20px rgb(255, 193, 7, 0.5);
+            --shield-processing-bg: rgb(66, 165, 245, 0.5);
+            --shield-processing-border: rgb(66, 165, 245, 0.8);
+            --shield-processing-text: #42a5f5;
+            --shield-processing-shadow: 0 0 15px rgb(66, 165, 245, 0.4);
+            --shield-button-active-bg: rgb(76, 175, 80, 0.5);
+            --shield-button-active-border: rgb(76, 175, 80, 0.8);
+            --shield-button-active-shadow: 0 0 15px rgb(76, 175, 80, 0.4);
+            --shield-button-active-check: #81c784;
+            --shield-queue-bg: rgb(255, 193, 7, 0.3);
+
+            /* Light text variants */
+            --text-label: rgb(255, 255, 255, 0.7);
+            --table-header-bg: rgb(255, 255, 255, 0.05);
+            --table-border: rgb(255, 255, 255, 0.1);
+            --table-border-light: rgb(255, 255, 255, 0.05);
+
+            /* Drop shadows */
+            --shadow-success: rgb(76, 175, 80, 0.8);
+            --shadow-error: rgb(244, 67, 54, 1);
+            --shadow-error-weak: rgb(244, 67, 54, 0.8);
+            --shadow-error-light: rgb(244, 67, 54, 0.4);
+            --shadow-warning: rgb(255, 193, 7, 0.8);
+            --shadow-info: rgb(33, 150, 243, 0.8);
+            --shadow-white: rgb(255, 255, 255, 0.8);
+
+            /* Status borders and shadows */
+            --status-discharging-border: rgb(255, 152, 0, 0.6);
+            --status-discharging-shadow: rgb(255, 152, 0, 0.4);
+            --status-charging-border: rgb(33, 150, 243, 0.6);
+            --status-charging-shadow: rgb(33, 150, 243, 0.4);
+
+            /* Battery gauge gradient */
+            --battery-gauge-gradient: linear-gradient(90deg, #f44336, #ff9800, #ffeb3b, #8bc34a, #4caf50);
+
+            /* Button states */
+            --button-active-bg: rgb(76, 175, 80, 0.4);
+            --button-disabled-bg: rgb(128, 128, 128, 0.2);
+            --button-disabled-border: rgb(128, 128, 128, 0.3);
+            --button-disabled-text: rgb(255, 255, 255, 0.4);
+        }
+
+        /* Světlý režim */
+        body.light-theme {
+            /* Pozadí */
+            --bg-primary: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+            --bg-secondary: rgb(255, 255, 255, 0.85);
+            --bg-tertiary: rgb(255, 255, 255, 0.6);
+            --bg-hover: rgb(0, 0, 0, 0.1);
+            --bg-active: rgb(76, 175, 80, 0.2);
+            --bg-disabled: rgb(0, 0, 0, 0.02);
+
+            /* Text */
+            --text-primary: #1a202c;
+            --text-secondary: #4a5568;
+            --text-tertiary: #718096;
+            --text-disabled: #cbd5e0;
+
+            /* Borders */
+            --border-primary: rgb(0, 0, 0, 0.15);
+            --border-secondary: rgb(0, 0, 0, 0.1);
+            --border-tertiary: rgb(0, 0, 0, 0.05);
+
+            /* Shadows */
+            --shadow-color: rgb(0, 0, 0, 0.1);
+            --shadow-strong: rgb(0, 0, 0, 0.2);
+            --shadow-light: rgb(0, 0, 0, 0.05);
+
+            /* Komponenty specifické barvy */
+            --solar-bg: linear-gradient(135deg, rgb(255, 245, 220, 0.95) 0%, rgb(255, 235, 180, 0.9) 100%);
+            --solar-border: rgb(255, 193, 7, 0.5);
+            --solar-accent: rgb(255, 160, 0, 0.95);
+            --grid-bg: linear-gradient(135deg, rgb(227, 242, 253, 0.95) 0%, rgb(187, 222, 251, 0.9) 100%);
+            --grid-border: rgb(66, 165, 245, 0.5);
+            --battery-bg: linear-gradient(135deg, rgb(232, 245, 233, 0.95) 0%, rgb(200, 230, 201, 0.9) 100%);
+            --battery-border: rgb(76, 175, 80, 0.5);
+            --house-bg: linear-gradient(135deg, rgb(252, 228, 236, 0.95) 0%, rgb(248, 187, 208, 0.9) 100%);
+            --house-border: rgb(240, 98, 146, 0.5);
+            --inverter-bg: linear-gradient(135deg, rgb(237, 231, 246, 0.95) 0%, rgb(209, 196, 233, 0.9) 100%);
+            --inverter-border: rgb(149, 117, 205, 0.5);
+
+            /* Status colors */
+            --status-charging-bg: rgb(33, 150, 243, 0.2);
+            --status-charging-text: #1565c0;
+            --status-discharging-bg: rgb(255, 152, 0, 0.2);
+            --status-discharging-text: #e65100;
+            --status-idle-bg: rgb(76, 175, 80, 0.2);
+            --status-idle-text: #2e7d32;
+            --status-importing-bg: rgb(244, 67, 54, 0.2);
+            --status-importing-text: #c62828;
+            --status-exporting-bg: rgb(76, 175, 80, 0.2);
+            --status-exporting-text: #2e7d32;
+
+            /* UI elements */
+            --dialog-bg: linear-gradient(135deg, rgb(255, 255, 255, 0.98) 0%, rgb(240, 244, 248, 0.98) 100%);
+            --dialog-border: rgb(66, 165, 245, 0.3);
+            --button-bg: rgb(0, 0, 0, 0.05);
+            --button-border: rgb(0, 0, 0, 0.15);
+            --button-hover: rgb(0, 0, 0, 0.1);
+            --button-active-border: rgb(76, 175, 80, 0.6);
+            --input-bg: rgb(0, 0, 0, 0.05);
+            --input-border: rgb(0, 0, 0, 0.15);
+            --input-focus-border: #1976d2;
+
+            /* Warnings and alerts */
+            --warning-bg: rgb(255, 193, 7, 0.15);
+            --warning-text: #f57c00;
+            --warning-bg-transparent: rgb(255, 193, 7, 0.6);
+            --warning-text-transparent: rgb(255, 193, 7, 0.9);
+            --error-bg: rgb(244, 67, 54, 0.15);
+            --error-text: #c62828;
+            --error-bg-transparent: rgb(244, 67, 54, 0.8);
+            --error-text-transparent: rgb(244, 67, 54, 1);
+            --info-bg: rgb(33, 150, 243, 0.15);
+            --info-text: #1976d2;
+
+            /* Animace - transparentní varianty */
+            --status-idle-bg-transparent: rgb(59, 130, 246, 0.7);
+            --status-idle-bg-semi: rgb(59, 130, 246, 0.4);
+
+            /* Indicator badges */
+            --indicator-warning-bg: linear-gradient(135deg, rgb(255, 193, 7, 0.95), rgb(255, 152, 0, 0.95));
+            --indicator-warning-border: rgb(255, 193, 7, 0.8);
+            --indicator-warning-shadow: rgb(255, 193, 7, 0.4);
+            --indicator-info-bg: linear-gradient(135deg, rgb(33, 150, 243, 0.95), rgb(25, 118, 210, 0.95));
+            --indicator-info-border: rgb(33, 150, 243, 0.8);
+            --indicator-info-shadow: rgb(33, 150, 243, 0.4);
+            --indicator-text: #fff;
+            --spinner-border: rgb(255, 255, 255, 0.3);
+            --spinner-border-top: #fff;
+
+            /* Tooltips */
+            --tooltip-bg: rgb(255, 255, 255, 0.98);
+            --tooltip-bg-secondary: rgb(240, 240, 240, 0.98);
+            --tooltip-border: rgb(0, 0, 0, 0.1);
+            --tooltip-border-secondary: rgb(0, 0, 0, 0.05);
+
+            /* Control panel */
+            --control-panel-bg: rgb(255, 255, 255, 0.98);
+            --control-panel-border: rgb(66, 165, 245, 0.3);
+
+            /* Success/Error text colors */
+            --success-text: #2e7d32;
+            --error-text-alt: #c62828;
+
+            /* Header */
+            --header-gradient: linear-gradient(135deg, #ff8f00 0%, #f57c00 100%);
+
+            /* Toast notifications */
+            --toast-body-text: rgb(0, 0, 0, 0.75);
+            --toast-success-border: rgb(46, 125, 50, 0.5);
+            --toast-success-border-light: rgb(46, 125, 50, 0.15);
+            --toast-success-shadow: 0 8px 32px rgb(0, 0, 0, 0.15), 0 0 0 1px rgb(46, 125, 50, 0.2);
+            --toast-error-border: rgb(198, 40, 40, 0.5);
+            --toast-error-border-light: rgb(198, 40, 40, 0.15);
+            --toast-error-shadow: 0 8px 32px rgb(0, 0, 0, 0.15), 0 0 0 1px rgb(198, 40, 40, 0.2);
+            --toast-warning-border: rgb(245, 124, 0, 0.5);
+            --toast-warning-border-light: rgb(245, 124, 0, 0.15);
+            --toast-warning-shadow: 0 8px 32px rgb(0, 0, 0, 0.15), 0 0 0 1px rgb(245, 124, 0, 0.2);
+
+            /* Modal */
+            --modal-backdrop: rgb(0, 0, 0, 0.5);
+            --modal-bg: linear-gradient(135deg, rgb(255, 255, 255, 0.98) 0%, rgb(245, 245, 245, 0.98) 100%);
+            --modal-border: rgb(66, 165, 245, 0.3);
+            --modal-shadow: 0 8px 32px rgb(0, 0, 0, 0.2);
+            --modal-header-text: rgb(0, 0, 0, 0.87);
+            --modal-body-text: rgb(0, 0, 0, 0.7);
+            --modal-warning-bg: rgb(255, 152, 0, 0.08);
+            --modal-warning-border: rgb(245, 124, 0, 0.25);
+            --modal-warning-text: rgb(245, 124, 0, 0.95);
+            --modal-checkbox-bg: rgb(0, 0, 0, 0.03);
+            --modal-checkbox-label: rgb(0, 0, 0, 0.8);
+            --modal-button-cancel-bg: rgb(0, 0, 0, 0.05);
+            --modal-button-cancel-hover: rgb(0, 0, 0, 0.1);
+            --modal-button-cancel-text: rgb(0, 0, 0, 0.7);
+            --modal-button-confirm-bg: linear-gradient(135deg, rgb(25, 118, 210, 0.9) 0%, rgb(13, 71, 161, 0.9) 100%);
+            --modal-button-confirm-hover: linear-gradient(135deg, rgb(25, 118, 210, 1) 0%, rgb(13, 71, 161, 1) 100%);
+            --modal-button-confirm-shadow: 0 4px 12px rgb(25, 118, 210, 0.3);
+
+            /* Shield states */
+            --shield-idle-bg: rgb(46, 125, 50, 0.15);
+            --shield-idle-border: rgb(46, 125, 50, 0.4);
+            --shield-idle-text: #2e7d32;
+            --shield-idle-shadow: 0 0 10px rgb(46, 125, 50, 0.2), 0 0 20px rgb(46, 125, 50, 0.3);
+            --shield-pending-bg: rgb(245, 124, 0, 0.2);
+            --shield-pending-border: rgb(245, 124, 0, 0.5);
+            --shield-pending-text: #f57c00;
+            --shield-pending-shadow: 0 0 10px rgb(245, 124, 0, 0.2), 0 0 20px rgb(245, 124, 0, 0.3);
+            --shield-processing-bg: rgb(25, 118, 210, 0.2);
+            --shield-processing-border: rgb(25, 118, 210, 0.5);
+            --shield-processing-text: #1976d2;
+            --shield-processing-shadow: 0 0 15px rgb(25, 118, 210, 0.3);
+            --shield-button-active-bg: rgb(46, 125, 50, 0.3);
+            --shield-button-active-border: rgb(46, 125, 50, 0.6);
+            --shield-button-active-shadow: 0 0 15px rgb(46, 125, 50, 0.3);
+            --shield-button-active-check: #2e7d32;
+            --shield-queue-bg: rgb(245, 124, 0, 0.15);
+
+            /* Light text variants */
+            --text-label: rgb(0, 0, 0, 0.6);
+            --table-header-bg: rgb(0, 0, 0, 0.03);
+            --table-border: rgb(0, 0, 0, 0.08);
+            --table-border-light: rgb(0, 0, 0, 0.04);
+
+            /* Drop shadows */
+            --shadow-success: rgb(76, 175, 80, 0.8);
+            --shadow-error: rgb(244, 67, 54, 1);
+            --shadow-error-weak: rgb(244, 67, 54, 0.8);
+            --shadow-error-light: rgb(244, 67, 54, 0.4);
+            --shadow-warning: rgb(255, 193, 7, 0.8);
+            --shadow-info: rgb(33, 150, 243, 0.8);
+            --shadow-white: rgb(0, 0, 0, 0.2);
+
+            /* Status borders and shadows */
+            --status-discharging-border: rgb(255, 152, 0, 0.6);
+            --status-discharging-shadow: rgb(255, 152, 0, 0.4);
+            --status-charging-border: rgb(33, 150, 243, 0.6);
+            --status-charging-shadow: rgb(33, 150, 243, 0.4);
+
+            /* Battery gauge gradient */
+            --battery-gauge-gradient: linear-gradient(90deg, #f44336, #ff9800, #ffeb3b, #8bc34a, #4caf50);
+
+            /* Button states */
+            --button-active-bg: rgb(76, 175, 80, 0.4);
+            --button-disabled-bg: rgb(200, 200, 200, 0.2);
+            --button-disabled-border: rgb(180, 180, 180, 0.3);
+            --button-disabled-text: rgb(0, 0, 0, 0.4);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden auto;
+            min-height: 100vh;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-bottom: 40px;
+            position: relative;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: var(--header-gradient);
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .time {
+            font-size: 16px;
+            font-weight: 600;
+            opacity: 0.8;
+        }
+
+        .last-update {
+            font-size: 12px;
+            opacity: 0.6;
+            font-style: italic;
+        }
+
+        /* ČHMÚ Weather Warning Badge */
+        .chmu-warning-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+            box-shadow: 0 2px 8px rgb(0, 0, 0, 0.1);
+        }
+
+        .chmu-warning-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgb(0, 0, 0, 0.15);
+        }
+
+        .chmu-warning-badge.severity-0 {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .chmu-warning-badge.severity-1 {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: #78350f;
+        }
+
+        .chmu-warning-badge.severity-2 {
+            background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%);
+            color: white;
+        }
+
+        .chmu-warning-badge.severity-3 {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            animation: pulse-warning 2s ease-in-out infinite;
+        }
+
+        .chmu-warning-badge.severity-4 {
+            background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+            color: white;
+            animation: pulse-warning 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-warning {
+            0%,
+            100% {
+                box-shadow: 0 2px 8px rgb(0, 0, 0, 0.1);
+            }
+
+            50% {
+                box-shadow: 0 4px 20px rgb(239, 68, 68, 0.4);
+            }
+        }
+
+        .chmu-icon {
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+        }
+
+        .chmu-text {
+            white-space: nowrap;
+        }
+
+        /* ČHMÚ Warning Modal */
+        .chmu-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgb(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .chmu-modal.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .chmu-modal-content {
+            background: var(--card-background);
+            border-radius: 16px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgb(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .chmu-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--header-gradient);
+        }
+
+        .chmu-modal-header h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .chmu-modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: var(--text-color);
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .chmu-modal-close:hover {
+            background: rgb(0, 0, 0, 0.1);
+            transform: rotate(90deg);
+        }
+
+        .chmu-modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            max-height: calc(80vh - 80px);
+        }
+
+        .chmu-warning-item {
+            background: var(--node-background);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border-left: 4px solid var(--accent-color);
+            box-shadow: 0 2px 8px rgb(0, 0, 0, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chmu-warning-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .chmu-warning-item.severity-1 {
+            border-left-color: #fbbf24;
+            background: linear-gradient(135deg,
+                rgb(251, 191, 36, 0.1) 0%,
+                var(--node-background) 40%
+            );
+        }
+
+        .chmu-warning-item.severity-2 {
+            border-left-color: #fb923c;
+            background: linear-gradient(135deg,
+                rgb(251, 146, 60, 0.15) 0%,
+                var(--node-background) 40%
+            );
+        }
+
+        .chmu-warning-item.severity-3 {
+            border-left-color: #ef4444;
+            background: linear-gradient(135deg,
+                rgb(239, 68, 68, 0.2) 0%,
+                var(--node-background) 40%
+            );
+        }
+
+        .chmu-warning-item.severity-4 {
+            border-left-color: #a855f7;
+            background: linear-gradient(135deg,
+                rgb(168, 85, 247, 0.2) 0%,
+                var(--node-background) 40%
+            );
+        }
+
+        /* TOP warning - zvýrazněné pozadí */
+        .chmu-warning-item.chmu-warning-top {
+            box-shadow: 0 4px 16px rgb(0, 0, 0, 0.25);
+            border-width: 6px;
+        }
+
+        .chmu-warning-item.chmu-warning-top.severity-1 {
+            background: linear-gradient(135deg,
+                rgb(251, 191, 36, 0.18) 0%,
+                var(--node-background) 50%
+            );
+        }
+
+        .chmu-warning-item.chmu-warning-top.severity-2 {
+            background: linear-gradient(135deg,
+                rgb(251, 146, 60, 0.25) 0%,
+                var(--node-background) 50%
+            );
+        }
+
+        .chmu-warning-item.chmu-warning-top.severity-3 {
+            background: linear-gradient(135deg,
+                rgb(239, 68, 68, 0.3) 0%,
+                var(--node-background) 50%
+            );
+        }
+
+        .chmu-warning-item.chmu-warning-top.severity-4 {
+            background: linear-gradient(135deg,
+                rgb(168, 85, 247, 0.3) 0%,
+                var(--node-background) 50%
+            );
+        }
+
+        /* Compact warnings - menší sekce */
+        .chmu-warning-item.chmu-warning-compact {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-width: 3px;
+        }
+
+        .chmu-warning-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .chmu-warning-icon {
+            font-size: 32px;
+        }
+
+        .chmu-warning-title {
+            flex: 1;
+        }
+
+        .chmu-warning-title h4 {
+            margin: 0 0 4px;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .chmu-warning-severity {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .chmu-warning-severity.severity-1 {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .chmu-warning-severity.severity-2 {
+            background: #fed7aa;
+            color: #7c2d12;
+        }
+
+        .chmu-warning-severity.severity-3 {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .chmu-warning-severity.severity-4 {
+            background: #f3e8ff;
+            color: #6b21a8;
+        }
+
+        .chmu-warning-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .chmu-info-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .chmu-info-icon {
+            font-size: 16px;
+            margin-top: 2px;
+        }
+
+        .chmu-info-content {
+            flex: 1;
+        }
+
+        .chmu-info-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 600;
+            opacity: 0.6;
+            margin-bottom: 2px;
+        }
+
+        .chmu-info-value {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .chmu-warning-description {
+            background: rgb(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .chmu-warning-description p {
+            margin: 0 0 8px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-color);
+        }
+
+        .chmu-warning-description p:last-child {
+            margin-bottom: 0;
+        }
+
+        .chmu-warning-description strong {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 700;
+            opacity: 0.7;
+            margin-bottom: 6px;
+        }
+
+        /* Header sekce s dalšími výstrahami */
+        .chmu-all-warnings-header {
+            margin: 24px 0 16px;
+            padding: 12px 0;
+            border-top: 2px solid rgb(255, 255, 255, 0.1);
+            border-bottom: 2px solid rgb(255, 255, 255, 0.1);
+        }
+
+        .chmu-all-warnings-header h5 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
+            color: var(--text-color);
+        }
+
+        /* Compact info řádky */
+        .chmu-warning-info-compact {
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .chmu-info-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .chmu-info-row .chmu-info-label {
+            opacity: 0.7;
+            font-weight: 500;
+        }
+
+        .chmu-info-row .chmu-info-value {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .chmu-no-warnings {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .chmu-no-warnings-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .chmu-no-warnings h4 {
+            margin: 0 0 8px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .chmu-no-warnings p {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        /* Energy Flow Canvas */
+        .flow-canvas {
+            position: relative;
+            width: 100%;
+            max-width: 100%;
+
+            /* Celá šířka - bylo 900px */
+            margin: 0 auto;
+            height: 1000px;
+        }
+
+        /* SVG for connections */
+        .connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .flow-line {
+            stroke-width: 3;
+            stroke-linecap: round;
+            fill: none;
+            opacity: 0.6;
+        }
+
+        /* Components - Kompaktní a široké */
+        .node {
+            position: absolute;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-primary);
+            border-radius: 12px;
+            padding: 10px 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            z-index: 2;
+            min-width: 130px;
+            max-width: 250px;
+        }
+
+        .node:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-primary);
+            transform: scale(1.05);
+            box-shadow: 0 10px 40px var(--shadow-color);
+        }
+
+        /* Solar - Top Center - S VĚTŠÍM ODSTUPEM */
+        .solar {
+            top: var(--solar-top);
+            left: var(--solar-left);
+            transform: var(--solar-transform);
+            border-color: var(--solar-border);
+            background: var(--solar-bg);
+        }
+
+        .solar:hover {
+            transform: var(--solar-transform) scale(1.05);
+        }
+
+        /* Grid - Left Middle - S VĚTŠÍM ODSTUPEM */
+        .grid-node {
+            top: var(--grid-top);
+            left: var(--grid-left);
+            transform: var(--grid-transform);
+            border-color: var(--grid-border);
+            background: var(--grid-bg);
+        }
+
+        .grid-node:hover {
+            transform: var(--grid-transform) scale(1.05);
+        }
+
+        /* Battery - Bottom Center - S VELKÝM ODSTUPEM */
+        .battery {
+            top: var(--battery-top);
+            bottom: var(--battery-bottom);
+            left: var(--battery-left);
+            transform: var(--battery-transform);
+            border-color: var(--battery-border);
+            background: var(--battery-bg);
+        }
+
+        .battery:hover {
+            transform: var(--battery-transform) scale(1.05);
+        }
+
+        /* House - Right Middle - S VĚTŠÍM ODSTUPEM */
+        .house {
+            top: var(--house-top);
+            right: var(--house-right);
+            transform: var(--house-transform);
+            border-color: var(--house-border);
+            background: var(--house-bg);
+        }
+
+        .house:hover {
+            transform: var(--house-transform) scale(1.05);
+        }
+
+        /* Center Hub - Inverter */
+        .inverter {
+            top: var(--inverter-top);
+            left: var(--inverter-left);
+            transform: var(--inverter-transform);
+            border-color: var(--inverter-border);
+            background: var(--inverter-bg);
+            min-width: 240px;
+
+            /* Rozšířeno pro lepší zobrazení notifikací a přetoků */
+            max-width: 240px;
+        }
+
+        .inverter:hover {
+            transform: var(--inverter-transform) scale(1.05);
+        }
+
+
+/* === FALLBACK VALUES === */
+.fallback-value {
+    opacity: 0.5;
+    font-style: italic;
+    color: var(--text-secondary, #888) !important;
+    cursor: help;
+}
+
+.fallback-value::after {
+    content: ' ⚠';
+    font-size: 0.8em;
+    margin-left: 2px;
+}

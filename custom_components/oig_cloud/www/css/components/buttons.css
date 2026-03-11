@@ -1,0 +1,392 @@
+/* ===================================
+   BUTTONS COMPONENT STYLES
+
+   Všechny button styly pro OIG Cloud Dashboard
+   - Base button styles
+   - Button variants (primary, secondary, action)
+   - Button groups
+   - Button states (hover, active, disabled)
+   - Layout buttons (minimize, edit, reset)
+   =================================== */
+
+/* === BASE BUTTON STYLES === */
+
+.btn {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.btn:hover {
+    background: var(--bg-hover);
+    transform: translateY(-1px);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--button-disabled-bg);
+    border-color: var(--button-disabled-border);
+    color: var(--button-disabled-text);
+}
+
+/* === BUTTON VARIANTS === */
+
+.btn-primary {
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+    box-shadow: 0 4px 8px rgb(76, 175, 80, 0.3);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, rgb(255, 255, 255, 0.08) 0%, rgb(255, 255, 255, 0.05) 100%);
+    border: 1px solid rgb(255, 255, 255, 0.15);
+    color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, rgb(255, 255, 255, 0.12) 0%, rgb(255, 255, 255, 0.08) 100%);
+    border-color: rgb(255, 255, 255, 0.25);
+}
+
+.btn-action {
+    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+    border: 1px solid rgb(33, 150, 243, 0.3);
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-action:hover {
+    background: linear-gradient(135deg, #1976D2 0%, #1565C0 100%);
+    box-shadow: 0 4px 12px rgb(33, 150, 243, 0.4);
+}
+
+/* === CONTROL BUTTONS === */
+
+.control-button {
+    padding: 4px 10px;
+    background: var(--status-charging-bg);
+    border: 1px solid var(--status-charging-border);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.control-button:hover {
+    background: var(--status-charging-shadow);
+    transform: scale(1.05);
+}
+
+.control-buttons-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+/* === LAYOUT BUTTONS === */
+
+.btn-minimize {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.btn-minimize:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    transform: scale(1.1);
+}
+
+.btn-layout-edit,
+.btn-layout-reset {
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.btn-layout-edit:hover,
+.btn-layout-reset:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-secondary);
+}
+
+.btn-layout-edit.active {
+    background: var(--button-active-bg);
+    border-color: #4caf50;
+    color: #4caf50;
+}
+
+.btn-layout-reset {
+    background: rgb(244, 67, 54, 0.1);
+}
+
+.btn-layout-reset:hover {
+    background: rgb(244, 67, 54, 0.2);
+}
+
+/* === BUTTON GROUPS === */
+
+.button-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 8px 0;
+}
+
+.button-group button {
+    flex: 1;
+    min-width: 70px;
+    padding: 6px 10px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 4px;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.button-group button:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-secondary);
+    transform: translateY(-1px);
+}
+
+.button-group button:active {
+    transform: translateY(0);
+}
+
+.button-group button.active {
+    background: var(--button-active-bg);
+    border-color: #4caf50;
+    color: #4caf50;
+}
+
+.button-group button:disabled,
+.button-group button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--button-disabled-bg);
+}
+
+.button-group button:disabled:hover,
+.button-group button.disabled:hover {
+    transform: none;
+}
+
+.button-group button:disabled {
+    border-color: var(--button-disabled-border);
+    color: var(--button-disabled-text);
+}
+
+/* === BUTTON STATES WITH INDICATORS === */
+
+.button-group button.active {
+    position: relative;
+}
+
+.button-group button.active::before {
+    content: '●';
+    position: absolute;
+    left: 8px;
+    color: #4caf50;
+}
+
+.button-group button.pending {
+    border-color: #ff9800;
+    color: #ff9800;
+}
+
+.button-group button.pending::before {
+    content: '⏳';
+    position: absolute;
+    left: 8px;
+}
+
+.button-group button.processing {
+    border-color: #2196f3;
+    color: #2196f3;
+}
+
+.button-group button.processing::before {
+    content: '⟳';
+    position: absolute;
+    left: 8px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* === DIALOG BUTTONS === */
+
+.ack-dialog-buttons button {
+    flex: 1;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ack-dialog-buttons .btn-cancel {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+}
+
+.ack-dialog-buttons .btn-cancel:hover {
+    background: var(--bg-hover);
+}
+
+.ack-dialog-buttons .btn-confirm {
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    border: none;
+    color: white;
+}
+
+.ack-dialog-buttons .btn-confirm:hover:not(:disabled) {
+    background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+    box-shadow: 0 4px 8px rgb(76, 175, 80, 0.3);
+}
+
+.ack-dialog-buttons .btn-confirm:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* === CLOSE BUTTONS === */
+
+.btn-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 20px;
+    padding: 4px 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-close:hover {
+    color: var(--text-primary);
+    transform: scale(1.1);
+}
+
+/* === INPUT GROUP BUTTONS === */
+
+.input-group button {
+    padding: 8px 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-left: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.input-group button:hover {
+    background: var(--bg-hover);
+}
+
+/* === TOAST BUTTONS === */
+
+.toast-header button {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px 8px;
+    margin-left: auto;
+}
+
+.toast-header button:hover {
+    color: var(--text-primary);
+}
+
+/* === LIGHT THEME OVERRIDES === */
+
+body.light-theme .btn-minimize {
+    color: rgb(0, 0, 0, 0.6);
+}
+
+body.light-theme .btn-minimize:hover {
+    background: rgb(0, 0, 0, 0.05);
+    color: rgb(0, 0, 0, 0.8);
+}
+
+body.light-theme .button-group button {
+    background: rgb(0, 0, 0, 0.03);
+    border-color: rgb(0, 0, 0, 0.1);
+    color: rgb(0, 0, 0, 0.87);
+}
+
+body.light-theme .button-group button:hover:not(:disabled) {
+    background: rgb(0, 0, 0, 0.08);
+}
+
+body.light-theme .button-group button.active {
+    background: rgb(76, 175, 80, 0.15);
+    border-color: #4caf50;
+}
+
+body.light-theme .button-group button:disabled {
+    opacity: 0.4;
+}
+
+body.light-theme .btn-close {
+    color: rgb(0, 0, 0, 0.54);
+}
+
+body.light-theme .btn-close:hover {
+    color: rgb(0, 0, 0, 0.87);
+}

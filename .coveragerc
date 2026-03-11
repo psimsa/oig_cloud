@@ -1,0 +1,8 @@
+[run]
+source = custom_components/oig_cloud
+relative_files = True
+
+[report]
+skip_covered = True
+show_missing = False
+

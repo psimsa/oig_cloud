@@ -1,42 +1,47 @@
+from typing import Any, Dict
+
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
-from homeassistant.const import EntityCategory
+from homeassistant.const import EntityCategory, UnitOfEnergy, UnitOfPower
 
-
-from typing import Dict
-
-
-SENSOR_TYPES_BOILER: Dict[
-    str, Dict[str, str | SensorDeviceClass | SensorStateClass]
-] = {
+SENSOR_TYPES_BOILER: Dict[str, Dict[str, Any]] = {
     "boiler_current_cbb_w": {
         "name": "Boiler - Current Energy (CBB)",
         "name_cs": "Bojler - Aktuální výkon (CBB)",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,
         "node_id": "boiler",
         "node_key": "p",
+        "local_entity_suffix": "tbl_boiler_p",
         "state_class": SensorStateClass.MEASUREMENT,
         "requires": ["boiler"],
+        "sensor_type_category": "data",
+        "device_mapping": "main",
     },
     "boiler_current_w": {
         "name": "Boiler - Current Energy (Computed)",
         "name_cs": "Bojler - Aktuální výkon (Vypočítaná)",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfPower.WATT,
         "node_id": None,
         "node_key": None,
         "state_class": SensorStateClass.MEASUREMENT,
         "requires": ["boiler"],
+        "sensor_type_category": "computed",
+        "device_mapping": "main",
+        "local_entity_suffix": "tbl_boiler_p",
     },
     "boiler_day_w": {
         "name": "Boiler - Today Energy",
         "name_cs": "Bojler - Dnešní uložení",
         "device_class": SensorDeviceClass.POWER,
-        "unit_of_measurement": "W",
+        "unit_of_measurement": UnitOfEnergy.WATT_HOUR,
         "node_id": "boiler",
         "node_key": "w",
+        "local_entity_suffix": "tbl_boiler_w",
         "state_class": SensorStateClass.TOTAL_INCREASING,
         "requires": ["boiler"],
+        "sensor_type_category": "data",
+        "device_mapping": "main",
     },
     "boiler_manual_mode": {
         "name": "Boiler - Manual mode",
@@ -45,9 +50,14 @@ SENSOR_TYPES_BOILER: Dict[
         "unit_of_measurement": None,
         "node_id": "boiler_prms",
         "node_key": "manual",
+        "local_entity_domains": ["sensor", "binary_sensor"],
+        "local_value_map": {"on": 1, "off": 0},
+        "local_entity_suffix": "tbl_boiler_prms_manual",
         "entity_category": EntityCategory.DIAGNOSTIC,
         "state_class": None,
         "options": ["Vypnuto / Off", "Zapnuto / On"],
+        "sensor_type_category": "data",
+        "device_mapping": "main",
     },
     "boiler_ssr1": {
         "name": "Boiler - SSR Rele 1",
@@ -56,9 +66,14 @@ SENSOR_TYPES_BOILER: Dict[
         "unit_of_measurement": None,
         "node_id": "boiler_prms",
         "node_key": "ssr0",
+        "local_entity_domains": ["sensor", "binary_sensor"],
+        "local_value_map": {"on": 1, "off": 0},
+        "local_entity_suffix": "tbl_boiler_prms_ssr0",
         "entity_category": EntityCategory.DIAGNOSTIC,
         "state_class": None,
         "options": ["Vypnuto / Off", "Zapnuto / On"],
+        "sensor_type_category": "data",
+        "device_mapping": "main",
     },
     "boiler_ssr2": {
         "name": "Boiler - SSR Rele 2",
@@ -67,9 +82,14 @@ SENSOR_TYPES_BOILER: Dict[
         "unit_of_measurement": None,
         "node_id": "boiler_prms",
         "node_key": "ssr1",
+        "local_entity_domains": ["sensor", "binary_sensor"],
+        "local_value_map": {"on": 1, "off": 0},
+        "local_entity_suffix": "tbl_boiler_prms_ssr1",
         "entity_category": EntityCategory.DIAGNOSTIC,
         "state_class": None,
         "options": ["Vypnuto / Off", "Zapnuto / On"],
+        "sensor_type_category": "data",
+        "device_mapping": "main",
     },
     "boiler_ssr3": {
         "name": "Boiler - SSR Rele 3",
@@ -78,8 +98,42 @@ SENSOR_TYPES_BOILER: Dict[
         "unit_of_measurement": None,
         "node_id": "boiler_prms",
         "node_key": "ssr2",
+        "local_entity_domains": ["sensor", "binary_sensor"],
+        "local_value_map": {"on": 1, "off": 0},
+        "local_entity_suffix": "tbl_boiler_prms_ssr2",
         "entity_category": EntityCategory.DIAGNOSTIC,
         "state_class": None,
         "options": ["Vypnuto / Off", "Zapnuto / On"],
+        "sensor_type_category": "data",
+        "device_mapping": "main",
+    },
+    "boiler_is_use": {
+        "name": "Boiler - is use",
+        "name_cs": "Bojler - K dispozici",
+        "device_class": SensorDeviceClass.ENUM,
+        "unit_of_measurement": None,
+        "node_id": "boiler_prms",
+        "node_key": "ison",
+        "local_entity_domains": ["sensor", "binary_sensor"],
+        "local_value_map": {"on": 1, "off": 0},
+        "local_entity_suffix": "tbl_boiler_prms_ison",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "state_class": None,
+        "options": ["Vypnuto / Off", "Zapnuto / On"],
+        "sensor_type_category": "data",
+        "device_mapping": "main",
+    },
+    "boiler_install_power": {
+        "name": "Boiler - install power",
+        "name_cs": "Bojler - instalovaný výkon",
+        "device_class": SensorDeviceClass.POWER,
+        "unit_of_measurement": UnitOfPower.WATT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "node_id": "boiler_prms",
+        "node_key": "p_set",
+        "local_entity_suffix": "tbl_boiler_prms_p_set",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "sensor_type_category": "data",
+        "device_mapping": "main",
     },
 }

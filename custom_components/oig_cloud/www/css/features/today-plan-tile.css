@@ -1,0 +1,351 @@
+/**
+ * Today Plan Tile Styles
+ *
+ * Styly pro dlaždici "Dnes - Plnění plánu"
+ * Phase 2.9 - Implementace dle PLAN_VS_ACTUAL_UX_REDESIGN.md
+ *
+ * @version 1.0.0
+ * @status IMPLEMENTOVÁNO - NEZASAZENO (čeká na review)
+ */
+
+/* ========================================================================
+   Hlavní kontejner dlaždice
+   ======================================================================== */
+
+.today-plan-tile {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    padding: 12px;
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    background: var(--card-background-color, #fff);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgb(0, 0, 0, 0.1);
+}
+
+.today-plan-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgb(0, 0, 0, 0.15);
+}
+
+.today-plan-tile--empty {
+    cursor: default;
+    justify-content: center;
+    align-items: center;
+}
+
+.today-plan-tile--empty:hover {
+    transform: none;
+    box-shadow: 0 2px 4px rgb(0, 0, 0, 0.1);
+}
+
+/* ========================================================================
+   Header s názvem a časem
+   ======================================================================== */
+
+.tile-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--divider-color, #e0e0e0);
+}
+
+.tile-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--primary-text-color, #333);
+}
+
+.tile-time {
+    font-size: 12px;
+    color: var(--secondary-text-color, #757575);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ========================================================================
+   Mini chart container
+   ======================================================================== */
+
+.mini-chart-container {
+    height: 100px;
+    margin-bottom: 8px;
+    position: relative;
+}
+
+.mini-chart-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* ========================================================================
+   Metriky (3 sloupce)
+   ======================================================================== */
+
+.tile-metrics {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.metric {
+    flex: 1;
+    text-align: center;
+    padding: 4px;
+    border-radius: 4px;
+    background: var(--card-background-color, #fafafa);
+}
+
+.metric-label {
+    font-size: 10px;
+    color: var(--secondary-text-color, #757575);
+    margin-bottom: 2px;
+    font-weight: 500;
+}
+
+.metric-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary-text-color, #333);
+    margin-bottom: 2px;
+    font-variant-numeric: tabular-nums;
+}
+
+.metric-sublabel {
+    font-size: 9px;
+    color: var(--secondary-text-color, #999);
+    font-weight: 500;
+}
+
+/* Barevné označení metrik */
+.metric.better .metric-value,
+.metric.better .metric-sublabel {
+    color: var(--success-color, #4CAF50);
+}
+
+.metric.worse .metric-value,
+.metric.worse .metric-sublabel {
+    color: var(--error-color, #f44336);
+}
+
+.metric.neutral .metric-value {
+    color: var(--secondary-text-color, #757575);
+}
+
+/* ========================================================================
+   EOD predikce
+   ======================================================================== */
+
+.tile-prediction {
+    font-size: 12px;
+    text-align: center;
+    margin-bottom: 8px;
+    padding: 6px 8px;
+    background: var(--primary-background-color, #f5f5f5);
+    border-radius: 4px;
+    line-height: 1.4;
+}
+
+.tile-prediction strong {
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.tile-prediction .prediction-plan {
+    color: var(--secondary-text-color, #757575);
+    font-size: 11px;
+    margin: 0 4px;
+}
+
+.tile-prediction .better {
+    color: var(--success-color, #4CAF50);
+    font-weight: 600;
+}
+
+.tile-prediction .worse {
+    color: var(--error-color, #f44336);
+    font-weight: 600;
+}
+
+.tile-prediction .neutral {
+    color: var(--secondary-text-color, #757575);
+}
+
+/* ========================================================================
+   Footer s Detail linkem a auto-refresh info
+   ======================================================================== */
+
+.tile-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--secondary-text-color, #999);
+    margin-top: auto;
+    padding-top: 4px;
+}
+
+.detail-link {
+    color: var(--primary-color, #03a9f4);
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.detail-link:hover {
+    color: var(--primary-color-dark, #0277bd);
+    text-decoration: underline;
+}
+
+.auto-refresh {
+    opacity: 0.7;
+    font-size: 10px;
+}
+
+/* ========================================================================
+   Empty state
+   ======================================================================== */
+
+.tile-empty-state {
+    text-align: center;
+    color: var(--secondary-text-color, #999);
+}
+
+.tile-empty-state p {
+    margin: 8px 0;
+    font-size: 13px;
+}
+
+.tile-empty-hint {
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+/* ========================================================================
+   Confidence level indicators (optional)
+   ======================================================================== */
+
+.today-plan-tile[data-confidence="low"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(to bottom,
+        var(--warning-color, #ff9800) 0%,
+        transparent 100%);
+    border-radius: 8px 0 0 8px;
+}
+
+.today-plan-tile[data-confidence="medium"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(to bottom,
+        var(--info-color, #2196f3) 0%,
+        transparent 100%);
+    border-radius: 8px 0 0 8px;
+}
+
+.today-plan-tile[data-confidence="good"]::before,
+.today-plan-tile[data-confidence="high"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(to bottom,
+        var(--success-color, #4CAF50) 0%,
+        transparent 100%);
+    border-radius: 8px 0 0 8px;
+}
+
+/* ========================================================================
+   Responsive adjustments
+   ======================================================================== */
+
+@media (width <= 768px) {
+    .today-plan-tile {
+        height: auto;
+        min-height: 200px;
+    }
+
+    .tile-metrics {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .metric {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        text-align: left;
+    }
+
+    .metric-label {
+        flex: 1;
+    }
+
+    .metric-value {
+        flex: 0 0 auto;
+    }
+}
+
+/* ========================================================================
+   Dark mode support
+   ======================================================================== */
+
+@media (prefers-color-scheme: dark) {
+    .today-plan-tile {
+        background: var(--card-background-color, #1e1e1e);
+        box-shadow: 0 2px 4px rgb(0, 0, 0, 0.3);
+    }
+
+    .today-plan-tile:hover {
+        box-shadow: 0 4px 8px rgb(0, 0, 0, 0.4);
+    }
+
+    .tile-header {
+        border-bottom-color: var(--divider-color, #333);
+    }
+
+    .tile-title {
+        color: var(--primary-text-color, #e0e0e0);
+    }
+
+    .metric {
+        background: var(--card-background-color, #2a2a2a);
+    }
+
+    .metric-value {
+        color: var(--primary-text-color, #e0e0e0);
+    }
+
+    .tile-prediction {
+        background: var(--primary-background-color, #2a2a2a);
+    }
+}
+
+/* ========================================================================
+   Animation pro auto-refresh
+   ======================================================================== */
+
+@keyframes pulse-refresh {
+    0%, 100% {
+        opacity: 0.7;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+.auto-refresh.refreshing {
+    animation: pulse-refresh 1s ease-in-out;
+}

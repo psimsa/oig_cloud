@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  homeassistant:
+    container_name: ha-test
+    image: homeassistant/home-assistant:2025.1.4
+    volumes:
+      - ./config:/config
+      - ./custom_components:/config/custom_components
+      - ./tests:/config/tests
+    environment:
+      - TZ=Europe/Prague
+    ports:
+      - "8123:8123"
+    restart: unless-stopped
+
+  # Test runner - spustí se pro testy
+  test-runner:
+    image: homeassistant/home-assistant:2025.1.4
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    command: >
+      sh -c "
+        pip install pytest pytest-cov pytest-asyncio &&
+        pytest tests/ -v
+      "
+    depends_on:
+      - homeassistant
+    profiles:
+      - test

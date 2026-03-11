@@ -1,0 +1,21 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2021,
+    "sourceType": "script"
+  },
+  "rules": {
+    "eqeqeq": "off",
+    "max-depth": "off",
+    "max-lines-per-function": "off",
+    "max-params": "off",
+    "no-alert": "off",
+    "no-undef": "off",
+    "no-unused-vars": "off",
+    "no-var": "off",
+    "prefer-const": "off"
+  }
+}

@@ -2,6 +2,7 @@
 pytest
 pytest-cov
 pytest-asyncio
+pytest-homeassistant-custom-component
 
 # Linting dependencies
 flake8
