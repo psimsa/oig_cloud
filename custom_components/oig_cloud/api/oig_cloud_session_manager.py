@@ -70,7 +70,7 @@ class OigCloudSessionManager:
         """Log information about API session configuration and headers."""
         try:
             # Base URL
-            base_url = getattr(self._api, "_base_url", "https://www.oigpower.cz/cez")
+            base_url = getattr(self._api, "_base_url", "https://portal.oigpower.cz/")
             _LOGGER.info(f"🌐 Base URL: {base_url}")
 
             # Try to get session info via get_session() method
