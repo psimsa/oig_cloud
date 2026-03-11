@@ -566,7 +566,7 @@ class OigCloudCoordinator(DataUpdateCoordinator):
 
                         # NOVÉ: Použít get_session() z API pro sdílení autentifikace
                         self.notification_manager = OigNotificationManager(
-                            self.hass, self.api, "https://www.oigpower.cz"
+                            self.hass, self.api, "https://portal.oigpower.cz"
                         )
                         _LOGGER.debug(
                             "Notification manager initialized with API session"
