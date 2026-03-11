@@ -56,7 +56,7 @@ class OigCloudApi:
     """API client for OIG Cloud."""
 
     # API endpoints
-    _base_url: str = "https://www.oigpower.cz/cez/"
+    _base_url: str = "https://portal.oigpower.cz/"
     _login_url: str = "inc/php/scripts/Login.php"
     _get_stats_url: str = "json.php"
     _set_mode_url: str = "inc/php/scripts/Device.Set.Value.php"
@@ -275,8 +275,8 @@ LwoFE+ObVXxX674szQvIc+7WPCooVsUbwZIikzJqZb4gJQ1OQx23CgyyYlsPHIDN
             "Accept-Encoding": "gzip, deflate, br, zstd",
             "Accept-Language": "cs-CZ,cs;q=0.9,en;q=0.8",
             "Connection": "keep-alive",
-            "Referer": "https://www.oigpower.cz/cez/",
-            "Origin": "https://www.oigpower.cz",
+            "Referer": "https://portal.oigpower.cz/",
+            "Origin": "https://portal.oigpower.cz",
             "Sec-Ch-Ua": '"Not)A;Brand";v="99", "Google Chrome";v="141", "Chromium";v="141"',
             "Sec-Ch-Ua-Mobile": "?1",
             "Sec-Ch-Ua-Platform": '"Android"',

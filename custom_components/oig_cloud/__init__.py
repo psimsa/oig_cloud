@@ -935,7 +935,7 @@ async def async_setup_entry(
                 # OPRAVA: Použít oig_api objekt (OigCloudApi) místo jakéhokoliv jiného
                 # NOVÉ: Použít session_manager.api pro přístup k underlying API
                 notification_manager = OigNotificationManager(
-                    hass, session_manager.api, "https://www.oigpower.cz/cez/"
+                    hass, session_manager.api, "https://portal.oigpower.cz/"
                 )
 
                 # Nastavíme device_id deterministicky (numerický box_id)
