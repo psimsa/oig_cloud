@@ -31,7 +31,7 @@ class OigCloudApi:
     """API client for OIG Cloud."""
     
     # API endpoints
-    _base_url: str = "https://www.oigpower.cz/cez/"
+    _base_url: str = "https://portal.oigpower.cz/"
     _login_url: str = "inc/php/scripts/Login.php"
     _get_stats_url: str = "json.php"
     _set_mode_url: str = "inc/php/scripts/Device.Set.Value.php"
