@@ -31,6 +31,8 @@ from .shared.logging import setup_otel_logging
 
 PLATFORMS = ["sensor", "binary_sensor"]
 
+ALL_BOX_MODES = ["Home 1", "Home 2", "Home 3", "Home UPS"]
+
 tracer = trace.get_tracer(__name__)
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.setLevel(logging.INFO)

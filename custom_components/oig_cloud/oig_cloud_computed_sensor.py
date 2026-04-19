@@ -4,6 +4,7 @@ from typing import Any, Dict, Final, Optional, Union, cast
 
 from .coordinator import OigCloudDataUpdateCoordinator
 from .oig_cloud_sensor import OigCloudSensor
+from .core.box_mode_composite import canonical_extended_state, parse_app_value
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,7 +75,11 @@ class OigCloudComputedSensor(OigCloudSensor):
             # Battery discharging power
             if self._sensor_type == "batt_batt_comp_p_discharge":
                 return self._get_batt_power_discharge(pv_data)
-                
+
+            # Box mode extended (computed from box_prm2_app sensor)
+            if self._sensor_type == "box_mode_extended":
+                return self._state_box_mode_extended()
+
             # CBB consumption (system consumption)
             # if self._sensor_type == "cbb_consumption_w":
             #     return self._get_cbb_consumption(pv_data)
@@ -213,3 +218,47 @@ class OigCloudComputedSensor(OigCloudSensor):
     async def async_update(self) -> None:
         # Request the coordinator to fetch new data and update the entity's state
         await self.coordinator.async_request_refresh()
+
+    def _state_box_mode_extended(self) -> Optional[str]:
+        raw_app = self._get_box_prm2_app()
+        if raw_app is None:
+            self._attr_extra_state_attributes = {
+                "raw_app": None,
+                "home_grid_v": False,
+                "home_grid_vi": False,
+                "flexibilita": False,
+            }
+            return "unknown"
+        state = parse_app_value(int(raw_app))
+        canonical = canonical_extended_state(state)
+        self._attr_extra_state_attributes = {
+            "raw_app": int(raw_app),
+            "home_grid_v": state.home_grid_v if state else False,
+            "home_grid_vi": state.home_grid_vi if state else False,
+            "flexibilita": state.flexibilita if state else False,
+        }
+        return canonical
+
+    def _get_box_prm2_app(self) -> Optional[float]:
+        box_id = self._resolve_box_id()
+        entity_id = f"sensor.oig_{box_id}_box_prm2_app"
+        if not self.hass:
+            return None
+        st = self.hass.states.get(entity_id)
+        if not st:
+            return None
+        raw = str(st.state)
+        if raw in ("unavailable", "", "unknown", "none"):
+            return None
+        try:
+            return float(raw)
+        except (ValueError, TypeError):
+            return None
+
+    def _resolve_box_id(self) -> str:
+        forced = getattr(self.coordinator, "forced_box_id", None)
+        if forced:
+            return str(forced)
+        if self.coordinator.data:
+            return list(self.coordinator.data.keys())[0]
+        return "unknown"

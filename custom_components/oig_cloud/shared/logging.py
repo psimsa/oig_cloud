@@ -14,6 +14,21 @@ from ..const import OT_ENDPOINT, OT_HEADERS, OT_INSECURE
 from .shared import get_resource
 
 
+def _redact_sensitive(value: str, show_chars: int = 4) -> str:
+    """Redact most of a sensitive string value for logging.
+
+    Args:
+        value: The sensitive value to redact.
+        show_chars: Number of characters to show at the end (default 4).
+
+    Returns:
+        Redacted string like "****last4".
+    """
+    if not isinstance(value, str) or len(value) <= show_chars:
+        return "****"
+    return f"****{value[-show_chars:]}"
+
+
 def setup_otel_logging(email_hash: str, hass_id: str) -> LoggingHandler:
     resource = get_resource(email_hash, hass_id)
 

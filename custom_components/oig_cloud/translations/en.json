@@ -1,85 +1,950 @@
 {
   "config": {
     "abort": {
-      "already_configured": "Device is already configured"
+      "already_configured": "OIG Cloud integration is already configured",
+      "not_implemented": "This feature is not yet implemented"
     },
     "error": {
-      "cannot_connect": "Failed to connect",
-      "invalid_auth": "Invalid authentication",
+      "api_key_required_for_frequent_updates": "⚠️ For updates every 4 hours or every hour, API key from Forecast.Solar is required",
+      "solcast_api_key_required": "⚠️ Solcast API key is required",
+      "solcast_site_id_required": "⚠️ Solcast site ID is required",
+      "cannot_connect": "Failed to connect to OIG Cloud API",
+      "dashboard_requires_all": "⚠️ Dashboard requires all other modules (Statistics, Solar forecast, Battery prediction, Price sensors, Spot prices, Extended sensors)",
+      "endpoint_must_start_with_slash": "⚠️ Endpoint must start with slash (/)",
+      "extended_interval_too_long": "⚠️ Extended interval is too long (maximum 3600 seconds = 60 minutes)",
+      "extended_interval_too_short": "⚠️ Extended interval is too short (minimum 300 seconds = 5 minutes)",
+      "interval_too_long": "⚠️ Standard interval is too long (maximum 300 seconds = 5 minutes)",
+      "interval_too_short": "⚠️ Standard interval is too short (minimum 30 seconds)",
+      "invalid_auth": "Invalid credentials",
+      "invalid_azimuth": "Invalid panel orientation (must be from 0° to 360°)",
+      "invalid_coordinates": "Invalid GPS coordinates",
+      "invalid_declination": "Invalid panel tilt (must be from 0° to 90°)",
+      "invalid_distribution_fee": "⚠️ Invalid distribution fee (0-10 CZK/kWh)",
+      "invalid_fee": "⚠️ Invalid fee",
+      "invalid_hour_format": "⚠️ Invalid hour format. Use numbers separated by comma (e.g.: 6,14,18)",
+      "invalid_hour_range": "⚠️ Hours must be in range 0-23",
+      "invalid_interval": "Interval must be within allowed range",
+      "invalid_kwp": "Invalid kWp power (must be from 0.1 to 15 kWp)",
+      "invalid_latitude": "Invalid GPS latitude (must be from -90 to 90°)",
+      "invalid_longitude": "Invalid GPS longitude (must be from -180 to 180°)",
+      "invalid_percentage": "⚠️ Invalid percentage (0.1-100%)",
+      "invalid_port": "⚠️ Invalid port (1-65535)",
+      "invalid_price": "⚠️ Invalid price (1-50 CZK/kWh)",
+      "invalid_hysteresis": "⚠️ Invalid price hysteresis (0-5 CZK/kWh)",
+      "invalid_hours": "⚠️ Invalid hours (1-24)",
+      "invalid_string1_params": "Invalid parameters for String 1",
+      "invalid_string2_params": "Invalid parameters for String 2",
+      "invalid_vat": "⚠️ Invalid VAT rate (0-30%)",
+      "live_data_not_confirmed": "You must confirm that you have 'Live Data' enabled in the app",
+      "live_data_not_enabled": "'Live Data' is not enabled in OIG Cloud app. Enable it in app settings!",
+      "local_proxy_missing": "⚠️ Local mode requires OIG Local proxy: sensor.oig_local_oig_proxy_proxy_status_last_data and sensor.oig_local_oig_proxy_proxy_status_box_device_id",
+      "min_must_be_less_than_target": "⚠️ Minimum capacity must be less than target capacity",
+      "no_strings_enabled": "⚠️ You must enable at least one solar panel string (String 1 or String 2)",
+      "overlapping_tariffs": "⚠️ HT and LT tariffs overlap. Each hour can be only HT or LT.",
+      "required": "This field is required",
+      "required_for_battery": "⚠️ Battery prediction requires extended sensors to be enabled",
+      "requires_solar_forecast": "⚠️ Battery prediction requires solar forecast to be enabled",
+      "solar_forecast_invalid_api_key": "Invalid API key for Forecast.Solar",
+      "solar_forecast_no_strings": "You must enable at least one string",
+      "tariff_gaps": "⚠️ Tariffs don't cover the whole day (0-23 hours). Check HT and LT starts.",
       "unknown": "Unexpected error"
     },
     "step": {
-      "user": {
-        "title": "Login to OIG",
-        "description": "Enter your username/email and password to log in to OIG",
+      "import_config": {
         "data": {
-          "no_telemetry": "Disable telemetry collection (features under active development may be limited)",
+          "config_file": "File path"
+        },
+        "title": "Import Configuration"
+      },
+      "init": {
+        "description": "Set basic parameters and enable features.",
+        "title": "Basic OIG Cloud Configuration"
+      },
+      "solar_basic": {
+        "description": "GPS coordinates and string selection for solar forecast.",
+        "title": "Solar Forecast - Basic Settings"
+      },
+      "solar_string1": {
+        "description": "Panel parameters for String 1.",
+        "title": "Solar Forecast - String 1"
+      },
+      "solar_string2": {
+        "description": "Panel parameters for String 2.",
+        "title": "Solar Forecast - String 2"
+      },
+      "statistics": {
+        "description": "Setting parameters for statistical sensors and predictions.",
+        "title": "Statistics Configuration"
+      },
+      "user": {
+        "data": {
+          "setup_type": "Setup Method"
+        },
+        "data_description": {
+          "setup_type": "🧙‍♂️ Wizard = step-by-step guided setup\n⚡ Quick = login only, everything else set to defaults"
+        },
+        "description": "{info}",
+        "title": "OIG Cloud - Setup Type Selection"
+      },
+      "wizard_battery": {
+        "data": {
+          "auto_mode_switch_enabled": "Automatic mode switching based on the plan",
+          "balancing_economic_threshold": "Economic balancing price (CZK/kWh)",
+          "balancing_enabled": "🔄 Enable battery cell balancing",
+          "balancing_hold_hours": "Hold at 100% duration (hours)",
+          "balancing_interval_days": "Balancing interval (days)",
+          "balancing_opportunistic_threshold": "Opportunistic balancing price (CZK/kWh)",
+          "cheap_window_percentile": "Cheap window percentile (%)",
+          "go_back": "⬅️ I want to go back (check + click Submit)",
+          "home_charge_rate": "Charging power from grid (kW)",
+          "min_capacity_percent": "Minimum battery capacity (%)",
+          "disable_planning_min_guard": "Disable planning minimum guard",
+          "max_ups_price_czk": "Maximum UPS charging price (CZK/kWh)",
+          "price_hysteresis_czk": "Price hysteresis (CZK/kWh)",
+          "hw_min_hold_hours": "Max hours at HW minimum",
+          "target_capacity_percent": "Target battery capacity (%)"
+        },
+        "data_description": {
+          "auto_mode_switch_enabled": "When enabled the integration calls the set_box_mode service automatically according to the computed schedule (same as Config Flow).",
+          "balancing_economic_threshold": "On days 5-7 after last balance, use this price threshold (typically 2.5 CZK/kWh)",
+          "balancing_enabled": "Automatically balances battery cells by charging to 100% and holding for configured hours",
+          "balancing_hold_hours": "How long to hold battery at 100% for cell balancing (1-12 hours, recommended 3 hours)",
+          "balancing_interval_days": "Maximum days between balancing cycles (3-30 days, recommended 7 days)",
+          "balancing_opportunistic_threshold": "If spot price drops below this, balance immediately regardless of days (typically 1.1 CZK/kWh)",
+          "cheap_window_percentile": "Used by balancing to select the \"cheap\" part of the price curve.",
+          "go_back": "Check this box and press 'Submit' - you will go back one step",
+          "home_charge_rate": "Maximum charging power from grid (typically 2-3 kW)",
+          "min_capacity_percent": "If capacity drops below this value, charging starts",
+          "disable_planning_min_guard": "Allows the planner to go below the planning minimum (more aggressive optimization)",
+          "max_ups_price_czk": "Hard safety limit: never charge from grid if price is higher than this value",
+          "price_hysteresis_czk": "Minimum price delta for hold vs. wait decisions",
+          "hw_min_hold_hours": "Maximum time to stay at hardware minimum before forcing recharge",
+          "target_capacity_percent": "Optimal capacity to charge to"
+        },
+        "description": "{step}\n{progress}\n\n📖 **What this module does:**\nIntelligently optimizes home battery charging according to spot electricity prices and solar production forecast. Automatically charges during cheapest hours.\n\n🔧 **What is needed:**\n• ☀️ Solar forecast (must be enabled)\n• ⚡ Extended sensors (must be enabled)\n• 📈 Spot electricity prices\n\n⚠️ **Experimental feature** - may require fine-tuning of parameters\n\n⚠️ **This module is required for:**\n• 📊 Dashboard (web interface)",
+        "title": "🔋 Battery Prediction Configuration"
+      },
+      "wizard_boiler": {
+        "data": {
+          "boiler_alt_cost_kwh": "Alternative heating cost (CZK/kWh)",
+          "boiler_alt_heater_switch_entity": "Alternative heat source switch - optional",
+          "boiler_circulation_pump_switch_entity": "Circulation pump switch - optional",
+          "boiler_cold_inlet_temp_c": "Cold water inlet temperature (°C)",
+          "boiler_deadline_time": "Deadline (time to have heated by)",
+          "boiler_has_alternative_heating": "Does boiler have alternative heat source?",
+          "boiler_heater_power_kw_entity": "Heating element power sensor (kW)",
+          "boiler_heater_switch_entity": "Heating element switch",
+          "boiler_plan_slot_minutes": "Time slot duration (minutes)",
+          "boiler_planning_horizon_hours": "Planning horizon (hours)",
+          "boiler_spot_price_sensor": "Spot price sensor",
+          "boiler_stratification_mode": "Stratification mode",
+          "boiler_target_temp_c": "Target water temperature (°C)",
+          "boiler_temp_sensor_bottom": "Temperature sensor (bottom) - optional",
+          "boiler_temp_sensor_top": "Temperature sensor (top)",
+          "boiler_volume_l": "Boiler volume (liters)",
+          "go_back": "⬅️ I want to go back (check + click Submit)"
+        },
+        "data_description": {
+          "boiler_alt_cost_kwh": "Cost per kWh from alternative source (e.g., 1.5 CZK/kWh for boiler). Electric heating will be used only when spot price is cheaper.",
+          "boiler_alt_heater_switch_entity": "Entity ID of switch for alternative source (e.g., boiler, heat pump). Leave empty if you don't have one.",
+          "boiler_circulation_pump_switch_entity": "Entity ID of switch for circulation pump. Leave empty if you do not control circulation via a switch.",
+          "boiler_cold_inlet_temp_c": "Temperature of incoming cold water from mains (typically 10-15°C)",
+          "boiler_deadline_time": "Time by which you want boiler heated (format HH:MM, e.g., 20:00). Planning will always find cheapest slots BEFORE this time.",
+          "boiler_has_alternative_heating": "Check if you have alternative heating method (boiler, HP) and want to use it when electricity is expensive",
+          "boiler_heater_power_kw_entity": "Entity ID of sensor with current power (e.g., sensor.boiler_power). If you don't have one, create a helper with constant value (e.g., 2.0 for 2kW)",
+          "boiler_heater_switch_entity": "Entity ID of switch for turning on main heating element (e.g., switch.boiler_heater). This will be controlled by the integration.",
+          "boiler_plan_slot_minutes": "Size of time blocks for planning (15-60 minutes). Smaller = more precise, larger = simpler. Recommended 60 minutes.",
+          "boiler_planning_horizon_hours": "How far ahead to plan (typically 24-48 hours). More = better optimization but longer calculation.",
+          "boiler_spot_price_sensor": "Entity ID of spot price sensor (e.g., sensor.oig_2206237016_spot_price_current_15min)",
+          "boiler_stratification_mode": "simple_avg = average temperature | two_zone = stratified model (more accurate, needs 2 sensors)",
+          "boiler_target_temp_c": "Desired water temperature (typically 55-65°C)",
+          "boiler_temp_sensor_bottom": "Entity ID of temperature sensor at bottom - for more accurate calculation with stratified boilers",
+          "boiler_temp_sensor_top": "Entity ID of temperature sensor at top of boiler (e.g., sensor.boiler_temperature_top)",
+          "boiler_volume_l": "Total volume of hot water tank (e.g., 120 liters)",
+          "go_back": "Check this box and press 'Submit' - you will go back one step"
+        },
+        "description": "{step}\n{progress}\n\n📖 **What this module does:**\nIntelligently plans boiler heating based on spot electricity prices. Selects the cheapest time slots for heating water before your deadline.\n\n🔧 **What is needed:**\n• 💰 Spot prices (must be enabled)\n• 🌡️ Boiler temperature sensors (top and optionally bottom)\n• ⚡ Heating element power\n\n💡 **How it works:**\n1. Calculates how much energy you need to heat the water\n2. Finds the cheapest time slots before deadline (e.g., 20:00)\n3. Creates a plan of when to turn on the boiler\n4. Controls a switch for turning heating on/off\n\n⚠️ **Note:** This module only controls WHEN to heat. Physical switching of the boiler must be handled by automation or smart switch.",
+        "title": "🔥 Boiler Configuration"
+      },
+      "wizard_credentials": {
+        "data": {
+          "go_back": "⬅️ I want to go back (check + click Submit)",
+          "live_data_enabled": "✅ I confirm that I have 'Live Data' enabled in the app",
           "password": "Password",
-          "username": "Username or email"
-        }
+          "username": "Email or username"
+        },
+        "data_description": {
+          "go_back": "Check this box and press 'Submit' - you will return to the main screen",
+          "live_data_enabled": "Without live data enabled, the integration will not work!"
+        },
+        "description": "{step}\n{progress}\n\nEnter your login credentials for the OIG Cloud application.\n\n⚠️ **IMPORTANT:** You must have 'Live Data' enabled in the OIG Cloud mobile app settings!",
+        "title": "🔐 Login Credentials"
+      },
+      "wizard_extended": {
+        "data": {
+          "enable_extended_battery_sensors": "🔋 Extended battery sensors",
+          "enable_extended_fve_sensors": "☀️ Extended PV sensors",
+          "enable_extended_grid_sensors": "⚡ Extended grid sensors",
+          "go_back": "⬅️ I want to go back (check + click Submit)"
+        },
+        "data_description": {
+          "enable_extended_battery_sensors": "Cell voltages, temperatures, charging/discharging currents",
+          "enable_extended_fve_sensors": "String voltages, currents, temperatures, power of individual strings",
+          "enable_extended_grid_sensors": "Phase voltages L1/L2/L3, frequency, power quality",
+          "go_back": "Check this box and press 'Submit' - you will go back one step"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Extended Sensors**\n\nSelect which groups of extended sensors you want to activate.\n\n💡 **Available groups:**\n• 🔋 Battery - cell voltages, temperatures, currents\n• ☀️ PV - string voltages, currents, temperatures\n• ⚡ Grid - phase voltages, frequency, quality\n\n⚠️ **Note:** More sensors = higher API load",
+        "title": "⚡ Extended Sensors"
+      },
+      "wizard_intervals": {
+        "data": {
+          "data_source_mode": "Telemetry data source",
+          "enable_cloud_notifications": "Cloud notifications",
+          "extended_scan_interval": "Extended data (seconds)",
+          "go_back": "⬅️ I want to go back (check + click Submit)",
+          "local_event_debounce_ms": "Local event debounce (ms)",
+          "local_proxy_stale_minutes": "Fallback to cloud after (minutes)",
+          "notifications_scan_interval": "Notifications interval (seconds)",
+          "standard_scan_interval": "Basic data (seconds)"
+        },
+        "data_description": {
+          "data_source_mode": "Cloud only = always read from cloud; Local only = read mapped local entities (if proxy is stale > this limit, temporarily fall back to cloud until it recovers)",
+          "enable_cloud_notifications": "Enable fetching cloud notifications (typically enough once every few minutes)",
+          "extended_scan_interval": "How often to load cell voltages, temperatures, currents and other detailed data (minimum 300 seconds, recommended 300-600 seconds)",
+          "go_back": "Check this box and press 'Submit' - you will go back one step",
+          "local_event_debounce_ms": "Debounce for event-driven refresh from local entities (lower = faster response, higher = fewer updates)",
+          "local_proxy_stale_minutes": "Switch back to cloud after this many minutes without local data; switch back to local automatically when proxy resumes",
+          "notifications_scan_interval": "How often to poll cloud notifications (recommended 300-900 seconds)",
+          "standard_scan_interval": "How often to load consumption, production, battery status and other basic data (minimum 30 seconds, recommended 30-60 seconds)"
+        },
+        "description": "{step}\n{progress}\n\nSet how often data should be loaded from OIG Cloud.\n\n💡 **Tip:** Shorter interval = more current data, but higher load on API servers.",
+        "title": "⏱️ Data Loading Intervals"
+      },
+      "wizard_modules": {
+        "data": {
+          "enable_auto": "🚗 Car - vehicle charging planning",
+          "enable_battery_prediction": "🔋 Intelligent battery prediction and optimization",
+          "enable_boiler": "🔥 Boiler - water heating optimization",
+          "enable_chmu_warnings": "🌦️ CHMU Weather Warnings (meteorological alerts)",
+          "enable_dashboard": "📊 Web dashboard with charts",
+          "enable_extended_sensors": "⚡ Extended sensors (voltages, currents, temperatures)",
+          "enable_pricing": "💰 Price sensors and spot prices from OTE",
+          "enable_solar_forecast": "☀️ Solar forecast for PV production",
+          "enable_statistics": "📊 Statistics and consumption analysis",
+          "go_back": "⬅️ I want to go back (check + click Submit)"
+        },
+        "data_description": {
+          "enable_auto": "Electric vehicle charging optimization (coming soon)",
+          "enable_battery_prediction": "Experimental - smart charging based on prices",
+          "enable_boiler": "Intelligent boiler heating planning based on spot prices",
+          "enable_chmu_warnings": "Weather warnings for your location (CAP XML)",
+          "enable_dashboard": "Web interface with charts accessible in HA",
+          "enable_extended_sensors": "Recommended - detailed monitoring",
+          "enable_pricing": "Recommended - OTE spot prices + cost calculation",
+          "enable_solar_forecast": "Requires API key from Forecast.Solar",
+          "enable_statistics": "Recommended - consumption median, predictions",
+          "go_back": "Check this box and press 'Submit' - you will go back one step"
+        },
+        "description": "{step}\n{progress}\n\nSelect which features you want to use. You can configure each module in detail later.",
+        "title": "📦 Module and Feature Selection"
+      },
+      "wizard_pricing_distribution": {
+        "data": {
+          "distribution_fee_nt_kwh": "Distribution fee LT (CZK/kWh)",
+          "distribution_fee_vt_kwh": "Distribution fee HT (CZK/kWh)",
+          "fixed_price_nt_kwh": "Fixed purchase price LT (CZK/kWh)",
+          "fixed_price_vt_kwh": "Fixed purchase price HT (CZK/kWh)",
+          "go_back": "⬅️ I want to go back (check + click Submit)",
+          "tariff_count": "Number of tariffs",
+          "tariff_nt_start_weekday": "LT start weekday (hour1,hour2)",
+          "tariff_nt_start_weekend": "LT start weekend (hour1,hour2)",
+          "tariff_vt_start_weekday": "HT start weekday (hour)",
+          "tariff_vt_start_weekend": "HT start weekend (hour)",
+          "tariff_weekend_same_as_weekday": "Weekend same as weekdays",
+          "vat_rate": "VAT (%)"
+        },
+        "data_description": {
+          "distribution_fee_nt_kwh": "Distribution fee LT (low tariff). E.g., 0.91 CZK/kWh",
+          "distribution_fee_vt_kwh": "Distribution fee HT (high tariff). E.g., 1.42 CZK/kWh",
+          "fixed_price_nt_kwh": "Fixed purchase price LT without VAT and distribution.",
+          "fixed_price_vt_kwh": "Fixed purchase price HT without VAT and distribution.",
+          "go_back": "Check this box and press 'Submit' - you will go back one step",
+          "tariff_count": "💡 Click 'Submit' to show parameters according to number of tariffs",
+          "tariff_nt_start_weekday": "LT start on weekday. Format: hour1,hour2 (e.g., '22,2' = 22:00 evening and 02:00 morning)",
+          "tariff_nt_start_weekend": "LT start on weekend. Format: hour1,hour2 (e.g., '0' = LT all day)",
+          "tariff_vt_start_weekday": "HT start on weekday. Format: hour (e.g., '6' = 06:00)",
+          "tariff_vt_start_weekend": "HT start on weekend. Format: hour (leave empty for LT all day)",
+          "tariff_weekend_same_as_weekday": "Use the same HT/LT times on weekends",
+          "vat_rate": "VAT rate in percent. Standard 21%"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Step 3: Distribution and VAT**\n\nSet distribution fees and VAT.\n\n💡 **Information:**\n• Distribution is **independent** of purchase/sale type (FIXED/SPOT)\n• If you have 2 tariffs (HT/LT), check 'Two tariffs'\n• HT hours are automatically set according to common times\n\n⚙️ After selecting number of tariffs, click 'Submit' to show parameters.",
+        "title": "⚡ Distribution and VAT Configuration (3/3)"
+      },
+      "wizard_pricing_export": {
+        "data": {
+          "export_fee_percent": "Export fee (%)",
+          "export_fixed_fee_czk": "Fixed export fee (CZK/kWh)",
+          "export_fixed_price_kwh": "Fixed export price (CZK/kWh)",
+          "export_pricing_scenario": "Export pricing scenario",
+          "go_back": "⬅️ I want to go back (check + click Submit)"
+        },
+        "data_description": {
+          "export_fee_percent": "Fee in %. E.g., 15% = you get 85% of spot price (spot × 0.85)",
+          "export_fixed_fee_czk": "Fixed fee subtracted from spot price. E.g., 0.20 CZK/kWh = spot - 0.20",
+          "export_fixed_price_kwh": "Fixed export price regardless of spot. E.g., 2.50 CZK/kWh",
+          "export_pricing_scenario": "💡 Click 'Submit' to show parameters for selected scenario",
+          "go_back": "Check this box and press 'Submit' - you will go back one step"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Step 2: Electricity Sale Price**\n\nSelect how you want to calculate the price for selling surplus to the grid.\n\n💡 **Recommended scenarios:**\n• 💰 SPOT - percentage - Advantageous at high spot prices\n• 💵 SPOT - fixed fee - More stable export\n• 🔒 FIXED price - Stable export price all year\n\n⚙️ After selecting scenario, click 'Submit' to show parameters.",
+        "title": "💸 Export Price Configuration (2/3)"
+      },
+      "wizard_pricing_import": {
+        "data": {
+          "fixed_price_kwh": "Fixed purchase price (CZK/kWh)",
+          "go_back": "⬅️ I want to go back (check + click Submit)",
+          "import_pricing_scenario": "Import pricing scenario",
+          "spot_fixed_fee_kwh": "Fixed fee (CZK/kWh)",
+          "spot_negative_fee_percent": "Surcharge for negative spot price (%)",
+          "spot_positive_fee_percent": "Surcharge for positive spot price (%)"
+        },
+        "data_description": {
+          "fixed_price_kwh": "Fixed purchase price. ⚠️ ENTER WITHOUT VAT AND DISTRIBUTION!",
+          "go_back": "Check this box and press 'Submit' - you will go back one step",
+          "import_pricing_scenario": "💡 Click 'Submit' to show parameters for selected scenario",
+          "spot_fixed_fee_kwh": "Constant fee added to spot price. E.g., 0.50 CZK/kWh",
+          "spot_negative_fee_percent": "For negative spot price: price × (1 - percent/100). E.g., 9% = spot × 0.91",
+          "spot_positive_fee_percent": "For positive spot price: price × (1 + percent/100). E.g., 15% = spot × 1.15"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Step 1: Electricity Purchase Price**\n\nSelect how you want to calculate the price for purchasing electricity from the grid.\n\n💡 **Recommended scenarios:**\n• 💰 SPOT + percentage - Variable price according to exchange\n• 💵 SPOT + fixed fee - More stable than percentage\n• 🔒 FIXED price - Predictable fixed price\n\n⚙️ After selecting scenario, click 'Submit' to show parameters.",
+        "title": "💰 Import Price Configuration (1/3)"
+      },
+      "wizard_solar": {
+        "data": {
+          "go_back": "⬅️ I want to go back (check + click Submit)",
+          "solar_forecast_provider": "Forecast provider",
+          "solar_forecast_api_key": "Forecast.Solar API key",
+          "solcast_api_key": "Solcast API key",
+          "solcast_site_id": "Solcast site ID",
+          "solar_forecast_latitude": "Installation GPS latitude",
+          "solar_forecast_longitude": "Installation GPS longitude",
+          "solar_forecast_mode": "Forecast update mode",
+          "solar_forecast_string1_azimuth": "String 1 - Azimuth / Orientation (°)",
+          "solar_forecast_string1_declination": "String 1 - Panel tilt (°)",
+          "solar_forecast_string1_enabled": "✅ Enable String 1",
+          "solar_forecast_string1_kwp": "String 1 - Installed power (kWp)",
+          "solar_forecast_string2_azimuth": "String 2 - Azimuth / Orientation (°)",
+          "solar_forecast_string2_declination": "String 2 - Panel tilt (°)",
+          "solar_forecast_string2_enabled": "✅ Enable String 2",
+          "solar_forecast_string2_kwp": "String 2 - Installed power (kWp)"
+        },
+        "data_description": {
+          "go_back": "Check this box and press 'Submit' - you will go back one step",
+          "solar_forecast_provider": "Select the solar forecast data provider",
+          "solar_forecast_api_key": "Optional for FREE modes. Required for frequent updates (4h, 1h)",
+          "solcast_api_key": "Required for Solcast requests",
+          "solcast_site_id": "Rooftop site ID from Solcast (used for hobbyist/free plans)",
+          "solar_forecast_latitude": "Range: -90° to 90° (Central Europe approx 48-51°)",
+          "solar_forecast_longitude": "Range: -180° to 180° (Central Europe approx 12-19°)",
+          "solar_forecast_mode": "🎯 Optimized = 3x daily at 6:00, 12:00, 16:00 (RECOMMENDED)\n🌅 Daily = 1x daily at 6:00\n🕐 4h/⚡1h = requires API key",
+          "solar_forecast_string1_azimuth": "0° = SOUTH, 90° = WEST, 180° = NORTH, 270° = EAST (range 0-360°)",
+          "solar_forecast_string1_declination": "0° = horizontal, 90° = vertical (roofs usually 30-45°). Range: 0-90°",
+          "solar_forecast_string1_enabled": "💡 Click 'Submit' to show parameters. If you have panels on only one orientation, String 1 is enough",
+          "solar_forecast_string1_kwp": "Total String 1 power in kWp (e.g., 5.0 kWp)",
+          "solar_forecast_string2_azimuth": "0° = SOUTH, 90° = WEST, 180° = NORTH, 270° = EAST (range 0-360°)",
+          "solar_forecast_string2_declination": "0° = horizontal, 90° = vertical (roofs usually 30-45°). Range: 0-90°",
+          "solar_forecast_string2_enabled": "💡 Click 'Submit' to show parameters. Enable if you have panels on two different orientations (e.g., east + west)",
+          "solar_forecast_string2_kwp": "Total String 2 power in kWp (e.g., 3.5 kWp)"
+        },
+        "description": "{step}\n{progress}\n\n📖 **What this module does:**\nProvides forecast of electricity production from photovoltaic panels for the next 24-72 hours. Uses Forecast.Solar service with accurate meteorological data.\n\n🔧 **What is needed:**\n• Free or paid API key from Forecast.Solar\n• GPS coordinates of PV installation\n• Panel parameters (tilt, azimuth, power)\n\n⚠️ **This module is required for:**\n• 🔋 Battery prediction (intelligent charging)\n\n🔑 Get API key by registering at Forecast.Solar",
+        "title": "☀️ Solar Forecast Configuration"
+      },
+      "wizard_summary": {
+        "data": {
+          "go_back": "⬅️ I want to go back (check + click Submit)"
+        },
+        "data_description": {
+          "go_back": "Check this box and press 'Submit' - you will go back one step"
+        },
+        "description": "{step}\n{progress}\n\n📋 **Configuration Summary**\n\n{summary}\n\n---\n\n✅ **Everything is ready!**\n\nClick 'Submit' to complete setup and activate the integration.",
+        "title": "✅ Summary and Completion"
+      },
+      "wizard_welcome": {
+        "description": "{info}",
+        "title": "🎯 Welcome to OIG Cloud Setup Wizard"
+      },
+      "wizard_welcome_reconfigure": {
+        "description": "🔧 **OIG Cloud Configuration Change**\n\nThis wizard will guide you through updating your integration configuration.\n\n**What you can change:**\n• 📦 Enable/disable modules and features\n• ⏱️ Adjust data update intervals\n• ☀️ Change solar forecast settings\n• 🔋 Adjust battery prediction parameters\n• 💰 Change pricing settings\n• ⚡ Adjust extended sensors\n\n**Note:** Login credentials cannot be changed here - you must delete and re-add the integration.\n\nClick \"Submit\" to continue with the setup.",
+        "title": "🔧 OIG Cloud Configuration Change"
       }
     }
   },
-  "selector": {
-    "set_box_mode": {
-      "options": {
-        "Home 1": "Home 1",
-        "Home 2": "Home 2",
-        "Home 3": "Home 3",
-        "Home UPS": "Home UPS"
-      },
-      "Acknowledgement": {
-        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
-      }
-    },
-    "set_grid_delivery": {
-      "options": {
-        "Vypnuto / Off": "Vypnuto / Off",
-        "Zapnuto / On": "Zapnuto / On",
-        "S omezením / Limited": "S omezením / Limited"
-      },
-      "Acknowledgement": {
-        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
-      },
-      "Warning": {
-        "description": "Before using this feature, familiarize yourself with the limitations available in the OIG Power / ČEZ Battery Box application."
-      }
-    },
-    "set_boiler_mode": {
-      "options": {
-        "CBB": "CBB",
-        "Manual": "Manual"
-      },
-      "Acknowledgement": {
-        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
-      }
-    },
-    "set_formating_mode": {
-      "options": {
-        "Nenabíjet": "Nenabíjet",
-        "Nabíjet": "Nabíjet"
-      },
-      "Limit": {
-        "min": "min",
-        "max": "max",
-        "unit_of_measurement": "unit_of_measurement"
-      },
-      "Acknowledgement": {
-        "description": "I acknowledge that calling the service will result in parameter modification of a live system. I take on full responsibility for the changes and any effect they may have, expected or otherwise."
+  "entity": {
+    "sensor": {
+      "data_source": {
+        "name": "Data source",
+        "state": {
+          "cloud": "Cloud",
+          "local": "Local"
+        },
+        "state_attributes": {
+          "configured_mode": {
+            "name": "Configured mode"
+          },
+          "effective_mode": {
+            "name": "Effective mode"
+          },
+          "last_local_data": {
+            "name": "Last local data"
+          },
+          "local_available": {
+            "name": "Local available"
+          },
+          "reason": {
+            "name": "Reason"
+          }
+        }
       }
     }
   },
   "options": {
+    "abort": {
+      "reconfigure_successful": "✅ Settings saved and integration reloaded."
+    },
     "step": {
-      "init": {
-        "title": "Configuration",
-        "description": "Adjust settings for your OIG Cloud integration",
+      "basic_config": {
         "data": {
-          "update_interval": "Update interval (seconds)",
-          "no_telemetry": "Disable telemetry (opt-out of data collection)",
-          "log_level": "Logging level"
-        }
+          "password": "Password",
+          "standard_scan_interval": "Basic data update interval (seconds)",
+          "username": "Username / Email"
+        },
+        "data_description": {
+          "password": "Password for OIG Cloud (leave empty to keep unchanged)",
+          "standard_scan_interval": "How often to fetch basic data from OIG Cloud (recommended 20-30s)",
+          "username": "Email or username for OIG Cloud login"
+        },
+        "description": "Configuration of basic integration parameters",
+        "title": "⚙️ Basic Settings"
+      },
+      "battery_prediction": {
+        "data": {
+          "auto_mode_switch_enabled": "Automatic mode switching based on the plan",
+          "cheap_window_percentile": "Cheap window percentile (%)",
+          "enable_battery_prediction": "Enable battery prediction",
+          "home_charge_rate": "Grid charging power (kW)",
+          "max_ups_price_czk": "Maximum UPS charging price (CZK/kWh)",
+          "min_capacity_percent": "Minimum battery capacity (%)",
+          "disable_planning_min_guard": "Disable planning minimum guard",
+          "total_hours": "Prediction hours"
+        },
+        "data_description": {
+          "auto_mode_switch_enabled": "When enabled the integration calls the set_box_mode service automatically according to the computed schedule (same as Config Flow).",
+          "cheap_window_percentile": "Used by balancing to select the \"cheap\" part of the price curve.",
+          "enable_battery_prediction": "Intelligent charging planning based on spot prices and consumption",
+          "home_charge_rate": "Maximum charging power of your system from grid",
+          "max_ups_price_czk": "Hard safety limit: never charge from grid if price is higher than this value",
+          "min_capacity_percent": "Below this level, grid charging starts (recommended 15-25%)",
+          "disable_planning_min_guard": "Allows the planner to go below the planning minimum (more aggressive optimization)",
+          "total_hours": "How far into future to plan charging (recommended 24-48h)"
+        },
+        "description": "Currently {current_state}. Min. capacity: {min_capacity}%, Charging power: {charge_rate}W",
+        "title": "Battery Prediction"
+      },
+      "extended_sensors": {
+        "data": {
+          "disable_extended_stats_api": "🚫 Disable extended stats API calls",
+          "enable_extended_battery_sensors": "🔋 Extended battery data",
+          "enable_extended_fve_sensors": "☀️ Extended PV data",
+          "enable_extended_grid_sensors": "⚡ Extended grid data",
+          "enable_extended_sensors": "Enable extended sensors",
+          "extended_scan_interval": "⏱️ Extended sensors update interval (seconds)"
+        },
+        "data_description": {
+          "disable_extended_stats_api": "If you have HTTP 500 errors, disable extended stats API",
+          "enable_extended_battery_sensors": "Cell voltages, currents, temperature and detailed battery status",
+          "enable_extended_fve_sensors": "Power and currents of individual PV strings",
+          "enable_extended_grid_sensors": "Voltages L1/L2/L3, grid frequency, power per phase",
+          "enable_extended_sensors": "Enable extended sensors for detailed system monitoring",
+          "extended_scan_interval": "How often to fetch extended data (higher value = less server load)"
+        },
+        "description": "Currently {current_state}",
+        "title": "📊 Extended Sensors"
+      },
+      "menu": {
+        "description": "Select what you want to configure",
+        "menu_options": {
+          "basic_config": "⚙️ Basic Settings",
+          "battery_prediction": "🔋 Battery Prediction",
+          "extended_sensors": "📊 Extended Sensors",
+          "pricing_config": "💰 Pricing Sensors",
+          "solar_forecast": "☀️ Solar Forecast",
+          "statistics_config": "📈 Statistics & Analytics"
+        },
+        "title": "OIG Cloud Configuration"
+      },
+      "pricing_config": {
+        "data": {
+          "distribution_fee_kwh": "Distribution fee (CZK/kWh)",
+          "enable_spot_prices": "Enable spot electricity prices from OTE",
+          "spot_fixed_fee_mwh": "Fixed fee (CZK/MWh)",
+          "spot_negative_fee_percent": "Fee for negative prices (%)",
+          "spot_positive_fee_percent": "Fee for positive prices (%)",
+          "spot_pricing_model": "Price calculation model"
+        },
+        "data_description": {
+          "distribution_fee_kwh": "Distribution fee added to final price (usually 1-2 CZK/kWh)",
+          "enable_spot_prices": "Download and process spot electricity prices from OTE daily at 13:00",
+          "spot_fixed_fee_mwh": "Constant fee in CZK per MWh added to spot price (automatically converted to kWh)",
+          "spot_negative_fee_percent": "For negative spot price: price × (1 - percent/100). E.g. 9% = price × 0.91",
+          "spot_positive_fee_percent": "For positive spot price: price × (1 + percent/100). E.g. 15% = price × 1.15",
+          "spot_pricing_model": "How commercial price is calculated from raw spot price"
+        },
+        "description": "Configuration of spot prices and final price calculation\n\nCurrent state: {current_state}\n{info}",
+        "title": "Spot Electricity Prices"
+      },
+      "solar_forecast": {
+        "data": {
+          "enable_solar_forecast": "Enable solar forecast",
+          "solar_forecast_api_key": "Forecast.Solar API key (optional)",
+          "solar_forecast_latitude": "Latitude",
+          "solar_forecast_longitude": "Longitude",
+          "solar_forecast_mode": "Update mode",
+          "solar_forecast_string1_azimuth": "String 1 - Azimuth (°)",
+          "solar_forecast_string1_declination": "String 1 - Tilt (°)",
+          "solar_forecast_string1_enabled": "Enable String 1",
+          "solar_forecast_string1_kwp": "String 1 - Power (kWp)",
+          "solar_forecast_string2_azimuth": "String 2 - Azimuth (°)",
+          "solar_forecast_string2_declination": "String 2 - Tilt (°)",
+          "solar_forecast_string2_enabled": "Enable String 2",
+          "solar_forecast_string2_kwp": "String 2 - Power (kWp)"
+        },
+        "data_description": {
+          "enable_solar_forecast": "Enable solar forecast for battery optimization and production prediction",
+          "solar_forecast_api_key": "API key for forecast.solar (optional, increases limits)",
+          "solar_forecast_latitude": "GPS latitude of your PV system (-90 to 90)",
+          "solar_forecast_longitude": "GPS longitude of your PV system (-180 to 180)",
+          "solar_forecast_mode": "How often to update solar forecast",
+          "solar_forecast_string1_azimuth": "Orientation of 1st string panels (0°=north, 90°=east, 180°=south, 270°=west)",
+          "solar_forecast_string1_declination": "Tilt of 1st string panels from horizontal (0-90°)",
+          "solar_forecast_string1_enabled": "Enable first panel string (at least one required)",
+          "solar_forecast_string1_kwp": "Installed power of 1st string in kWp",
+          "solar_forecast_string2_azimuth": "Orientation of 2nd string panels (0°=north, 90°=east, 180°=south, 270°=west)",
+          "solar_forecast_string2_declination": "Tilt of 2nd string panels from horizontal (0-90°)",
+          "solar_forecast_string2_enabled": "Enable second panel string (optional)",
+          "solar_forecast_string2_kwp": "Installed power of 2nd string in kWp"
+        },
+        "description": "Currently {current_state}. Mode: {current_mode}",
+        "title": "☀️ Solar Forecast"
+      },
+      "statistics_config": {
+        "data": {
+          "enable_statistics": "Enable statistical sensors",
+          "reconfigure_statistics": "Reconfigure statistics (deletes old data)"
+        },
+        "data_description": {
+          "enable_statistics": "Consumption median by time, battery prediction, consumption analysis",
+          "reconfigure_statistics": "⚠️ Deletes all stored historical data and starts over"
+        },
+        "description": "Currently {current_state}",
+        "title": "Statistics & Analytics"
+      },
+      "wizard_battery": {
+        "data": {
+          "balancing_economic_threshold": "Economic balancing price (CZK/kWh)",
+          "balancing_enabled": "🔄 Enable battery cell balancing",
+          "balancing_hold_hours": "Hold at 100% duration (hours)",
+          "balancing_interval_days": "Balancing interval (days)",
+          "balancing_opportunistic_threshold": "Opportunistic balancing price (CZK/kWh)",
+          "go_back": "⬅️ I want to go back (check + click Submit)",
+          "home_charge_rate": "Charging power from grid (kW)",
+          "max_ups_price_czk": "Maximum UPS charging price (CZK/kWh)",
+          "min_capacity_percent": "Minimum battery capacity (%)",
+          "disable_planning_min_guard": "Disable planning minimum guard",
+          "target_capacity_percent": "Target battery capacity (%)"
+        },
+        "data_description": {
+          "balancing_economic_threshold": "On days 5-7 after last balance, use this price threshold (typically 2.5 CZK/kWh)",
+          "balancing_enabled": "Automatically balances battery cells by charging to 100% and holding for configured hours",
+          "balancing_hold_hours": "How long to hold battery at 100% for cell balancing (1-12 hours, recommended 3 hours)",
+          "balancing_interval_days": "Maximum days between balancing cycles (3-30 days, recommended 7 days)",
+          "balancing_opportunistic_threshold": "If spot price drops below this, balance immediately regardless of days (typically 1.1 CZK/kWh)",
+          "go_back": "Check this box and press 'Submit' - you will go back one step",
+          "home_charge_rate": "Maximum charging power from grid (typically 2-3 kW)",
+          "max_ups_price_czk": "Hard safety limit: never charge from grid if price is higher than this value",
+          "min_capacity_percent": "If capacity drops below this value, charging starts",
+          "disable_planning_min_guard": "Allows the planner to go below the planning minimum (more aggressive optimization)",
+          "target_capacity_percent": "Optimal capacity to charge to"
+        },
+        "description": "{step}\n{progress}\n\n📖 **What this module does:**\nIntelligently optimizes home battery charging according to spot electricity prices and solar production forecast. Automatically charges during cheapest hours.\n\n🔧 **What is needed:**\n• ☀️ Solar forecast (must be enabled)\n• ⚡ Extended sensors (must be enabled)\n• 📈 Spot electricity prices\n\n⚠️ **Experimental feature** - may require fine-tuning of parameters\n\n⚠️ **This module is required for:**\n• 📊 Dashboard (web interface)",
+        "title": "🔋 Battery Prediction Configuration"
+      },
+      "wizard_boiler": {
+        "data": {
+          "boiler_alt_cost_kwh": "Alternative heating cost (CZK/kWh)",
+          "boiler_alt_heater_switch_entity": "Alternative heater switch - optional",
+          "boiler_cold_inlet_temp_c": "Cold water temperature (°C)",
+          "boiler_deadline_time": "Deadline (time to have heated by)",
+          "boiler_has_alternative_heating": "Does boiler have alternative heat source?",
+          "boiler_heater_power_kw_entity": "Heater power sensor (kW)",
+          "boiler_heater_switch_entity": "Heater switch",
+          "boiler_plan_slot_minutes": "Time slot length (minutes)",
+          "boiler_planning_horizon_hours": "Planning horizon (hours)",
+          "boiler_spot_price_sensor": "Spot price sensor",
+          "boiler_stratification_mode": "Stratification mode",
+          "boiler_target_temp_c": "Target water temperature (°C)",
+          "boiler_temp_sensor_bottom": "Temperature sensor (bottom) - optional",
+          "boiler_temp_sensor_top": "Temperature sensor (top)",
+          "boiler_volume_l": "Boiler volume (liters)",
+          "go_back": "⬅️ I want to go back (check + click Submit)"
+        },
+        "data_description": {
+          "boiler_alt_cost_kwh": "How much 1 kWh from alternative source costs (e.g., 1.5 CZK/kWh for boiler). Electric heating will be used only when spot price is cheaper.",
+          "boiler_alt_heater_switch_entity": "Entity ID of switch for alternative source (e.g., boiler, heat pump). Leave empty if you don't have one.",
+          "boiler_cold_inlet_temp_c": "Cold water inlet temperature from mains (typically 10-15°C)",
+          "boiler_deadline_time": "By when you want boiler heated (format HH:MM, e.g., 20:00). Planning always finds cheapest slots BEFORE this time.",
+          "boiler_has_alternative_heating": "Check if you have alternative heating method (boiler, HP) and want to use it when electricity is expensive",
+          "boiler_heater_power_kw_entity": "Entity ID of sensor with current power (e.g., sensor.boiler_power). If you don't have one, create a helper with constant value (e.g., 2.0 for 2kW)",
+          "boiler_heater_switch_entity": "Entity ID of switch to turn on main heating element (e.g., switch.boiler_heater). This will be controlled by the integration.",
+          "boiler_plan_slot_minutes": "Size of time blocks for planning (15-60 minutes). Smaller = more precise, larger = simpler. Recommended 60 minutes.",
+          "boiler_planning_horizon_hours": "How far ahead to plan (typically 24-48 hours). More = better optimization but longer calculation.",
+          "boiler_spot_price_sensor": "Entity ID of spot price sensor (e.g., sensor.oig_2206237016_spot_price_current_15min)",
+          "boiler_stratification_mode": "simple_avg = temperature average | two_zone = stratified model (more accurate, needs 2 sensors)",
+          "boiler_target_temp_c": "What temperature to heat water to (typically 55-65°C)",
+          "boiler_temp_sensor_bottom": "Entity ID of temperature sensor at bottom - for more accurate calculation in stratified boilers",
+          "boiler_temp_sensor_top": "Entity ID of temperature sensor at top of boiler (e.g., sensor.boiler_temperature_top)",
+          "boiler_volume_l": "Total volume of hot water tank (e.g., 120 liters)",
+          "go_back": "Check this box and press 'Submit' - you will go back one step"
+        },
+        "description": "{step}\n{progress}\n\n📖 **What this module does:**\nIntelligently plans water heater heating based on spot electricity prices. Selects the cheapest time slots to heat water before your set deadline.\n\n🔧 **What is needed:**\n• 💰 Spot prices (must be enabled)\n• 🌡️ Boiler temperature sensors (top and optionally bottom)\n• ⚡ Heater power\n\n💡 **How it works:**\n1. Calculates how much energy you need to heat the water\n2. Finds the cheapest time slots before deadline (e.g., 20:00)\n3. Creates a plan when to turn on the boiler\n4. Controls the switch for turning heating on/off\n\n⚠️ **Note:** This module only controls WHEN to heat. Physical boiler switching must be handled via automation or smart switch.",
+        "title": "🔥 Boiler Configuration"
+      },
+      "wizard_extended": {
+        "data": {
+          "enable_extended_battery_sensors": "🔋 Extended battery sensors",
+          "enable_extended_fve_sensors": "☀️ Extended PV sensors",
+          "enable_extended_grid_sensors": "⚡ Extended grid sensors",
+          "go_back": "⬅️ I want to go back (check + click Submit)"
+        },
+        "data_description": {
+          "enable_extended_battery_sensors": "Cell voltages, temperatures, charging/discharging currents",
+          "enable_extended_fve_sensors": "String voltages, currents, temperatures, power of individual strings",
+          "enable_extended_grid_sensors": "Phase voltages L1/L2/L3, frequency, power quality",
+          "go_back": "Check this box and press 'Submit' - you will go back one step"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Extended Sensors**\n\nSelect which groups of extended sensors you want to activate.\n\n💡 **Available groups:**\n• 🔋 Battery - cell voltages, temperatures, currents\n• ☀️ PV - string voltages, currents, temperatures\n• ⚡ Grid - phase voltages, frequency, quality\n\n⚠️ **Note:** More sensors = higher API load",
+        "title": "⚡ Extended Sensors"
+      },
+      "wizard_intervals": {
+        "data": {
+          "data_source_mode": "Telemetry data source",
+          "enable_cloud_notifications": "Cloud notifications",
+          "extended_scan_interval": "Extended data (seconds)",
+          "go_back": "⬅️ I want to go back (check + click Submit)",
+          "local_event_debounce_ms": "Local event debounce (ms)",
+          "local_proxy_stale_minutes": "Fallback to cloud after (minutes)",
+          "notifications_scan_interval": "Notifications interval (seconds)",
+          "standard_scan_interval": "Basic data (seconds)"
+        },
+        "data_description": {
+          "data_source_mode": "Cloud only = always cloud; Local only = mapped local entities (falls back to cloud when proxy is stale/unavailable)",
+          "enable_cloud_notifications": "Enable fetching cloud notifications (typically enough once every few minutes)",
+          "extended_scan_interval": "How often to load cell voltages, temperatures, currents and other detailed data (minimum 300 seconds, recommended 300-600 seconds)",
+          "go_back": "Check this box and press 'Submit' - you will go back one step",
+          "local_event_debounce_ms": "Debounce for event-driven refresh from local entities (lower = faster updates, higher = fewer updates)",
+          "local_proxy_stale_minutes": "Fallback to cloud if the local proxy has not sent any data for longer than this limit",
+          "notifications_scan_interval": "How often to poll cloud notifications (recommended 300-900 seconds)",
+          "standard_scan_interval": "How often to load consumption, production, battery status and other basic data (minimum 30 seconds, recommended 30-60 seconds)"
+        },
+        "description": "{step}\n{progress}\n\nSet how often data should be loaded from OIG Cloud.\n\n💡 **Tip:** Shorter interval = more current data, but higher load on API servers.",
+        "title": "⏱️ Data Loading Intervals"
+      },
+      "wizard_modules": {
+        "data": {
+          "enable_auto": "🚗 Car - vehicle charging planning",
+          "enable_battery_prediction": "🔋 Intelligent battery prediction and optimization",
+          "enable_boiler": "🔥 Boiler - water heating optimization",
+          "enable_chmu_warnings": "🌦️ CHMU Weather Warnings (meteorological alerts)",
+          "enable_dashboard": "📊 Web dashboard with charts",
+          "enable_extended_sensors": "⚡ Extended sensors (voltages, currents, temperatures)",
+          "enable_pricing": "💰 Price sensors and spot prices from OTE",
+          "enable_solar_forecast": "☀️ Solar forecast for PV production",
+          "enable_statistics": "📊 Statistics and consumption analysis",
+          "go_back": "⬅️ I want to go back (check + click Submit)"
+        },
+        "data_description": {
+          "enable_auto": "Electric vehicle charging optimization (coming soon)",
+          "enable_battery_prediction": "Experimental - smart charging based on prices",
+          "enable_boiler": "Intelligent boiler heating planning based on spot prices",
+          "enable_chmu_warnings": "Meteorological warnings for your location (CAP XML)",
+          "enable_dashboard": "Web interface with charts accessible in HA",
+          "enable_extended_sensors": "Recommended - detailed monitoring",
+          "enable_pricing": "Recommended - spot prices from OTE + cost calculations",
+          "enable_solar_forecast": "Requires API key from Forecast.Solar",
+          "enable_statistics": "Recommended - consumption median, predictions",
+          "go_back": "Check this box and press 'Submit' - you will go back one step"
+        },
+        "description": "{step}\n{progress}\n\nSelect which features you want to use. You can configure each module in detail later.",
+        "title": "📦 Module and Feature Selection"
+      },
+      "wizard_pricing_distribution": {
+        "data": {
+          "distribution_fee_nt_kwh": "Distribution fee LT (CZK/kWh)",
+          "distribution_fee_vt_kwh": "Distribution fee HT (CZK/kWh)",
+          "fixed_price_nt_kwh": "Fixed purchase price LT (CZK/kWh)",
+          "fixed_price_vt_kwh": "Fixed purchase price HT (CZK/kWh)",
+          "go_back": "⬅️ I want to go back (check + click Submit)",
+          "tariff_count": "Number of tariffs",
+          "tariff_nt_start_weekday": "LT start weekday (hour1,hour2)",
+          "tariff_nt_start_weekend": "LT start weekend (hour1,hour2)",
+          "tariff_vt_start_weekday": "HT start weekday (hour)",
+          "tariff_vt_start_weekend": "HT start weekend (hour)",
+          "tariff_weekend_same_as_weekday": "Weekend same as weekdays",
+          "vat_rate": "VAT (%)"
+        },
+        "data_description": {
+          "distribution_fee_nt_kwh": "Distribution fee LT (low tariff). E.g., 0.91 CZK/kWh",
+          "distribution_fee_vt_kwh": "Distribution fee HT (high tariff). E.g., 1.42 CZK/kWh",
+          "fixed_price_nt_kwh": "Fixed purchase price LT without VAT and distribution.",
+          "fixed_price_vt_kwh": "Fixed purchase price HT without VAT and distribution.",
+          "go_back": "Check this box and press 'Submit' - you will go back one step",
+          "tariff_count": "💡 Click 'Submit' to show parameters according to number of tariffs",
+          "tariff_nt_start_weekday": "LT start on weekday. Format: hour1,hour2 (e.g., '22,2' = 22:00 evening and 02:00 morning)",
+          "tariff_nt_start_weekend": "LT start on weekend. Format: hour1,hour2 (e.g., '0' = LT all day)",
+          "tariff_vt_start_weekday": "HT start on weekday. Format: hour (e.g., '6' = 06:00)",
+          "tariff_vt_start_weekend": "HT start on weekend. Format: hour (leave empty for LT all day)",
+          "tariff_weekend_same_as_weekday": "Use the same HT/LT times on weekends",
+          "vat_rate": "VAT rate in percent. Standard 21%"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Step 3: Distribution and VAT**\n\nSet distribution fees and VAT.\n\n💡 **Information:**\n• Distribution is **independent** of purchase/sale type (FIXED/SPOT)\n• If you have 2 tariffs (HT/LT), check 'Two tariffs'\n• HT hours are automatically set according to common times\n\n⚙️ After selecting number of tariffs, click 'Submit' to show parameters.",
+        "title": "⚡ Distribution and VAT Configuration (3/3)"
+      },
+      "wizard_pricing_export": {
+        "data": {
+          "export_fee_percent": "Export fee (%)",
+          "export_fixed_fee_czk": "Fixed export fee (CZK/kWh)",
+          "export_fixed_price_kwh": "Fixed export price (CZK/kWh)",
+          "export_pricing_scenario": "Export pricing scenario",
+          "go_back": "⬅️ I want to go back (check + click Submit)"
+        },
+        "data_description": {
+          "export_fee_percent": "Fee in %. E.g., 15% = you get 85% of spot price (spot × 0.85)",
+          "export_fixed_fee_czk": "Fixed fee subtracted from spot price. E.g., 0.20 CZK/kWh = spot - 0.20",
+          "export_fixed_price_kwh": "Fixed export price regardless of spot. E.g., 2.50 CZK/kWh",
+          "export_pricing_scenario": "💡 Click 'Submit' to show parameters for selected scenario",
+          "go_back": "Check this box and press 'Submit' - you will go back one step"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Step 2: Electricity Sale Price**\n\nSelect how you want to calculate the price for selling surplus to the grid.\n\n💡 **Recommended scenarios:**\n• 💰 SPOT - percentage - Advantageous at high spot prices\n• 💵 SPOT - fixed fee - More stable export\n• 🔒 FIXED price - Stable export price all year\n\n⚙️ After selecting scenario, click 'Submit' to show parameters.",
+        "title": "💸 Export Price Configuration (2/3)"
+      },
+      "wizard_pricing_import": {
+        "data": {
+          "fixed_price_kwh": "Fixed purchase price (CZK/kWh)",
+          "go_back": "⬅️ I want to go back (check + click Submit)",
+          "import_pricing_scenario": "Import pricing scenario",
+          "spot_fixed_fee_kwh": "Fixed fee (CZK/kWh)",
+          "spot_negative_fee_percent": "Surcharge for negative spot price (%)",
+          "spot_positive_fee_percent": "Surcharge for positive spot price (%)"
+        },
+        "data_description": {
+          "fixed_price_kwh": "Fixed purchase price. ⚠️ ENTER WITHOUT VAT AND DISTRIBUTION!",
+          "go_back": "Check this box and press 'Submit' - you will go back one step",
+          "import_pricing_scenario": "💡 Click 'Submit' to show parameters for selected scenario",
+          "spot_fixed_fee_kwh": "Constant fee added to spot price. E.g., 0.50 CZK/kWh",
+          "spot_negative_fee_percent": "For negative spot price: price × (1 - percent/100). E.g., 9% = spot × 0.91",
+          "spot_positive_fee_percent": "For positive spot price: price × (1 + percent/100). E.g., 15% = spot × 1.15"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Step 1: Electricity Purchase Price**\n\nSelect how you want to calculate the price for purchasing electricity from the grid.\n\n💡 **Recommended scenarios:**\n• 💰 SPOT + percentage - Variable price according to exchange\n• 💵 SPOT + fixed fee - More stable than percentage\n• 🔒 FIXED price - Predictable fixed price\n\n⚙️ After selecting scenario, click 'Submit' to show parameters.",
+        "title": "💰 Import Price Configuration (1/3)"
+      },
+      "wizard_solar": {
+        "data": {
+          "go_back": "⬅️ I want to go back (check + click Submit)",
+          "solar_forecast_provider": "Forecast provider",
+          "solar_forecast_api_key": "Forecast.Solar API key",
+          "solcast_api_key": "Solcast API key",
+          "solcast_site_id": "Solcast site ID",
+          "solar_forecast_latitude": "Installation GPS latitude",
+          "solar_forecast_longitude": "Installation GPS longitude",
+          "solar_forecast_mode": "Forecast update mode",
+          "solar_forecast_string1_azimuth": "String 1 - Azimuth / Orientation (°)",
+          "solar_forecast_string1_declination": "String 1 - Panel tilt (°)",
+          "solar_forecast_string1_enabled": "✅ Enable String 1",
+          "solar_forecast_string1_kwp": "String 1 - Installed power (kWp)",
+          "solar_forecast_string2_azimuth": "String 2 - Azimuth / Orientation (°)",
+          "solar_forecast_string2_declination": "String 2 - Panel tilt (°)",
+          "solar_forecast_string2_enabled": "✅ Enable String 2",
+          "solar_forecast_string2_kwp": "String 2 - Installed power (kWp)"
+        },
+        "data_description": {
+          "go_back": "Check this box and press 'Submit' - you will go back one step",
+          "solar_forecast_provider": "Select the solar forecast data provider",
+          "solar_forecast_api_key": "Optional for FREE modes. Required for frequent updates (4h, 1h)",
+          "solcast_api_key": "Required for Solcast requests",
+          "solcast_site_id": "Rooftop site ID from Solcast (used for hobbyist/free plans)",
+          "solar_forecast_latitude": "Range: -90° to 90° (Central Europe approx 48-51°)",
+          "solar_forecast_longitude": "Range: -180° to 180° (Central Europe approx 12-19°)",
+          "solar_forecast_mode": "🎯 Optimized = 3x daily at 6:00, 12:00, 16:00 (RECOMMENDED)\n🌅 Daily = 1x daily at 6:00\n🕐 4h/⚡1h = requires API key",
+          "solar_forecast_string1_azimuth": "0° = SOUTH, 90° = WEST, 180° = NORTH, 270° = EAST (range 0-360°)",
+          "solar_forecast_string1_declination": "0° = horizontal, 90° = vertical (roofs usually 30-45°). Range: 0-90°",
+          "solar_forecast_string1_enabled": "💡 Click 'Submit' to show parameters. If you have panels on only one orientation, String 1 is enough",
+          "solar_forecast_string1_kwp": "Total String 1 power in kWp (e.g., 5.0 kWp)",
+          "solar_forecast_string2_azimuth": "0° = SOUTH, 90° = WEST, 180° = NORTH, 270° = EAST (range 0-360°)",
+          "solar_forecast_string2_declination": "0° = horizontal, 90° = vertical (roofs usually 30-45°). Range: 0-90°",
+          "solar_forecast_string2_enabled": "💡 Click 'Submit' to show parameters. Enable if you have panels on two different orientations (e.g., east + west)",
+          "solar_forecast_string2_kwp": "Total String 2 power in kWp (e.g., 3.5 kWp)"
+        },
+        "description": "{step}\n{progress}\n\n📖 **What this module does:**\nProvides forecast of electricity production from photovoltaic panels for the next 24-72 hours. Uses Forecast.Solar service with accurate meteorological data.\n\n🔧 **What is needed:**\n• Free or paid API key from Forecast.Solar\n• GPS coordinates of PV installation\n• Panel parameters (tilt, azimuth, power)\n\n⚠️ **This module is required for:**\n• 🔋 Battery prediction (intelligent charging)\n\n🔑 Get API key by registering at Forecast.Solar",
+        "title": "☀️ Solar Forecast Configuration"
+      },
+      "wizard_summary": {
+        "data": {
+          "go_back": "⬅️ I want to go back (check + click Submit)"
+        },
+        "data_description": {
+          "go_back": "Check this box and press 'Submit' - you will go back one step"
+        },
+        "description": "{step}\n{progress}\n\n📋 **Configuration Summary**\n\n{summary}\n\n---\n\n✅ **Everything is ready!**\n\nClick 'Submit' to save changes.",
+        "title": "✅ Summary and Completion"
+      },
+      "wizard_welcome_reconfigure": {
+        "description": "🔧 **OIG Cloud Configuration Change**\n\nThis wizard will guide you through updating your integration configuration.\n\n**What you can change:**\n• 📦 Enable/disable modules and features\n• ⏱️ Adjust data update intervals\n• ☀️ Change solar forecast settings\n• 🔋 Adjust battery prediction parameters\n• 💰 Change pricing settings\n• ⚡ Adjust extended sensors\n\n**Note:** Login credentials cannot be changed here - you must delete and re-add the integration.\n\nClick \"Submit\" to continue with the setup.",
+        "title": "🔧 OIG Cloud Configuration Change"
       }
+    }
+  },
+  "selector": {
+    "setup_type": {
+      "options": {
+        "import": "📥 Import from YAML",
+        "quick": "⚡ Quick Setup",
+        "wizard": "🧙‍♂️ Setup Wizard (recommended)"
+      }
+    },
+    "box_mode": {
+      "options": {
+        "home_1": "Home 1",
+        "home_2": "Home 2",
+        "home_3": "Home 3",
+        "home_ups": "Home UPS"
+      }
+    },
+    "boiler_mode": {
+      "options": {
+        "cbb": "CBB",
+        "manual": "Manual"
+      }
+    },
+    "battery_charge_mode": {
+      "options": {
+        "no_charge": "Do not charge",
+        "charge": "Charge"
+      }
+    },
+    "grid_delivery_mode": {
+      "options": {
+        "off": "Vypnuto / Off",
+        "on": "Zapnuto / On",
+        "limited": "S omezením / Limited"
+      }
+    }
+  },
+  "services": {
+    "apply_boiler_plan": {
+      "description": "Applies the planned boiler heating. Creates automations for turning on the heating element at planned times.",
+      "name": "Apply heating plan"
+    },
+    "cancel_boiler_plan": {
+      "description": "Cancels the active boiler heating plan and removes planned automations.",
+      "name": "Cancel heating plan"
+    },
+    "plan_boiler_heating": {
+      "description": "Creates an optimal boiler heating plan based on spot prices. Finds the cheapest time slots before the deadline.",
+      "fields": {
+        "deadline": {
+          "description": "Override the default deadline time (format HH:MM, e.g., 20:00)",
+          "name": "Override deadline"
+        },
+        "force": {
+          "description": "Forces plan recalculation even if a valid plan already exists",
+          "name": "Force recalculation"
+        }
+      },
+      "name": "Plan boiler heating"
+    },
+    "set_boiler_mode": {
+      "description": "Switch boiler between automatic (CBB) and manual mode.",
+      "fields": {
+        "acknowledgement": {
+          "description": "I acknowledge the risks associated with manual boiler mode and accept full responsibility.",
+          "name": "Acknowledgement"
+        },
+        "mode": {
+          "description": "Select between CBB (automatic) or Manual operation.",
+          "name": "Boiler Mode"
+        }
+      },
+      "name": "Set Boiler Mode"
+    },
+    "set_box_mode": {
+      "description": "Set Battery Box mode (Home 1, Home 2, Home 3, Home UPS) and optional supplementary toggles (Grid V, Grid VI)",
+      "fields": {
+        "acknowledgement": {
+          "description": "Acknowledge mode change",
+          "name": "Acknowledgement"
+        },
+        "home_grid_v": {
+          "description": "Enable Home Grid V supplementary mode",
+          "name": "Home Grid V"
+        },
+        "home_grid_vi": {
+          "description": "Enable Home Grid VI supplementary mode",
+          "name": "Home Grid VI"
+        },
+        "mode": {
+          "description": "Battery Box mode",
+          "name": "Mode"
+        }
+      },
+      "name": "Set Battery Box Mode"
+    },
+    "set_formating_mode": {
+      "description": "Enable or disable immediate charging of the battery from the grid.",
+      "fields": {
+        "acknowledgement": {
+          "description": "I acknowledge that starting battery charging from the grid modifies a live system and accept responsibility.",
+          "name": "Acknowledgement"
+        },
+        "limit": {
+          "description": "Set the target battery charge percentage.",
+          "name": "Target Charge (%)"
+        },
+        "mode": {
+          "description": "Select to start or stop grid charging of the battery.",
+          "name": "Charging Mode"
+        }
+      },
+      "name": "Set Battery Grid Charging"
+    },
+    "set_grid_delivery": {
+      "description": "Configure export of excess production to the grid. Ensure legal permissions are obtained.",
+      "fields": {
+        "acknowledgement": {
+          "description": "I acknowledge that enabling this feature modifies a live system. I take full responsibility.",
+          "name": "Acknowledgement"
+        },
+        "limit": {
+          "description": "Set the maximum allowed export to the grid in watts.",
+          "name": "Grid Export Limit (W)"
+        },
+        "mode": {
+          "description": "Choose whether grid export is allowed, limited, or disabled.",
+          "name": "Grid Export Mode"
+        },
+        "warning": {
+          "description": "Before enabling grid export, ensure you have DSO approval. Unauthorized export may lead to penalties.",
+          "name": "Export Warning"
+        }
+      },
+      "name": "Set Grid Delivery Mode"
     }
   }
 }

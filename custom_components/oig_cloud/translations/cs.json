@@ -1,85 +1,752 @@
 {
   "config": {
     "abort": {
-      "already_configured": "Zařízení je již nakonfigurováno"
+      "already_configured": "Integrace OIG Cloud je již nakonfigurována",
+      "not_implemented": "Tato funkce ještě není implementována"
     },
     "error": {
-      "cannot_connect": "Nepodařilo se připojit",
+      "api_key_required_for_frequent_updates": "⚠️ Pro aktualizaci každé 4 hodiny nebo každou hodinu je vyžadován API klíč z Forecast.Solar",
+      "solcast_api_key_required": "⚠️ Je vyžadován API klíč pro Solcast",
+      "solcast_site_id_required": "⚠️ Je vyžadováno Solcast site ID",
+      "cannot_connect": "Nepodařilo se připojit k OIG Cloud API",
+      "dashboard_requires_all": "⚠️ Dashboard vyžaduje všechny ostatní moduly (Statistiky, Solární předpověď, Predikce baterie, Cenové senzory, Spotové ceny, Rozšířené senzory)",
+      "endpoint_must_start_with_slash": "⚠️ Endpoint musí začínat lomítkem (/)",
+      "extended_interval_too_long": "⚠️ Rozšířený interval je příliš dlouhý (maximálně 3600 sekund = 60 minut)",
+      "extended_interval_too_short": "⚠️ Rozšířený interval je příliš krátký (minimálně 300 sekund = 5 minut)",
+      "interval_too_long": "⚠️ Standardní interval je příliš dlouhý (maximálně 300 sekund = 5 minut)",
+      "interval_too_short": "⚠️ Standardní interval je příliš krátký (minimálně 30 sekund)",
       "invalid_auth": "Neplatné přihlašovací údaje",
+      "invalid_azimuth": "Neplatná orientace panelů (musí být od 0° do 360°)",
+      "invalid_coordinates": "Neplatné GPS souřadnice",
+      "invalid_declination": "Neplatný sklon panelů (musí být od 0° do 90°)",
+      "invalid_distribution_fee": "⚠️ Neplatný distribuční poplatek (0-10 CZK/kWh)",
+      "invalid_fee": "⚠️ Neplatný poplatek",
+      "invalid_hour_format": "⚠️ Neplatný formát hodin. Použijte čísla oddělená čárkou (např: 6,14,18)",
+      "invalid_hour_range": "⚠️ Hodiny musí být v rozsahu 0-23",
+      "invalid_interval": "Interval musí být v povoleném rozsahu",
+      "invalid_kwp": "Neplatný výkon kWp (musí být od 0.1 do 15 kWp)",
+      "invalid_latitude": "Neplatná GPS šířka (musí být od -90 do 90°)",
+      "invalid_longitude": "Neplatná GPS délka (musí být od -180 do 180°)",
+      "invalid_percentage": "⚠️ Neplatné procento (0.1-100%)",
+      "invalid_port": "⚠️ Neplatný port (1-65535)",
+      "invalid_price": "⚠️ Neplatná cena (1-50 CZK/kWh)",
+      "invalid_hysteresis": "⚠️ Neplatná hystereze ceny (0-5 CZK/kWh)",
+      "invalid_hours": "⚠️ Neplatný počet hodin (1-24)",
+      "invalid_string1_params": "Neplatné parametry pro String 1",
+      "invalid_string2_params": "Neplatné parametry pro String 2",
+      "invalid_vat": "⚠️ Neplatná sazba DPH (0-30%)",
+      "live_data_not_confirmed": "Musíte potvrdit, že máte v aplikaci zapnutá 'Živá data'",
+      "live_data_not_enabled": "V OIG Cloud aplikaci nejsou zapnutá 'Živá data'. Zapněte je v nastavení aplikace!",
+      "local_proxy_missing": "⚠️ Pro režim 'Lokální' je potřeba OIG Local proxy: sensor.oig_local_oig_proxy_proxy_status_last_data a sensor.oig_local_oig_proxy_proxy_status_box_device_id",
+      "min_must_be_less_than_target": "⚠️ Minimální kapacita musí být menší než cílová kapacita",
+      "no_strings_enabled": "⚠️ Musíte povolit alespoň jeden string solárních panelů (String 1 nebo String 2)",
+      "overlapping_tariffs": "⚠️ VT a NT tarify se překrývají. Každá hodina může být pouze VT nebo NT.",
+      "required": "Toto pole je povinné",
+      "required_for_battery": "⚠️ Predikce baterie vyžaduje zapnuté rozšířené senzory",
+      "requires_solar_forecast": "⚠️ Predikce baterie vyžaduje zapnutou solární předpověď",
+      "solar_forecast_invalid_api_key": "Neplatný API klíč pro Forecast.Solar",
+      "solar_forecast_no_strings": "Musíte povolit alespoň jeden string",
+      "tariff_gaps": "⚠️ Tarify nepokrývají celý den (0-23 hodin). Zkontrolujte začátky VT a NT.",
       "unknown": "Neočekávaná chyba"
     },
     "step": {
-      "user": {
-        "title": "Přihlášení do OIG",
-        "description": "Zadejte své přihlašovací jméno/e-mail a heslo pro přihlášení do OIG",
+      "import_config": {
         "data": {
-          "no_telemetry": "Zakázat sběr telemetrie (funkce v aktivním vývoji mohou být omezeny)",
+          "config_file": "Cesta k souboru"
+        },
+        "title": "Import konfigurace"
+      },
+      "init": {
+        "description": "Nastavte základní parametry a povolte funkce.",
+        "title": "Základní konfigurace OIG Cloud"
+      },
+      "solar_basic": {
+        "description": "GPS souřadnice a výběr stringů pro solar forecast.",
+        "title": "Solar Forecast - základní nastavení"
+      },
+      "solar_string1": {
+        "description": "Parametry panelů na String 1.",
+        "title": "Solar Forecast - String 1"
+      },
+      "solar_string2": {
+        "description": "Parametry panelů na String 2.",
+        "title": "Solar Forecast - String 2"
+      },
+      "statistics": {
+        "description": "Nastavení parametrů pro statistické senzory a predikce.",
+        "title": "Konfigurace statistik"
+      },
+      "user": {
+        "data": {
+          "setup_type": "Způsob nastavení"
+        },
+        "data_description": {
+          "setup_type": "🧙‍♂️ Průvodce = postupné nastavení krok za krokem\n⚡ Rychlé = jen přihlášení, vše ostatní na výchozí hodnoty"
+        },
+        "description": "{info}",
+        "title": "OIG Cloud - Výběr typu nastavení"
+      },
+      "wizard_battery": {
+        "data": {
+          "auto_mode_switch_enabled": "Automatické přepínání režimů podle plánu",
+          "balancing_economic_threshold": "Cena pro ekonomické balancing (CZK/kWh)",
+          "balancing_enabled": "🔄 Povolit vyrovnání článků baterie",
+          "balancing_hold_hours": "Doba držení na 100% (hodiny)",
+          "balancing_interval_days": "Interval vyrovnání (dny)",
+          "balancing_opportunistic_threshold": "Cena pro opportunistic balancing (CZK/kWh)",
+          "cheap_window_percentile": "Percentil levných hodin (%)",
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)",
+          "home_charge_rate": "Nabíjecí výkon ze sítě (kW)",
+          "min_capacity_percent": "Minimální kapacita baterie (%)",
+          "disable_planning_min_guard": "Vypnout ochranu plánovacího minima",
+          "max_ups_price_czk": "Maximální cena pro nabíjení UPS (CZK/kWh)",
+          "price_hysteresis_czk": "Hystereze ceny (CZK/kWh)",
+          "hw_min_hold_hours": "Max. hodin na HW minimu",
+          "target_capacity_percent": "Cílová kapacita baterie (%)"
+        },
+        "data_description": {
+          "auto_mode_switch_enabled": "Pokud je zapnuto, integrace bude volat službu změny režimu (set_box_mode) automaticky podle vypočteného plánu. Stejné nastavení jako v průvodci.",
+          "balancing_economic_threshold": "V dnech 5-7 po posledním vyrovnání použít tento cenový práh (typicky 2.5 CZK/kWh)",
+          "balancing_enabled": "Automaticky vyrovnává články baterie nabíjením na 100% a držením po nastavenou dobu",
+          "balancing_hold_hours": "Jak dlouho držet baterii na 100% pro vyrovnání článků (1-12 hodin, doporučeno 3 hodiny)",
+          "balancing_interval_days": "Maximální počet dní mezi cykly vyrovnání (3-30 dní, doporučeno 7 dní)",
+          "balancing_opportunistic_threshold": "Pokud spot cena klesne pod tuto hodnotu, vyrovnat okamžitě bez ohledu na dny (typicky 1.1 CZK/kWh)",
+          "cheap_window_percentile": "Používá balancing pro výběr \"levné\" části cenové křivky.",
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět",
+          "home_charge_rate": "Maximální výkon nabíjení ze sítě (typicky 2-3 kW)",
+          "min_capacity_percent": "Pokud kapacita klesne pod tuto hodnotu, zahájí se nabíjení",
+          "disable_planning_min_guard": "Povolí plánovači jít níž než plánovací minimum (agresivnější optimalizace)",
+          "max_ups_price_czk": "Tvrdý bezpečnostní limit: ze sítě se nikdy nenabíjí, pokud je cena vyšší",
+          "price_hysteresis_czk": "Minimální cenový rozdíl pro rozhodnutí držet vs. čekat",
+          "hw_min_hold_hours": "Maximální doba na HW minimu před nuceným dobitím",
+          "target_capacity_percent": "Optimální kapacita, na kterou se nabíjí"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Co tento modul dělá:**\nInteligentně optimalizuje nabíjení domácí baterie podle spotových cen elektřiny a předpovědi solární výroby. Automaticky se nabíjí v nejlevnějších hodinách.\n\n🔧 **Co je potřeba:**\n• ☀️ Solární předpověď (musí být zapnutá)\n• ⚡ Rozšířené senzory (musí být zapnuté)\n• 📈 Spotové ceny elektřiny\n\n⚠️ **Experimentální funkce** - může vyžadovat jemné doladění parametrů\n\n⚠️ **Tento modul je vyžadován pro:**\n• 📊 Dashboard (webové rozhraní)",
+        "title": "🔋 Konfigurace predikce baterie"
+      },
+      "wizard_boiler": {
+        "data": {
+          "boiler_alt_cost_kwh": "Cena alternativního ohřevu (CZK/kWh)",
+          "boiler_alt_heater_switch_entity": "Přepínač alternativního zdroje - volitelný",
+          "boiler_circulation_pump_switch_entity": "Přepínač cirkulačního čerpadla - volitelný",
+          "boiler_cold_inlet_temp_c": "Teplota studené vody (°C)",
+          "boiler_deadline_time": "Deadline (čas do kdy mít ohřáto)",
+          "boiler_has_alternative_heating": "Má bojler alternativní zdroj tepla?",
+          "boiler_heater_power_kw_entity": "Senzor výkonu topného tělesa (kW)",
+          "boiler_heater_switch_entity": "Přepínač topného tělesa",
+          "boiler_plan_slot_minutes": "Délka časového slotu (minuty)",
+          "boiler_planning_horizon_hours": "Plánovací horizont (hodiny)",
+          "boiler_spot_price_sensor": "Senzor spotové ceny",
+          "boiler_stratification_mode": "Režim stratifikace",
+          "boiler_target_temp_c": "Cílová teplota vody (°C)",
+          "boiler_temp_sensor_bottom": "Teplotní senzor (dolní část) - volitelný",
+          "boiler_temp_sensor_top": "Teplotní senzor (horní část)",
+          "boiler_volume_l": "Objem bojleru (litry)",
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)"
+        },
+        "data_description": {
+          "boiler_alt_cost_kwh": "Kolik vás stojí 1 kWh z alternativního zdroje (např. 1.5 CZK/kWh pro kotel). Elektrický ohřev se použije jen když je spotová cena levnější.",
+          "boiler_alt_heater_switch_entity": "Entity ID přepínače pro alternativní zdroj (např. kotel, tepelné čerpadlo). Nechte prázdné, pokud nemáte.",
+          "boiler_circulation_pump_switch_entity": "Entity ID přepínače pro cirkulační čerpadlo. Nechte prázdné, pokud cirkulaci neřídíte přes switch.",
+          "boiler_cold_inlet_temp_c": "Teplota přítoku studené vody z vodovodu (typicky 10-15°C)",
+          "boiler_deadline_time": "Do kdy chcete mít bojler ohřátý (formát HH:MM, např. 20:00). Plánování vždy najde nejlevnější sloty PŘED tímto časem.",
+          "boiler_has_alternative_heating": "Zaškrtněte, pokud máte alternativní způsob ohřevu (kotel, TČ) a chcete ho využívat když je elektřina drahá",
+          "boiler_heater_power_kw_entity": "Entity ID senzoru s aktuálním výkonem (např. sensor.boiler_power). Pokud nemáte, vytvořte helper s konstantní hodnotou (např. 2.0 pro 2kW)",
+          "boiler_heater_switch_entity": "Entity ID přepínače pro zapnutí hlavního topného tělesa (např. switch.boiler_heater). Toto bude integrace zapínat/vypínat.",
+          "boiler_plan_slot_minutes": "Velikost časových bloků pro plánování (15-60 minut). Menší = přesnější, větší = jednodušší. Doporučeno 60 minut.",
+          "boiler_planning_horizon_hours": "Jak daleko dopředu plánovat (typicky 24-48 hodin). Čím více, tím lepší optimalizace, ale delší výpočet.",
+          "boiler_spot_price_sensor": "Entity ID senzoru se spotovou cenou (např. sensor.oig_2206237016_spot_price_current_15min)",
+          "boiler_stratification_mode": "simple_avg = průměr teplot | two_zone = stratifikovaný model (přesnější, potřebuje 2 senzory)",
+          "boiler_target_temp_c": "Na jakou teplotu chcete ohřát vodu (typicky 55-65°C)",
+          "boiler_temp_sensor_bottom": "Entity ID teplotního senzoru ve spodní části - pro přesnější výpočet u stratifikovaných bojlerů",
+          "boiler_temp_sensor_top": "Entity ID teplotního senzoru v horní části bojleru (např. sensor.boiler_temperature_top)",
+          "boiler_volume_l": "Celkový objem zásobníku teplé vody (např. 120 litrů)",
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Co tento modul dělá:**\nInteligentně plánuje oh řev bojleru podle spotových cen elektřiny. Vybírá nejlevnější časové sloty pro ohřev vody před vámi nastaveným deadlinem.\n\n🔧 **Co je potřeba:**\n• 💰 Spotové ceny (musí být zapnuté)\n• 🌡️ Teplotní senzory bojleru (horní a volitelně dolní)\n• ⚡ Výkon topného tělesa\n\n💡 **Jak to funguje:**\n1. Vypočítá kolik energie potřebujete pro dohřátí vody\n2. Najde nejlevnější časové sloty před deadlinem (např. 20:00)\n3. Vytvoří plán kdy zapnout bojler\n4. Ovládá přepínač (switch) pro zapnutí/vypnutí ohřevu\n\n⚠️ **Poznámka:** Tento modul pouze řídí KDY ohřívat. Fyzické zapínání bojleru musíte zajistit pomocí automatizace nebo chytrého vypínače.",
+        "title": "🔥 Konfigurace bojleru"
+      },
+      "wizard_credentials": {
+        "data": {
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)",
+          "live_data_enabled": "✅ Potvrzuji, že mám zapnutá 'Živá data' v aplikaci",
           "password": "Heslo",
-          "username": "Přihlašovací jméno nebo e-mail"
-        }
+          "username": "E-mail nebo uživatelské jméno"
+        },
+        "data_description": {
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se na úvodní obrazovku",
+          "live_data_enabled": "Bez zapnutých živých dat integrace nebude fungovat!"
+        },
+        "description": "{step}\n{progress}\n\nZadejte své přihlašovací údaje do OIG Cloud aplikace.\n\n⚠️ **DŮLEŽITÉ:** V mobilní aplikaci OIG Cloud musíte mít zapnutou funkci 'Živá data' v nastavení!",
+        "title": "🔐 Přihlašovací údaje"
+      },
+      "wizard_extended": {
+        "data": {
+          "enable_extended_battery_sensors": "🔋 Rozšířené senzory baterie",
+          "enable_extended_fve_sensors": "☀️ Rozšířené senzory FVE",
+          "enable_extended_grid_sensors": "⚡ Rozšířené senzory sítě",
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)"
+        },
+        "data_description": {
+          "enable_extended_battery_sensors": "Napětí článků, teploty, proudy nabíjení/vybíjení",
+          "enable_extended_fve_sensors": "Napětí stringů, proudy, teploty, výkon jednotlivých stringů",
+          "enable_extended_grid_sensors": "Napětí fází L1/L2/L3, frekvence, kvalita napájení",
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Rozšířené senzory**\n\nVyberte, které skupiny rozšířených senzorů chcete aktivovat.\n\n💡 **Dostupné skupiny:**\n• 🔋 Baterie - napětí článků, teploty, proudy\n• ☀️ FVE - napětí stringů, proudy, teploty\n• ⚡ Síť - napětí fází, frekvence, kvalita\n\n⚠️ **Poznámka:** Více senzorů = vyšší zátěž na API",
+        "title": "⚡ Rozšířené senzory"
+      },
+      "wizard_intervals": {
+        "data": {
+          "data_source_mode": "Zdroj telemetrie",
+          "enable_cloud_notifications": "Cloud notifikace",
+          "extended_scan_interval": "Rozšířená data (sekund)",
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)",
+          "local_event_debounce_ms": "Local event debounce (ms)",
+          "local_proxy_stale_minutes": "Fallback na cloud po (minut)",
+          "notifications_scan_interval": "Notifikace interval (sekund)",
+          "standard_scan_interval": "Základní data (sekund)"
+        },
+        "data_description": {
+          "data_source_mode": "Cloud only = všechny senzory čtou z cloudu; Local only = čtení z lokálních entit (při výpadku proxy > limit minut se dočasně vrátí na cloud)",
+          "enable_cloud_notifications": "Povolit stahování cloud notifikací (typicky stačí 1× za několik minut)",
+          "extended_scan_interval": "Jak často načítat napětí článků, teploty, proudy a další detailní údaje (minimálně 300 sekund, doporučeno 300-600 sekund)",
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět",
+          "local_event_debounce_ms": "Debounce pro event-driven refresh z lokálních entit (nižší = rychlejší reakce, vyšší = méně aktualizací)",
+          "local_proxy_stale_minutes": "Po kolika minutách bez lokálních dat se přepnout do cloudu. Jakmile proxy znovu odpoví, vrátí se zpět na local.",
+          "notifications_scan_interval": "Jak často kontrolovat cloud notifikace (doporučeno 300-900 sekund)",
+          "standard_scan_interval": "Jak často načítat spotřebu, výrobu, stav baterie a další základní údaje (minimálně 30 sekund, doporučeno 30-60 sekund)"
+        },
+        "description": "{step}\n{progress}\n\nNastavte, jak často se mají načítat data z OIG Cloud.\n\n💡 **Tip:** Kratší interval = aktuálnější data, ale vyšší zátěž na API servery.",
+        "title": "⏱️ Intervaly načítání dat"
+      },
+      "wizard_modules": {
+        "data": {
+          "enable_auto": "🚗 Auto - plánování nabíjení vozidla",
+          "enable_battery_prediction": "🔋 Inteligentní predikce a optimalizace baterie",
+          "enable_boiler": "🔥 Bojler - optimalizace ohřevu vody",
+          "enable_chmu_warnings": "🌦️ Varování ČHMÚ (meteorologická výstraha)",
+          "enable_dashboard": "📊 Webový dashboard s grafy",
+          "enable_extended_sensors": "⚡ Rozšířené senzory (napětí, proudy, teploty)",
+          "enable_pricing": "💰 Cenové senzory a spotové ceny z OTE",
+          "enable_solar_forecast": "☀️ Solární předpověď výroby FVE",
+          "enable_statistics": "📊 Statistiky a analýzy spotřeby",
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)"
+        },
+        "data_description": {
+          "enable_auto": "Optimalizace nabíjení elektromobilu (připravujeme)",
+          "enable_battery_prediction": "Experimentální - chytré nabíjení podle cen",
+          "enable_boiler": "Inteligentní plánování ohřevu bojleru podle spotových cen",
+          "enable_chmu_warnings": "Meteorologická varování pro vaši lokalitu (CAP XML)",
+          "enable_dashboard": "Webové rozhraní s grafy přístupné v HA",
+          "enable_extended_sensors": "Doporučeno - detailní monitoring",
+          "enable_pricing": "Doporučeno - spotové ceny z OTE + kalkulace nákladů",
+          "enable_solar_forecast": "Vyžaduje API klíč od Forecast.Solar",
+          "enable_statistics": "Doporučeno - medián spotřeby, predikce",
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět"
+        },
+        "description": "{step}\n{progress}\n\nVyberte, které funkce chcete používat. Každý modul můžete později podrobně nastavit.",
+        "title": "📦 Výběr modulů a funkcí"
+      },
+      "wizard_pricing_distribution": {
+        "data": {
+          "distribution_fee_nt_kwh": "Poplatek za distribuci NT (CZK/kWh)",
+          "distribution_fee_vt_kwh": "Poplatek za distribuci VT (CZK/kWh)",
+          "fixed_price_nt_kwh": "Fixní nákupní cena NT (CZK/kWh)",
+          "fixed_price_vt_kwh": "Fixní nákupní cena VT (CZK/kWh)",
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)",
+          "tariff_count": "Počet tarifů",
+          "tariff_nt_start_weekday": "NT začátek pracovní den (hodina1,hodina2)",
+          "tariff_nt_start_weekend": "NT začátek víkend (hodina1,hodina2)",
+          "tariff_vt_start_weekday": "VT začátek pracovní den (hodina)",
+          "tariff_vt_start_weekend": "VT začátek víkend (hodina)",
+          "tariff_weekend_same_as_weekday": "Víkend stejné jako pracovní dny",
+          "vat_rate": "DPH (%)"
+        },
+        "data_description": {
+          "distribution_fee_nt_kwh": "Distribuční poplatek NT (nízký tarif). Např. 0.91 CZK/kWh",
+          "distribution_fee_vt_kwh": "Distribuční poplatek VT (vysoký tarif). Např. 1.42 CZK/kWh",
+          "fixed_price_nt_kwh": "Fixní nákupní cena NT bez DPH a distribuce.",
+          "fixed_price_vt_kwh": "Fixní nákupní cena VT bez DPH a distribuce.",
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět",
+          "tariff_count": "💡 Klikněte 'Odeslat' pro zobrazení parametrů podle počtu tarifů",
+          "tariff_nt_start_weekday": "Začátek NT v pracovní den. Formát: hodina1,hodina2 (např. '22,2' = 22:00 večer a 02:00 ráno)",
+          "tariff_nt_start_weekend": "Začátek NT o víkendu. Formát: hodina1,hodina2 (např. '0' = NT celý den)",
+          "tariff_vt_start_weekday": "Začátek VT v pracovní den. Formát: hodina (např. '6' = 06:00)",
+          "tariff_vt_start_weekend": "Začátek VT o víkendu. Formát: hodina (nechte prázdné pro NT celý den)",
+          "tariff_weekend_same_as_weekday": "Použít stejné časy VT/NT i o víkendu",
+          "vat_rate": "Sazba DPH v procentech. Standardně 21%"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Krok 3: Distribuce a DPH**\n\nNastavte distribuční poplatky a DPH.\n\n💡 **Informace:**\n• Distribuce je **nezávislá** na typu nákupu/prodeje (FIX/SPOT)\n• Pokud máte 2 tarify (VT/NT), zaškrtněte 'Dva tarify'\n• VT hodiny se automaticky nastaví podle běžných časů\n\n⚙️ Po výběru počtu tarifů klikněte 'Odeslat' pro zobrazení parametrů.",
+        "title": "⚡ Konfigurace distribuce a DPH (3/3)"
+      },
+      "wizard_pricing_export": {
+        "data": {
+          "export_fee_percent": "Srážka z exportu (%)",
+          "export_fixed_fee_czk": "Fixní srážka exportu (CZK/kWh)",
+          "export_fixed_price_kwh": "Fixní výkupní cena (CZK/kWh)",
+          "export_pricing_scenario": "Scénář prodejní ceny",
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)"
+        },
+        "data_description": {
+          "export_fee_percent": "Srážka v %. Např. 15% = dostanete 85% ze spotové ceny (spot × 0.85)",
+          "export_fixed_fee_czk": "Fixní srážka od spotové ceny. Např. 0.20 CZK/kWh = spot - 0.20",
+          "export_fixed_price_kwh": "Fixní výkupní cena bez ohledu na spot. Např. 2.50 CZK/kWh",
+          "export_pricing_scenario": "💡 Klikněte 'Odeslat' pro zobrazení parametrů zvoleného scénáře",
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Krok 2: Prodejní cena elektřiny**\n\nVyberte, jak chcete počítat cenu za prodej přebytků do sítě.\n\n💡 **Doporučené scénáře:**\n• 💰 SPOT - procento - Výhodné při vysokých spotových cenách\n• 💵 SPOT - fixní srážka - Stabilnější výkup\n• 🔒 FIX cena - Stabilní výkupní cena po celý rok\n\n⚙️ Po výběru scénáře klikněte 'Odeslat' pro zobrazení parametrů.",
+        "title": "💸 Konfigurace prodejní ceny (2/3)"
+      },
+      "wizard_pricing_import": {
+        "data": {
+          "fixed_price_kwh": "Fixní nákupní cena (CZK/kWh)",
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)",
+          "import_pricing_scenario": "Scénář nákupní ceny",
+          "spot_fixed_fee_kwh": "Fixní poplatek (CZK/kWh)",
+          "spot_negative_fee_percent": "Přirážka při záporné spotové ceně (%)",
+          "spot_positive_fee_percent": "Přirážka při kladné spotové ceně (%)"
+        },
+        "data_description": {
+          "fixed_price_kwh": "Fixní nákupní cena. ⚠️ ZADÁVEJTE BEZ DPH A DISTRIBUCE!",
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět",
+          "import_pricing_scenario": "💡 Klikněte 'Odeslat' pro zobrazení parametrů zvoleného scénáře",
+          "spot_fixed_fee_kwh": "Konstantní poplatek přičtený ke spotové ceně. Např. 0,50 CZK/kWh",
+          "spot_negative_fee_percent": "Při záporné spotové ceně: cena × (1 - procento/100). Např. 9% = spot × 0,91",
+          "spot_positive_fee_percent": "Při kladné spotové ceně: cena × (1 + procento/100). Např. 15% = spot × 1,15"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Krok 1: Nákupní cena elektřiny**\n\nVyberte, jak chcete počítat cenu za nákup elektřiny ze sítě.\n\n💡 **Doporučené scénáře:**\n• 💰 SPOT + procento - Variabilní cena podle burzy\n• 💵 SPOT + fixní poplatek - Stabilnější než procento\n• 🔒 FIX cena - Předvídatelná fixní cena\n\n⚙️ Po výběru scénáře klikněte 'Odeslat' pro zobrazení parametrů.",
+        "title": "💰 Konfigurace nákupní ceny (1/3)"
+      },
+      "wizard_solar": {
+        "data": {
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)",
+          "solar_forecast_provider": "Poskytovatel předpovědi",
+          "solar_forecast_api_key": "Forecast.Solar API klíč",
+          "solcast_api_key": "Solcast API klíč",
+          "solcast_site_id": "Solcast site ID",
+          "solar_forecast_latitude": "GPS šířka instalace",
+          "solar_forecast_longitude": "GPS délka instalace",
+          "solar_forecast_mode": "Režim aktualizace předpovědi",
+          "solar_forecast_string1_azimuth": "String 1 - Azimut / Orientace (°)",
+          "solar_forecast_string1_declination": "String 1 - Sklon panelů (°)",
+          "solar_forecast_string1_enabled": "✅ Zapnout String 1",
+          "solar_forecast_string1_kwp": "String 1 - Instalovaný výkon (kWp)",
+          "solar_forecast_string2_azimuth": "String 2 - Azimut / Orientace (°)",
+          "solar_forecast_string2_declination": "String 2 - Sklon panelů (°)",
+          "solar_forecast_string2_enabled": "✅ Zapnout String 2",
+          "solar_forecast_string2_kwp": "String 2 - Instalovaný výkon (kWp)"
+        },
+        "data_description": {
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět",
+          "solar_forecast_provider": "Vyberte zdroj dat pro solární předpověď",
+          "solar_forecast_api_key": "Nepovinné pro ZDARMA režimy. Povinné pro časté aktualizace (4h, 1h)",
+          "solcast_api_key": "Povinné pro Solcast",
+          "solcast_site_id": "Rooftop site ID ze Solcastu (pro hobbyist/free účty)",
+          "solar_forecast_latitude": "Rozsah: -90° až 90° (Střední Evropa cca 48-51°)",
+          "solar_forecast_longitude": "Rozsah: -180° až 180° (Střední Evropa cca 12-19°)",
+          "solar_forecast_mode": "🎯 Optimalizovaný = 3× denně v 6:00, 12:00, 16:00 (DOPORUČENO)\n🌅 Denní = 1× denně v 6:00\n🕐 4h/⚡1h = vyžaduje API klíč",
+          "solar_forecast_string1_azimuth": "0° = JIH, 90° = ZÁPAD, 180° = SEVER, 270° = VÝCHOD (rozsah 0-360°)",
+          "solar_forecast_string1_declination": "0° = horizontálně, 90° = vertikálně (střechy obvykle 30-45°). Rozsah: 0-90°",
+          "solar_forecast_string1_enabled": "💡 Klikněte 'Odeslat' pro zobrazení parametrů. Pokud máte panely pouze na jedné orientaci, stačí String 1",
+          "solar_forecast_string1_kwp": "Celkový výkon String 1 v kWp (např. 5.0 kWp)",
+          "solar_forecast_string2_azimuth": "0° = JIH, 90° = ZÁPAD, 180° = SEVER, 270° = VÝCHOD (rozsah 0-360°)",
+          "solar_forecast_string2_declination": "0° = horizontálně, 90° = vertikálně (střechy obvykle 30-45°). Rozsah: 0-90°",
+          "solar_forecast_string2_enabled": "💡 Klikněte 'Odeslat' pro zobrazení parametrů. Zapněte, pokud máte panely na dvou různých orientacích (např. východ + západ)",
+          "solar_forecast_string2_kwp": "Celkový výkon String 2 v kWp (např. 3.5 kWp)"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Co tento modul dělá:**\nPoskytuje předpověď výroby elektřiny z fotovoltaických panelů na následujících 24-72 hodin. Využívá službu Forecast.Solar s přesnými meteorologickými daty.\n\n🔧 **Co je potřeba:**\n• Bezplatný nebo placený API klíč z Forecast.Solar\n• GPS souřadnice instalace FVE\n• Parametry panelů (sklon, azimut, výkon)\n\n⚠️ **Tento modul je vyžadován pro:**\n• 🔋 Predikce baterie (inteligentní nabíjení)\n\n🔑 API klíč získáte registrací na Forecast.Solar",
+        "title": "☀️ Konfigurace solární předpovědi"
+      },
+      "wizard_summary": {
+        "data": {
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)"
+        },
+        "data_description": {
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět"
+        },
+        "description": "{step}\n{progress}\n\n📋 **Shrnutí konfigurace**\n\n{summary}\n\n---\n\n✅ **Vše je připraveno!**\n\nKliknutím na 'Odeslat' dokončíte nastavení a integrace se aktivuje.",
+        "title": "✅ Shrnutí a dokončení"
+      },
+      "wizard_welcome": {
+        "description": "{info}",
+        "title": "🎯 Vítejte v průvodci OIG Cloud"
+      },
+      "wizard_welcome_reconfigure": {
+        "description": "🔧 **Změna nastavení OIG Cloud**\n\nTento průvodce vás provede úpravou konfigurace integrace.\n\n**Co můžete změnit:**\n• 📦 Zapnout/vypnout moduly a funkce\n• ⏱️ Upravit intervaly načítání dat\n• ☀️ Změnit nastavení solární předpovědi\n• 🔋 Upravit parametry predikce baterie\n• 💰 Změnit cenové nastavení\n• ⚡ Upravit rozšířené senzory\n\n**Poznámka:** Přihlašovací údaje nelze měnit zde - musíte smazat a znovu přidat integraci.\n\nKliknutím na \"Odeslat\" pokračujte v nastavení.",
+        "title": "🔧 Změna nastavení OIG Cloud"
       }
     }
   },
-  "selector": {
-    "set_box_mode": {
-      "options": {
-        "Home 1": "Home 1",
-        "Home 2": "Home 2",
-        "Home 3": "Home 3",
-        "Home UPS": "Home UPS"
-      },
-      "Acknowledgement": {
-        "description": "Beru na vědomí, že volání této služby povede ke změně parametrů živého systému. Přijímám plnou odpovědnost za změny a jakýkoli jejich očekávaný či neočekávaný dopad."
-      }
-    },
-    "set_grid_delivery": {
-      "options": {
-        "Vypnuto / Off": "Vypnuto / Off",
-        "Zapnuto / On": "Zapnuto / On",
-        "S omezením / Limited": "S omezením / Limited"
-      },
-      "Acknowledgement": {
-        "description": "Beru na vědomí, že volání této služby povede ke změně parametrů živého systému. Přijímám plnou odpovědnost za změny a jakýkoli jejich očekávaný či neočekávaný dopad."
-      },
-      "Upozornění": {
-        "description": "Před použitím této funkce se seznamte s omezeními dostupnými v aplikaci OIG Power / ČEZ Battery Box."
-      }
-    },
-    "set_boiler_mode": {
-      "options": {
-        "CBB": "CBB",
-        "Manual": "Manuální"
-      },
-      "Acknowledgement": {
-        "description": "Beru na vědomí, že volání této služby povede ke změně parametrů živého systému. Přijímám plnou odpovědnost za změny a jakýkoli jejich očekávaný či neočekávaný dopad."
-      }
-    },
-    "set_formating_mode": {
-      "options": {
-        "Nenabíjet": "Nenabíjet",
-        "Nabíjet": "Nabíjet"
-      },
-      "Limit": {
-        "min": "minimální",
-        "max": "maximální",
-        "unit_of_measurement": "jednotka měření"
-      },
-      "Acknowledgement": {
-        "description": "Beru na vědomí, že volání této služby povede ke změně parametrů živého systému. Přijímám plnou odpovědnost za změny a jakýkoli jejich očekávaný či neočekávaný dopad."
+  "entity": {
+    "sensor": {
+      "data_source": {
+        "name": "Zdroj dat",
+        "state": {
+          "cloud": "Cloud",
+          "local": "Lokální"
+        },
+        "state_attributes": {
+          "configured_mode": {
+            "name": "Nastavený režim"
+          },
+          "effective_mode": {
+            "name": "Používaný režim"
+          },
+          "last_local_data": {
+            "name": "Poslední lokální data"
+          },
+          "local_available": {
+            "name": "Lokální dostupné"
+          },
+          "reason": {
+            "name": "Důvod"
+          }
+        }
       }
     }
   },
   "options": {
+    "abort": {
+      "reconfigure_successful": "✅ Nastavení bylo uloženo a integrace byla znovu načtena."
+    },
     "step": {
-      "init": {
-        "title": "Konfigurace",
-        "description": "Nastavení integrace OIG Cloud",
+      "battery_prediction": {
         "data": {
-          "update_interval": "Interval aktualizace (vteřiny)",
-          "no_telemetry": "Zakázat telemetrii (odhlášení ze sběru dat)",
-          "log_level": "Úroveň protokolování"
+          "auto_mode_switch_enabled": "Automatické přepínání režimů podle plánu",
+          "cheap_window_percentile": "Percentil levných hodin (%)"
+        },
+        "data_description": {
+          "auto_mode_switch_enabled": "Pokud je zapnuto, integrace bude volat službu změny režimu (set_box_mode) automaticky podle vypočteného plánu. Stejné nastavení jako v průvodci.",
+          "cheap_window_percentile": "Používá balancing pro výběr \"levné\" části cenové křivky."
         }
+      },
+      "wizard_battery": {
+        "data": {
+          "auto_mode_switch_enabled": "Automatické přepínání režimů podle plánu",
+          "balancing_economic_threshold": "Cena pro ekonomické balancing (CZK/kWh)",
+          "balancing_enabled": "🔄 Povolit vyrovnání článků baterie",
+          "balancing_hold_hours": "Doba držení na 100% (hodiny)",
+          "balancing_interval_days": "Interval vyrovnání (dny)",
+          "balancing_opportunistic_threshold": "Cena pro opportunistic balancing (CZK/kWh)",
+          "cheap_window_percentile": "Percentil levných hodin (%)",
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)",
+          "home_charge_rate": "Nabíjecí výkon ze sítě (kW)",
+          "max_ups_price_czk": "Maximální cena pro nabíjení UPS (CZK/kWh)",
+          "min_capacity_percent": "Minimální kapacita baterie (%)",
+          "disable_planning_min_guard": "Vypnout ochranu plánovacího minima",
+          "target_capacity_percent": "Cílová kapacita baterie (%)"
+        },
+        "data_description": {
+          "auto_mode_switch_enabled": "Pokud je zapnuto, integrace bude volat službu změny režimu (set_box_mode) automaticky podle vypočteného plánu.",
+          "balancing_economic_threshold": "V dnech 5-7 po posledním vyrovnání použít tento cenový práh (typicky 2.5 CZK/kWh)",
+          "balancing_enabled": "Automaticky vyrovnává články baterie nabíjením na 100% a držením po nastavenou dobu",
+          "balancing_hold_hours": "Jak dlouho držet baterii na 100% pro vyrovnání článků (1-12 hodin, doporučeno 3 hodiny)",
+          "balancing_interval_days": "Maximální počet dní mezi cykly vyrovnání (3-30 dní, doporučeno 7 dní)",
+          "balancing_opportunistic_threshold": "Pokud spot cena klesne pod tuto hodnotu, vyrovnat okamžitě bez ohledu na dny (typicky 1.1 CZK/kWh)",
+          "cheap_window_percentile": "Používá balancing pro výběr \"levné\" části cenové křivky.",
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět",
+          "home_charge_rate": "Maximální výkon nabíjení ze sítě (typicky 2-3 kW)",
+          "min_capacity_percent": "Pokud kapacita klesne pod tuto hodnotu, zahájí se nabíjení",
+          "disable_planning_min_guard": "Povolí plánovači jít níž než plánovací minimum (agresivnější optimalizace)",
+          "max_ups_price_czk": "Tvrdý bezpečnostní limit: ze sítě se nikdy nenabíjí, pokud je cena vyšší",
+          "target_capacity_percent": "Optimální kapacita, na kterou se nabíjí"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Co tento modul dělá:**\nInteligentně optimalizuje nabíjení domácí baterie podle spotových cen elektřiny a předpovědi solární výroby. Automaticky se nabíjí v nejlevnějších hodinách.\n\n🔧 **Co je potřeba:**\n• ☀️ Solární předpověď (musí být zapnutá)\n• ⚡ Rozšířené senzory (musí být zapnuté)\n• 📈 Spotové ceny elektřiny\n\n⚠️ **Experimentální funkce** - může vyžadovat jemné doladění parametrů\n\n⚠️ **Tento modul je vyžadován pro:**\n• 📊 Dashboard (webové rozhraní)",
+        "title": "🔋 Konfigurace predikce baterie"
+      },
+      "wizard_boiler": {
+        "data": {
+          "boiler_alt_cost_kwh": "Cena alternativního ohřevu (CZK/kWh)",
+          "boiler_alt_heater_switch_entity": "Přepínač alternativního zdroje - volitelný",
+          "boiler_cold_inlet_temp_c": "Teplota studené vody (°C)",
+          "boiler_deadline_time": "Deadline (čas do kdy mít ohřáto)",
+          "boiler_has_alternative_heating": "Má bojler alternativní zdroj tepla?",
+          "boiler_heater_power_kw_entity": "Senzor výkonu topného tělesa (kW)",
+          "boiler_heater_switch_entity": "Přepínač topného tělesa",
+          "boiler_plan_slot_minutes": "Délka časového slotu (minuty)",
+          "boiler_planning_horizon_hours": "Plánovací horizont (hodiny)",
+          "boiler_spot_price_sensor": "Senzor spotové ceny",
+          "boiler_stratification_mode": "Režim stratifikace",
+          "boiler_target_temp_c": "Cílová teplota vody (°C)",
+          "boiler_temp_sensor_bottom": "Teplotní senzor (dolní část) - volitelný",
+          "boiler_temp_sensor_top": "Teplotní senzor (horní část)",
+          "boiler_volume_l": "Objem bojleru (litry)",
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)"
+        },
+        "data_description": {
+          "boiler_alt_cost_kwh": "Kolik vás stojí 1 kWh z alternativního zdroje (např. 1.5 CZK/kWh pro kotel). Elektrický ohřev se použije jen když je spotová cena levnější.",
+          "boiler_alt_heater_switch_entity": "Entity ID přepínače pro alternativní zdroj (např. kotel, tepelné čerpadlo). Nechte prázdné, pokud nemáte.",
+          "boiler_cold_inlet_temp_c": "Teplota přítoku studené vody z vodovodu (typicky 10-15°C)",
+          "boiler_deadline_time": "Do kdy chcete mít bojler ohřátý (formát HH:MM, např. 20:00). Plánování vždy najde nejlevnější sloty PŘED tímto časem.",
+          "boiler_has_alternative_heating": "Zaškrtněte, pokud máte alternativní způsob ohřevu (kotel, TČ) a chcete ho využívat když je elektřina drahá",
+          "boiler_heater_power_kw_entity": "Entity ID senzoru s aktuálním výkonem (např. sensor.boiler_power). Pokud nemáte, vytvořte helper s konstantní hodnotou (např. 2.0 pro 2kW)",
+          "boiler_heater_switch_entity": "Entity ID přepínače pro zapnutí hlavního topného tělesa (např. switch.boiler_heater). Toto bude integrace zapínat/vypínat.",
+          "boiler_plan_slot_minutes": "Velikost časových bloků pro plánování (15-60 minut). Menší = přesnější, větší = jednodušší. Doporučeno 60 minut.",
+          "boiler_planning_horizon_hours": "Jak daleko dopředu plánovat (typicky 24-48 hodin). Čím více, tím lepší optimalizace, ale delší výpočet.",
+          "boiler_spot_price_sensor": "Entity ID senzoru se spotovou cenou (např. sensor.oig_2206237016_spot_price_current_15min)",
+          "boiler_stratification_mode": "simple_avg = průměr teplot | two_zone = stratifikovaný model (přesnější, potřebuje 2 senzory)",
+          "boiler_target_temp_c": "Na jakou teplotu chcete ohřát vodu (typicky 55-65°C)",
+          "boiler_temp_sensor_bottom": "Entity ID teplotního senzoru ve spodní části - pro přesnější výpočet u stratifikovaných bojlerů",
+          "boiler_temp_sensor_top": "Entity ID teplotního senzoru v horní části bojleru (např. sensor.boiler_temperature_top)",
+          "boiler_volume_l": "Celkový objem zásobníku teplé vody (např. 120 litrů)",
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Co tento modul dělá:**\nInteligentně plánuje ohřev bojleru podle spotových cen elektřiny. Vybírá nejlevnější časové sloty pro ohřev vody před vámi nastaveným deadlinem.\n\n🔧 **Co je potřeba:**\n• 💰 Spotové ceny (musí být zapnuté)\n• 🌡️ Teplotní senzory bojleru (horní a volitelně dolní)\n• ⚡ Výkon topného tělesa\n\n💡 **Jak to funguje:**\n1. Vypočítá kolik energie potřebujete pro dohřátí vody\n2. Najde nejlevnější časové sloty před deadlinem (např. 20:00)\n3. Vytvoří plán kdy zapnout bojler\n4. Ovládá přepínač (switch) pro zapnutí/vypnutí ohřevu\n\n⚠️ **Poznámka:** Tento modul pouze řídí KDY ohřívat. Fyzické zapínání bojleru musíte zajistit pomocí automatizace nebo chytrého vypínače.",
+        "title": "🔥 Konfigurace bojleru"
+      },
+      "wizard_extended": {
+        "data": {
+          "enable_extended_battery_sensors": "🔋 Rozšířené senzory baterie",
+          "enable_extended_fve_sensors": "☀️ Rozšířené senzory FVE",
+          "enable_extended_grid_sensors": "⚡ Rozšířené senzory sítě",
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)"
+        },
+        "data_description": {
+          "enable_extended_battery_sensors": "Napětí článků, teploty, proudy nabíjení/vybíjení",
+          "enable_extended_fve_sensors": "Napětí stringů, proudy, teploty, výkon jednotlivých stringů",
+          "enable_extended_grid_sensors": "Napětí fází L1/L2/L3, frekvence, kvalita napájení",
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Rozšířené senzory**\n\nVyberte, které skupiny rozšířených senzorů chcete aktivovat.\n\n💡 **Dostupné skupiny:**\n• 🔋 Baterie - napětí článků, teploty, proudy\n• ☀️ FVE - napětí stringů, proudy, teploty\n• ⚡ Síť - napětí fází, frekvence, kvalita\n\n⚠️ **Poznámka:** Více senzorů = vyšší zátěž na API",
+        "title": "⚡ Rozšířené senzory"
+      },
+      "wizard_intervals": {
+        "data": {
+          "data_source_mode": "Zdroj telemetrie",
+          "enable_cloud_notifications": "Cloud notifikace",
+          "extended_scan_interval": "Rozšířená data (sekund)",
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)",
+          "local_event_debounce_ms": "Local event debounce (ms)",
+          "local_proxy_stale_minutes": "Fallback na cloud po (minut)",
+          "notifications_scan_interval": "Notifikace interval (sekund)",
+          "standard_scan_interval": "Základní data (sekund)"
+        },
+        "data_description": {
+          "data_source_mode": "Cloud only = vše z cloudu; Local only = lokální mapping (při výpadku/zastarání proxy automaticky fallback na cloud)",
+          "enable_cloud_notifications": "Povolit stahování cloud notifikací (typicky stačí 1× za několik minut)",
+          "extended_scan_interval": "Jak často načítat napětí článků, teploty, proudy a další detailní údaje (minimálně 300 sekund, doporučeno 300-600 sekund)",
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět",
+          "local_event_debounce_ms": "Debounce pro event-driven refresh z local entit (nižší = rychlejší reakce, vyšší = méně aktualizací)",
+          "local_proxy_stale_minutes": "Fallback na cloud, pokud lokální proxy neposlala data déle než tento limit",
+          "notifications_scan_interval": "Jak často kontrolovat cloud notifikace (doporučeno 300-900 sekund)",
+          "standard_scan_interval": "Jak často načítat spotřebu, výrobu, stav baterie a další základní údaje (minimálně 30 sekund, doporučeno 30-60 sekund)"
+        },
+        "description": "{step}\n{progress}\n\nNastavte, jak často se mají načítat data z OIG Cloud.\n\n💡 **Tip:** Kratší interval = aktuálnější data, ale vyšší zátěž na API servery.",
+        "title": "⏱️ Intervaly načítání dat"
+      },
+      "wizard_modules": {
+        "data": {
+          "enable_auto": "🚗 Auto - plánování nabíjení vozidla",
+          "enable_battery_prediction": "🔋 Inteligentní predikce a optimalizace baterie",
+          "enable_boiler": "🔥 Bojler - optimalizace ohřevu vody",
+          "enable_chmu_warnings": "🌦️ Varování ČHMÚ (meteorologická výstraha)",
+          "enable_dashboard": "📊 Webový dashboard s grafy",
+          "enable_extended_sensors": "⚡ Rozšířené senzory (napětí, proudy, teploty)",
+          "enable_pricing": "💰 Cenové senzory a spotové ceny z OTE",
+          "enable_solar_forecast": "☀️ Solární předpověď výroby FVE",
+          "enable_statistics": "📊 Statistiky a analýzy spotřeby",
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)"
+        },
+        "data_description": {
+          "enable_auto": "Optimalizace nabíjení elektromobilu (připravujeme)",
+          "enable_battery_prediction": "Experimentální - chytré nabíjení podle cen",
+          "enable_boiler": "Inteligentní plánování ohřevu bojleru podle spotových cen",
+          "enable_chmu_warnings": "Meteorologická varování pro vaši lokalitu (CAP XML)",
+          "enable_dashboard": "Webové rozhraní s grafy přístupné v HA",
+          "enable_extended_sensors": "Doporučeno - detailní monitoring",
+          "enable_pricing": "Doporučeno - spotové ceny z OTE + kalkulace nákladů",
+          "enable_solar_forecast": "Vyžaduje API klíč od Forecast.Solar",
+          "enable_statistics": "Doporučeno - medián spotřeby, predikce",
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět"
+        },
+        "description": "{step}\n{progress}\n\nVyberte, které funkce chcete používat. Každý modul můžete později podrobně nastavit.",
+        "title": "📦 Výběr modulů a funkcí"
+      },
+      "wizard_pricing_distribution": {
+        "data": {
+          "distribution_fee_nt_kwh": "Poplatek za distribuci NT (CZK/kWh)",
+          "distribution_fee_vt_kwh": "Poplatek za distribuci VT (CZK/kWh)",
+          "fixed_price_nt_kwh": "Fixní nákupní cena NT (CZK/kWh)",
+          "fixed_price_vt_kwh": "Fixní nákupní cena VT (CZK/kWh)",
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)",
+          "tariff_count": "Počet tarifů",
+          "tariff_nt_start_weekday": "NT začátek pracovní den (hodina1,hodina2)",
+          "tariff_nt_start_weekend": "NT začátek víkend (hodina1,hodina2)",
+          "tariff_vt_start_weekday": "VT začátek pracovní den (hodina)",
+          "tariff_vt_start_weekend": "VT začátek víkend (hodina)",
+          "tariff_weekend_same_as_weekday": "Víkend stejné jako pracovní dny",
+          "vat_rate": "DPH (%)"
+        },
+        "data_description": {
+          "distribution_fee_nt_kwh": "Distribuční poplatek NT (nízký tarif). Např. 0.91 CZK/kWh",
+          "distribution_fee_vt_kwh": "Distribuční poplatek VT (vysoký tarif). Např. 1.42 CZK/kWh",
+          "fixed_price_nt_kwh": "Fixní nákupní cena NT bez DPH a distribuce.",
+          "fixed_price_vt_kwh": "Fixní nákupní cena VT bez DPH a distribuce.",
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět",
+          "tariff_count": "💡 Klikněte 'Odeslat' pro zobrazení parametrů podle počtu tarifů",
+          "tariff_nt_start_weekday": "Začátek NT v pracovní den. Formát: hodina1,hodina2 (např. '22,2' = 22:00 večer a 02:00 ráno)",
+          "tariff_nt_start_weekend": "Začátek NT o víkendu. Formát: hodina1,hodina2 (např. '0' = NT celý den)",
+          "tariff_vt_start_weekday": "Začátek VT v pracovní den. Formát: hodina (např. '6' = 06:00)",
+          "tariff_vt_start_weekend": "Začátek VT o víkendu. Formát: hodina (nechte prázdné pro NT celý den)",
+          "tariff_weekend_same_as_weekday": "Použít stejné časy VT/NT i o víkendu",
+          "vat_rate": "Sazba DPH v procentech. Standardně 21%"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Krok 3: Distribuce a DPH**\n\nNastavte distribuční poplatky a DPH.\n\n💡 **Informace:**\n• Distribuce je **nezávislá** na typu nákupu/prodeje (FIX/SPOT)\n• Pokud máte 2 tarify (VT/NT), zaškrtněte 'Dva tarify'\n• VT hodiny se automaticky nastaví podle běžných časů\n\n⚙️ Po výběru počtu tarifů klikněte 'Odeslat' pro zobrazení parametrů.",
+        "title": "⚡ Konfigurace distribuce a DPH (3/3)"
+      },
+      "wizard_pricing_export": {
+        "data": {
+          "export_fee_percent": "Srážka z exportu (%)",
+          "export_fixed_fee_czk": "Fixní srážka exportu (CZK/kWh)",
+          "export_fixed_price_kwh": "Fixní výkupní cena (CZK/kWh)",
+          "export_pricing_scenario": "Scénář prodejní ceny",
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)"
+        },
+        "data_description": {
+          "export_fee_percent": "Srážka v %. Např. 15% = dostanete 85% ze spotové ceny (spot × 0.85)",
+          "export_fixed_fee_czk": "Fixní srážka od spotové ceny. Např. 0.20 CZK/kWh = spot - 0.20",
+          "export_fixed_price_kwh": "Fixní výkupní cena bez ohledu na spot. Např. 2.50 CZK/kWh",
+          "export_pricing_scenario": "💡 Klikněte 'Odeslat' pro zobrazení parametrů zvoleného scénáře",
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Krok 2: Prodejní cena elektřiny**\n\nVyberte, jak chcete počítat cenu za prodej přebytků do sítě.\n\n💡 **Doporučené scénáře:**\n• 💰 SPOT - procento - Výhodné při vysokých spotových cenách\n• 💵 SPOT - fixní srážka - Stabilnější výkup\n• 🔒 FIX cena - Stabilní výkupní cena po celý rok\n\n⚙️ Po výběru scénáře klikněte 'Odeslat' pro zobrazení parametrů.",
+        "title": "💸 Konfigurace prodejní ceny (2/3)"
+      },
+      "wizard_pricing_import": {
+        "data": {
+          "fixed_price_kwh": "Fixní nákupní cena (CZK/kWh)",
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)",
+          "import_pricing_scenario": "Scénář nákupní ceny",
+          "spot_fixed_fee_kwh": "Fixní poplatek (CZK/kWh)",
+          "spot_negative_fee_percent": "Přirážka při záporné spotové ceně (%)",
+          "spot_positive_fee_percent": "Přirážka při kladné spotové ceně (%)"
+        },
+        "data_description": {
+          "fixed_price_kwh": "Fixní nákupní cena. ⚠️ ZADÁVEJTE BEZ DPH A DISTRIBUCE!",
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět",
+          "import_pricing_scenario": "💡 Klikněte 'Odeslat' pro zobrazení parametrů zvoleného scénáře",
+          "spot_fixed_fee_kwh": "Konstantní poplatek přičtený ke spotové ceně. Např. 0,50 CZK/kWh",
+          "spot_negative_fee_percent": "Při záporné spotové ceně: cena × (1 - procento/100). Např. 9% = spot × 0,91",
+          "spot_positive_fee_percent": "Při kladné spotové ceně: cena × (1 + procento/100). Např. 15% = spot × 1,15"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Krok 1: Nákupní cena elektřiny**\n\nVyberte, jak chcete počítat cenu za nákup elektřiny ze sítě.\n\n💡 **Doporučené scénáře:**\n• 💰 SPOT + procento - Variabilní cena podle burzy\n• 💵 SPOT + fixní poplatek - Stabilnější než procento\n• 🔒 FIX cena - Předvídatelná fixní cena\n\n⚙️ Po výběru scénáře klikněte 'Odeslat' pro zobrazení parametrů.",
+        "title": "💰 Konfigurace nákupní ceny (1/3)"
+      },
+      "wizard_solar": {
+        "data": {
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)",
+          "solar_forecast_provider": "Poskytovatel předpovědi",
+          "solar_forecast_api_key": "Forecast.Solar API klíč",
+          "solcast_api_key": "Solcast API klíč",
+          "solcast_site_id": "Solcast site ID",
+          "solar_forecast_latitude": "GPS šířka instalace",
+          "solar_forecast_longitude": "GPS délka instalace",
+          "solar_forecast_mode": "Režim aktualizace předpovědi",
+          "solar_forecast_string1_azimuth": "String 1 - Azimut / Orientace (°)",
+          "solar_forecast_string1_declination": "String 1 - Sklon panelů (°)",
+          "solar_forecast_string1_enabled": "✅ Zapnout String 1",
+          "solar_forecast_string1_kwp": "String 1 - Instalovaný výkon (kWp)",
+          "solar_forecast_string2_azimuth": "String 2 - Azimut / Orientace (°)",
+          "solar_forecast_string2_declination": "String 2 - Sklon panelů (°)",
+          "solar_forecast_string2_enabled": "✅ Zapnout String 2",
+          "solar_forecast_string2_kwp": "String 2 - Instalovaný výkon (kWp)"
+        },
+        "data_description": {
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět",
+          "solar_forecast_provider": "Vyberte zdroj dat pro solární předpověď",
+          "solar_forecast_api_key": "Nepovinné pro ZDARMA režimy. Povinné pro časté aktualizace (4h, 1h)",
+          "solcast_api_key": "Povinné pro Solcast",
+          "solcast_site_id": "Rooftop site ID ze Solcastu (pro hobbyist/free účty)",
+          "solar_forecast_latitude": "Rozsah: -90° až 90° (Střední Evropa cca 48-51°)",
+          "solar_forecast_longitude": "Rozsah: -180° až 180° (Střední Evropa cca 12-19°)",
+          "solar_forecast_mode": "🎯 Optimalizovaný = 3× denně v 6:00, 12:00, 16:00 (DOPORUČENO)\n🌅 Denní = 1× denně v 6:00\n🕐 4h/⚡1h = vyžaduje API klíč",
+          "solar_forecast_string1_azimuth": "0° = JIH, 90° = ZÁPAD, 180° = SEVER, 270° = VÝCHOD (rozsah 0-360°)",
+          "solar_forecast_string1_declination": "0° = horizontálně, 90° = vertikálně (střechy obvykle 30-45°). Rozsah: 0-90°",
+          "solar_forecast_string1_enabled": "💡 Klikněte 'Odeslat' pro zobrazení parametrů. Pokud máte panely pouze na jedné orientaci, stačí String 1",
+          "solar_forecast_string1_kwp": "Celkový výkon String 1 v kWp (např. 5.0 kWp)",
+          "solar_forecast_string2_azimuth": "0° = JIH, 90° = ZÁPAD, 180° = SEVER, 270° = VÝCHOD (rozsah 0-360°)",
+          "solar_forecast_string2_declination": "0° = horizontálně, 90° = vertikálně (střechy obvykle 30-45°). Rozsah: 0-90°",
+          "solar_forecast_string2_enabled": "💡 Klikněte 'Odeslat' pro zobrazení parametrů. Zapněte, pokud máte panely na dvou různých orientacích (např. východ + západ)",
+          "solar_forecast_string2_kwp": "Celkový výkon String 2 v kWp (např. 3.5 kWp)"
+        },
+        "description": "{step}\n{progress}\n\n📖 **Co tento modul dělá:**\nPoskytuje předpověď výroby elektřiny z fotovoltaických panelů na následujících 24-72 hodin. Využívá službu Forecast.Solar s přesnými meteorologickými daty.\n\n🔧 **Co je potřeba:**\n• Bezplatný nebo placený API klíč z Forecast.Solar\n• GPS souřadnice instalace FVE\n• Parametry panelů (sklon, azimut, výkon)\n\n⚠️ **Tento modul je vyžadován pro:**\n• 🔋 Predikce baterie (inteligentní nabíjení)\n\n🔑 API klíč získáte registrací na Forecast.Solar",
+        "title": "☀️ Konfigurace solární předpovědi"
+      },
+      "wizard_summary": {
+        "data": {
+          "go_back": "⬅️ Chci se vrátit zpět (zaškrtnout + kliknout Odeslat)"
+        },
+        "data_description": {
+          "go_back": "Zaškrtněte toto políčko a stiskněte tlačítko 'Odeslat' - vrátíte se o krok zpět"
+        },
+        "description": "{step}\n{progress}\n\n📋 **Shrnutí konfigurace**\n\n{summary}\n\n---\n\n✅ **Vše je připraveno!**\n\nKliknutím na 'Odeslat' uložíte změny.",
+        "title": "✅ Shrnutí a dokončení"
+      },
+      "wizard_welcome_reconfigure": {
+        "description": "🔧 **Změna nastavení OIG Cloud**\n\nTento průvodce vás provede úpravou konfigurace integrace.\n\n**Co můžete změnit:**\n• 📦 Zapnout/vypnout moduly a funkce\n• ⏱️ Upravit intervaly načítání dat\n• ☀️ Změnit nastavení solární předpovědi\n• 🔋 Upravit parametry predikce baterie\n• 💰 Změnit cenové nastavení\n• ⚡ Upravit rozšířené senzory\n\n**Poznámka:** Přihlašovací údaje nelze měnit zde - musíte smazat a znovu přidat integraci.\n\nKliknutím na \"Odeslat\" pokračujte v nastavení.",
+        "title": "🔧 Změna nastavení OIG Cloud"
       }
+    }
+  },
+  "selector": {
+    "setup_type": {
+      "options": {
+        "import": "📥 Import z YAML",
+        "quick": "⚡ Rychlé nastavení",
+        "wizard": "🧙‍♂️ Průvodce nastavením (doporučeno)"
+      }
+    },
+    "box_mode": {
+      "options": {
+        "home_1": "Home 1",
+        "home_2": "Home 2",
+        "home_3": "Home 3",
+        "home_ups": "Home UPS"
+      }
+    },
+    "boiler_mode": {
+      "options": {
+        "cbb": "CBB",
+        "manual": "Manual"
+      }
+    },
+    "battery_charge_mode": {
+      "options": {
+        "no_charge": "Nenabíjet",
+        "charge": "Nabíjet"
+      }
+    },
+    "grid_delivery_mode": {
+      "options": {
+        "off": "Vypnuto / Off",
+        "on": "Zapnuto / On",
+        "limited": "S omezením / Limited"
+      }
+    }
+  },
+  "services": {
+    "apply_boiler_plan": {
+      "description": "Aplikuje naplánovaný ohřev bojleru. Vytvoří automatizace pro zapínání topného tělesa v naplánovaných časech.",
+      "name": "Aplikovat plán ohřevu"
+    },
+    "cancel_boiler_plan": {
+      "description": "Zruší aktivní plán ohřevu bojleru a odstraní naplánované automatizace.",
+      "name": "Zrušit plán ohřevu"
+    },
+    "plan_boiler_heating": {
+      "description": "Vytvoří plán optimálního ohřevu bojleru na základě spotových cen. Najde nejlevnější časové sloty před deadlinem.",
+      "fields": {
+        "deadline": {
+          "description": "Přepsání defaultního deadline času (formát HH:MM, např. 20:00)",
+          "name": "Přepsat deadline"
+        },
+        "force": {
+          "description": "Vynutí přepočet plánu i když už existuje platný plán",
+          "name": "Vynutit přepočet"
+        }
+      },
+      "name": "Naplánovat ohřev bojleru"
     }
   }
 }

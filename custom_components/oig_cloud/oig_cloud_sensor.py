@@ -29,7 +29,7 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
         self._attr_state_class = SENSOR_TYPES[sensor_type].get("state_class")
         self._node_id: Optional[str] = SENSOR_TYPES[sensor_type].get("node_id")
         self._node_key: Optional[str] = SENSOR_TYPES[sensor_type].get("node_key")
-        self._box_id: str = list(self.coordinator.data.keys())[0]
+        self._box_id: str = self._resolve_box_id()
         self.entity_id = f"sensor.oig_{self._box_id}_{sensor_type}"
         _LOGGER.debug(f"Created sensor {self.entity_id}")
 
@@ -91,7 +91,10 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
     @property
     def options(self) -> Optional[List[str]]:
         """Return the options for this sensor if applicable."""
-        return SENSOR_TYPES[self._sensor_type].get("options")
+        options = SENSOR_TYPES[self._sensor_type].get("options")
+        if isinstance(options, list):
+            return [str(option) for option in options]
+        return None
 
     @property
     def name(self) -> str:
@@ -115,7 +118,7 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
         """Safely extract node value from coordinator data."""
         if not self.coordinator.data or not self._node_id or not self._node_key:
             return None
-            
+
         box_id = list(self.coordinator.data.keys())[0]
         try:
             return self.coordinator.data[box_id][self._node_id][self._node_key]
@@ -124,3 +127,11 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
                 f"Could not find {self._node_id}.{self._node_key} in data for sensor {self.entity_id}"
             )
             return None
+
+    def _resolve_box_id(self) -> str:
+        forced = getattr(self.coordinator, "forced_box_id", None)
+        if forced:
+            return str(forced)
+        if self.coordinator.data:
+            return list(self.coordinator.data.keys())[0]
+        return "unknown"

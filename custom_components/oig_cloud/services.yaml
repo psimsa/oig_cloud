@@ -9,6 +9,7 @@ set_box_mode:
     Mode:
       description: The mode to set
       example: "Home 1"
+      required: false
       selector:
         select:
           options:
@@ -16,6 +17,16 @@ set_box_mode:
             - "Home 2"
             - "Home 3"
             - "Home UPS"
+    home_grid_v:
+      description: Enable Home Grid V supplementary mode
+      required: false
+      selector:
+        boolean:
+    home_grid_vi:
+      description: Enable Home Grid VI supplementary mode
+      required: false
+      selector:
+        boolean:
     Acknowledgement:
       description: |
         I acknowledge that calling the service will result in parameter modification of a live system.

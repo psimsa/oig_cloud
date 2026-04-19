@@ -224,6 +224,16 @@ class OigCloudApi:
                 self._logger.error(f"Error setting grid delivery limit: {e}", stack_info=True)
                 raise OigCloudApiError(f"Failed to set grid delivery limit: {e}") from e
 
+    async def set_box_prm2_app(self, value: int) -> bool:
+        """Set box_prm2.app value (supplementary mode bitmask: 0-3)."""
+        with tracer.start_as_current_span("set_box_prm2_app") as span:
+            try:
+                self._logger.debug(f"Setting box_prm2.app to {value}")
+                return await self.set_box_params_internal("box_prm2", "app", str(value))
+            except Exception as e:
+                self._logger.error(f"Error setting box_prm2.app: {e}", stack_info=True)
+                raise OigCloudApiError(f"Failed to set box_prm2.app: {e}") from e
+
     async def set_boiler_mode(self, mode: str) -> bool:
         """Set boiler mode (manual or automatic)."""
         with tracer.start_as_current_span("set_boiler_mode") as span:

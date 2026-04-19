@@ -1,0 +1,19 @@
+version: 2
+exclude_paths:
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/tests/**"
+  - "**/test/**"
+engines:
+  typescript:
+    exclude:
+      - "no-explicit-any"
+    exclude_paths:
+      - "**/tests/**"
+      - "**/*.test.ts"
+      - "**/*.test.tsx"
+  eslint:
+    exclude:
+      - "**/tests/**"
+      - "**/*.test.ts"
+      - "**/*.test.tsx"
