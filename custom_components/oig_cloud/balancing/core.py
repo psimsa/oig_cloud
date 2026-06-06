@@ -426,7 +426,9 @@ class BalancingManager:
             )
 
             # Use hourly statistics for battery SoC
-            stats = await self.hass.async_add_executor_job(
+            from homeassistant.components.recorder import get_instance
+
+            stats = await get_instance(self.hass).async_add_executor_job(
                 statistics_during_period,
                 self.hass,
                 start_time,

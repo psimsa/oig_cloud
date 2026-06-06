@@ -618,7 +618,9 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
             )
 
             # Načíst všechna historická data
-            states = await self.hass.async_add_executor_job(
+            from homeassistant.components.recorder import get_instance
+
+            states = await get_instance(self.hass).async_add_executor_job(
                 history.state_changes_during_period,
                 self.hass,
                 start_time,
@@ -737,7 +739,9 @@ class OigCloudStatisticsSensor(SensorEntity, RestoreEntity):
             )
 
             # Načíst historii (vrací list of states)
-            states = await self.hass.async_add_executor_job(
+            from homeassistant.components.recorder import get_instance
+
+            states = await get_instance(self.hass).async_add_executor_job(
                 history.state_changes_during_period,
                 self.hass,
                 interval_start,
