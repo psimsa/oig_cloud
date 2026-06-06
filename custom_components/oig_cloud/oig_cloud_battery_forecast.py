@@ -5138,7 +5138,9 @@ class OigCloudBatteryForecastSensor(RestoreEntity, CoordinatorEntity, SensorEnti
             ]
 
             # Načíst historii
-            states = await self._hass.async_add_executor_job(
+            from homeassistant.components.recorder import get_instance
+
+            states = await get_instance(self._hass).async_add_executor_job(
                 get_significant_states,
                 self._hass,
                 start_time,
@@ -9275,7 +9277,9 @@ class OigCloudBatteryForecastSensor(RestoreEntity, CoordinatorEntity, SensorEnti
             from homeassistant.components.recorder import history
 
             # Načíst změny stavu ze sensoru
-            history_data = await self._hass.async_add_executor_job(
+            from homeassistant.components.recorder import get_instance
+
+            history_data = await get_instance(self._hass).async_add_executor_job(
                 history.state_changes_during_period,
                 self._hass,
                 start_time,
@@ -12900,7 +12904,9 @@ class OigCloudBatteryForecastSensor(RestoreEntity, CoordinatorEntity, SensorEnti
             )
             end_time = dt_util.now()
 
-            stats = await hass.async_add_executor_job(
+            from homeassistant.components.recorder import get_instance
+
+            stats = await get_instance(hass).async_add_executor_job(
                 statistics_during_period,
                 hass,
                 start_time,
@@ -13128,7 +13134,9 @@ class OigCloudBatteryForecastSensor(RestoreEntity, CoordinatorEntity, SensorEnti
             # Načíst states z recorderu
             from homeassistant.components.recorder import history
 
-            states = await self.hass.async_add_executor_job(
+            from homeassistant.components.recorder import get_instance
+
+            states = await get_instance(self.hass).async_add_executor_job(
                 history.get_significant_states,
                 self.hass,
                 start_time,
@@ -14670,7 +14678,9 @@ class OigCloudBatteryEfficiencySensor(RestoreEntity, CoordinatorEntity, SensorEn
             battery_sensor = f"sensor.oig_{self._box_id}_remaining_usable_capacity"
 
             # Získat stavy na konci měsíce
-            history = await self.hass.async_add_executor_job(
+            from homeassistant.components.recorder import get_instance
+
+            history = await get_instance(self.hass).async_add_executor_job(
                 get_significant_states,
                 self.hass,
                 end_time - timedelta(hours=1),
@@ -14736,7 +14746,7 @@ class OigCloudBatteryEfficiencySensor(RestoreEntity, CoordinatorEntity, SensorEn
                             continue
 
             # Načíst stav baterie na začátku měsíce
-            history_start = await self.hass.async_add_executor_job(
+            history_start = await get_instance(self.hass).async_add_executor_job(
                 get_significant_states,
                 self.hass,
                 start_time,

@@ -2219,7 +2219,7 @@ class ModeTransitionTracker:
             from homeassistant.components import recorder
 
             # Run v executoru aby to neblokovalo event loop
-            states = await self.hass.async_add_executor_job(
+            states = await recorder.get_instance(self.hass).async_add_executor_job(
                 recorder.history.state_changes_during_period,
                 self.hass,
                 start_time,
