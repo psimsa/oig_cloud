@@ -1038,12 +1038,18 @@ async def async_setup_entry(
         if not (isinstance(box_id_for_devices, str) and box_id_for_devices.isdigit()):
             box_id_for_devices = "unknown"
 
+        # Hlavní zařízení musí existovat dřív, než se na něj service zařízení
+        # (Analytics, ServiceShield) odkážou přes via_device_id (HA 2026.8+).
+        from .device_link import ensure_main_device, via_main_device
+
+        ensure_main_device(hass, entry.entry_id, box_id_for_devices)
+
         analytics_device_info = {
             "identifiers": {(DOMAIN, f"{box_id_for_devices}_analytics")},
             "name": f"Analytics & Predictions {box_id_for_devices}",
             "manufacturer": "OIG",
             "model": "Analytics Module",
-            "via_device": (DOMAIN, box_id_for_devices),
+            **via_main_device(hass, entry.entry_id, box_id_for_devices),
             "entry_type": "service",
         }
 
@@ -1266,7 +1272,7 @@ async def async_setup_entry(
                 "name": f"ServiceShield {shield_box_id}",
                 "manufacturer": "OIG",
                 "model": "Shield",
-                "via_device": (DOMAIN, shield_box_id),
+                **via_main_device(hass, entry.entry_id, shield_box_id),
                 "entry_type": "service",
             }
             hass.data[DOMAIN][entry.entry_id]["shield_device_info"] = shield_device_info

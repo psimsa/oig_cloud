@@ -8,6 +8,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DEFAULT_NAME, DOMAIN
+from .device_link import entity_config_entry_id, via_main_device
 from .oig_cloud_coordinator import OigCloudCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -222,6 +223,11 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
         sensor_def = _get_sensor_definition(self._sensor_type)
         sensor_category = sensor_def.get("sensor_type_category")
 
+        # Propojení s hlavním zařízením (via_device_id od HA 2026.8)
+        via_link = via_main_device(
+            self.hass, entity_config_entry_id(self), self._box_id
+        )
+
         # ServiceShield senzory budou v separátním Shield zařízení
         if sensor_category == "shield":
             return DeviceInfo(
@@ -229,7 +235,7 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
                 name=f"ServiceShield {self._box_id}",
                 manufacturer="OIG",
                 model="Shield",
-                via_device=(DOMAIN, self._box_id),
+                **via_link,
             )
 
         # Analytics & Predictions senzory budou v samostatném propojeném zařízení
@@ -239,7 +245,7 @@ class OigCloudSensor(CoordinatorEntity, SensorEntity):
                 name=f"Analytics & Predictions {self._box_id}",
                 manufacturer="OIG",
                 model="Analytics Module",
-                via_device=(DOMAIN, self._box_id),  # Propojení s hlavním zařízením
+                **via_link,
             )
 
         # Hlavní zařízení pro data, computed a extended senzory
