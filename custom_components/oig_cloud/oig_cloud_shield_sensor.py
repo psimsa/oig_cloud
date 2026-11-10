@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional, Union
 
 from .const import DOMAIN
+from .device_link import entity_config_entry_id, via_main_device
 from .oig_cloud_sensor import OigCloudSensor, _get_sensor_definition, resolve_box_id
 
 _LOGGER = logging.getLogger(__name__)
@@ -453,7 +454,7 @@ class OigCloudShieldSensor(OigCloudSensor):
             "name": f"ServiceShield {box_id}",
             "manufacturer": "OIG",
             "model": "Shield",
-            "via_device": (DOMAIN, box_id),
+            **via_main_device(self.hass, entity_config_entry_id(self), box_id),
         }
 
     def _resolve_box_id(self) -> str:

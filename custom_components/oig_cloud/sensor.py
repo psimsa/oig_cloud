@@ -8,6 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
+from .device_link import via_main_device
 from .oig_cloud_data_source_sensor import OigCloudDataSourceSensor
 from .oig_cloud_sensor import resolve_box_id
 
@@ -452,7 +453,7 @@ async def async_setup_entry(  # noqa: C901
         "name": f"Analytics & Predictions {inverter_sn}",
         "manufacturer": "OIG",
         "model": "Analytics Module",
-        "via_device": (DOMAIN, inverter_sn),
+        **via_main_device(hass, entry.entry_id, inverter_sn),
         "entry_type": "service",
     }
 
@@ -492,14 +493,6 @@ async def async_setup_entry(  # noqa: C901
                 from .oig_cloud_data_sensor import OigCloudDataSensor
 
                 sensor = OigCloudDataSensor(coordinator, sensor_type)
-
-                # Ověříme, že senzor má správnou device_info před přidáním
-                if hasattr(sensor, "device_info") and sensor.device_info is not None:
-                    if not isinstance(sensor.device_info, dict):
-                        _LOGGER.error(
-                            f"Sensor {sensor_type} has invalid device_info type: {type(sensor.device_info)}"
-                        )
-                        continue
 
                 basic_sensors.append(sensor)
                 _LOGGER.debug(f"Created data sensor: {sensor_type}")
@@ -546,17 +539,6 @@ async def async_setup_entry(  # noqa: C901
                     from .oig_cloud_computed_sensor import OigCloudComputedSensor
 
                     sensor = OigCloudComputedSensor(coordinator, sensor_type)
-
-                    # Ověříme device_info
-                    if (
-                        hasattr(sensor, "device_info")
-                        and sensor.device_info is not None
-                    ):
-                        if not isinstance(sensor.device_info, dict):
-                            _LOGGER.error(
-                                f"Computed sensor {sensor_type} has invalid device_info type: {type(sensor.device_info)}"
-                            )
-                            continue
 
                     computed_sensors.append(sensor)
                     _LOGGER.debug(f"Created computed sensor: {sensor_type}")
@@ -757,17 +739,6 @@ async def async_setup_entry(  # noqa: C901
                     try:
                         sensor = OigCloudShieldSensor(coordinator, sensor_type)
 
-                        # Ověříme device_info
-                        if (
-                            hasattr(sensor, "device_info")
-                            and sensor.device_info is not None
-                        ):
-                            if not isinstance(sensor.device_info, dict):
-                                _LOGGER.error(
-                                    f"Shield sensor {sensor_type} has invalid device_info type: {type(sensor.device_info)}"
-                                )
-                                continue
-
                         shield_sensors.append(sensor)
                         _LOGGER.debug(f"Created shield sensor: {sensor_type}")
                     except Exception as e:
@@ -816,17 +787,6 @@ async def async_setup_entry(  # noqa: C901
                     sensor = OigCloudDataSensor(
                         coordinator, sensor_type, notification=True
                     )
-
-                    # Jednoduché ověření device_info
-                    if (
-                        hasattr(sensor, "device_info")
-                        and sensor.device_info is not None
-                    ):
-                        if not isinstance(sensor.device_info, dict):
-                            _LOGGER.error(
-                                f"Notification sensor {sensor_type} has invalid device_info type: {type(sensor.device_info)}"
-                            )
-                            continue
 
                     notification_sensors.append(sensor)
                     _LOGGER.debug(f"Created notification sensor: {sensor_type}")
